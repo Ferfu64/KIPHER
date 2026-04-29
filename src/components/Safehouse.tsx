@@ -3,7 +3,7 @@ import { db, auth } from '../lib/firebase';
 import { collection, query, addDoc, onSnapshot, serverTimestamp, orderBy, limit, doc, deleteDoc } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { UserProfile, Safehouse as SafehouseType, ChatMessage } from '../types';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Send, LogOut, Plus, Lock, MessageCircle, Terminal, Trash2, Info } from 'lucide-react';
 import { handleFirestoreError, OperationType, ensureDate } from '../lib/utils';
 import { audioService } from '../services/audioService';

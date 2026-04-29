@@ -12,7 +12,7 @@ import NodeGateway from './components/NodeGateway';
 import MeetingHub from './components/MeetingHub';
 import MiscSystems from './components/MiscSystems';
 import TacticalProtocolHandler from './components/TacticalProtocolHandler';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Terminal, Users, Home, Archive, ShieldAlert, LogOut, Radio, Activity, Zap, User, ShieldCheck, Lock, Info, Box, Settings, Volume2, VolumeX } from 'lucide-react';
 import { audioService } from './services/audioService';
 

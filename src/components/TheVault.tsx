@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db, auth } from '../lib/firebase';
 import { collection, query, onSnapshot, where, orderBy, getDocs, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { UserProfile, VaultItem, VaultFile } from '../types';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Archive, Lock, FileText, Database, ShieldAlert, X, ChevronRight, Plus, Download, Trash2, Key, Info } from 'lucide-react';
 import { handleFirestoreError, OperationType, ensureDate } from '../lib/utils';
 import { audioService } from '../services/audioService';

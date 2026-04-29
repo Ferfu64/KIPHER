@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../lib/firebase';
 import { collection, query, where, onSnapshot, orderBy, limit, serverTimestamp, addDoc, Timestamp } from 'firebase/firestore';
 import { UserProfile, SystemCommand } from '../types';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, AlertTriangle, Ghost, RefreshCw, X, Search, Globe, Lock } from 'lucide-react';
 import { audioService } from '../services/audioService';
 

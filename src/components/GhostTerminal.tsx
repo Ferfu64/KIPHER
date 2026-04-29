@@ -3,7 +3,7 @@ import { UserProfile } from '../types';
 import CommandCenter from './CommandCenter';
 import AdminUserForm from './AdminUserForm';
 import { ShieldAlert, Users, Radio, Activity } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 export default function GhostTerminal({ currentUser }: { currentUser: UserProfile }) {
   const [activeTab, setActiveTab] = useState<'COMMAND' | 'USERS'>('COMMAND');

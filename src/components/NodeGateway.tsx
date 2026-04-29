@@ -3,7 +3,7 @@ import { UserProfile } from '../types';
 import Safehouse from './Safehouse';
 import TheVault from './TheVault';
 import { Box, Archive, HelpCircle, ShieldAlert } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function NodeGateway({ currentUser }: { currentUser: UserProfile }) {
   const [mode, setMode] = useState<'NODES' | 'VAULTS'>('NODES');

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, query, onSnapshot, where, orderBy, limit } from 'firebase/firestore';
 import { UserProfile } from '../types';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Users, ExternalLink } from 'lucide-react';
 import { handleFirestoreError, OperationType, ensureDate } from '../lib/utils';
 

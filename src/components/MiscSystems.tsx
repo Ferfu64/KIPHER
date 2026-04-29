@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
 import { Settings, ShieldCheck, Activity, Terminal, Key, User, FileText } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 export default function MiscSystems({ currentUser }: { currentUser: UserProfile }) {
   const [activeTab, setActiveTab] = useState<'PROFILE' | 'CLEARANCE' | 'LOGS'>('PROFILE');

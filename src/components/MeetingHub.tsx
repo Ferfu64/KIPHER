@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, Safehouse as SafehouseType, VaultItem, ChatMessage, VaultFile } from '../types';
 import { db, auth } from '../lib/firebase';
 import { collection, query, addDoc, onSnapshot, serverTimestamp, orderBy, limit, doc, getDocs, updateDoc, arrayUnion } from 'firebase/firestore';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Mic, MicOff, Paperclip, Share2, Terminal, Users, Search, Download, Trash2, Plus, Zap, AlertTriangle } from 'lucide-react';
 import { handleFirestoreError, OperationType, ensureDate } from '../lib/utils';
 import { signInAnonymously } from 'firebase/auth';

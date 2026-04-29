@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { auth, db } from '../lib/firebase';
 import { signInWithEmailAndPassword, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Lock, Terminal, Activity, User, Key, Info } from 'lucide-react';
 import { UserProfile } from '../types';
 import GestureListener, { GhostTerminal } from './GestureListener';
