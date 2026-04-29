@@ -1,0 +1,151 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Helpers
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { 
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    function isVerified() { return isSignedIn(); } 
+    function isOwner(userId) { return request.auth.uid == userId; }
+
+    // --- ENTITY VALIDATIONS ---
+
+    function isValidUser(data) {
+      return data.displayName is string && data.displayName.size() <= 50 &&
+             data.password is string && data.password.size() <= 100 &&
+             data.role in ['AGENT', 'SUPERUSER', 'OWNER', 'ASSET'] &&
+             data.isOwner is bool &&
+             data.clearanceLevel is int && data.clearanceLevel >= 0 && data.clearanceLevel <= 5 &&
+             data.isBanned is bool &&
+             data.keys().hasAll(['uid', 'displayName', 'password', 'role', 'isOwner', 'clearanceLevel', 'isBanned']) &&
+             data.keys().size() >= 7;
+    }
+
+    function isValidSafehouse(data) {
+      return data.hostAuthId == request.auth.uid &&
+             data.passcode is string && data.passcode.matches('^[0-9]{4}$') &&
+             data.name is string && data.name.size() <= 100;
+    }
+
+    function isValidMessage(data) {
+      return data.senderAuthId == request.auth.uid &&
+             data.text is string && data.text.size() <= 2000 &&
+             data.timestamp == request.time &&
+             data.type in ['TEXT', 'SYSTEM', 'ALERT', 'VAULT', 'NODE'];
+    }
+
+    function isValidVault(data) {
+      return data.title is string && data.title.size() <= 100 &&
+             data.passcode is string && data.passcode.matches('^[0-9]{4}$') &&
+             data.clearanceRequired is int &&
+             data.ownerId == request.auth.uid;
+    }
+
+    function isValidRequest(data) {
+      return data.userId == request.auth.uid &&
+             data.status == 'PENDING' &&
+             data.timestamp == request.time;
+    }
+
+    function isValidConnection(data) {
+      return data.users.size() == 2 &&
+             request.auth.uid in data.users &&
+             data.status in ['PENDING', 'LINKED'];
+    }
+
+    function isValidCommand(data) {
+      return data.type in ['ALERT', 'MEDIA', 'BLACKOUT', 'REDIRECT', 'SAFETY', 'RESTORE'] &&
+             data.timestamp == request.time &&
+             data.active is bool;
+    }
+
+    // --- MATCH BLOCKS ---
+
+    match /system_commands/{id} {
+      allow read: if isSignedIn() && (resource.data.targetUserId == null || resource.data.targetUserId == request.auth.uid || isAdmin());
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isAdmin() && isValidUser(incoming()) && incoming().uid == userId;
+      allow update: if isAdmin() || (isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['lastSeen', 'currentAuthUid']));
+    }
+
+    match /safehouses/{safehouseId} {
+      allow read: if true; // Publicly viewable rooms list
+      allow create: if (isVerified() || isAdmin()) && isValidSafehouse(incoming());
+      allow update: if isAdmin() || (
+        isSignedIn() && existing().hostAuthId == request.auth.uid && isValidSafehouse(incoming())
+      );
+      allow delete: if isAdmin() || (isSignedIn() && existing().hostAuthId == request.auth.uid);
+
+      match /messages/{messageId} {
+        allow read: if isVerified() || isAdmin(); 
+        allow create: if (isVerified() || isAdmin()) && isValidMessage(incoming());
+      }
+    }
+
+    match /vaults/{vaultId} {
+      allow read: if true;
+      allow create: if (isVerified() || isAdmin()) && isValidVault(incoming());
+      allow update, delete: if isAdmin() || (isSignedIn() && existing().ownerId == request.auth.uid);
+    }
+
+    match /clearance_requests/{requestId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if (isVerified() || isAdmin()) && isValidRequest(incoming());
+      allow update: if isAdmin();
+    }
+
+    match /connections/{connectionId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.users;
+      allow create: if (isVerified() || isAdmin()) && isValidConnection(incoming());
+      allow update: if (isVerified() || isAdmin()) && request.auth.uid in existing().users && isValidConnection(incoming());
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/connections/$(connectionId)).data.users;
+        allow create: if (isVerified() || isAdmin()) && isValidMessage(incoming()) && 
+                       request.auth.uid in get(/databases/$(database)/documents/connections/$(connectionId)).data.users;
+      }
+    }
+
+    match /admins/{authUid} {
+      allow read: if isVerified() || isAdmin();
+      allow create, update: if isSignedIn() && request.auth.uid == authUid;
+      allow delete: if request.auth.uid == authUid;
+    }
+
+    match /system_alerts/{id} {
+      allow read: if true;
+      allow create: if isAdmin();
+    }
+
+    match /media_injects/{id} {
+      allow read: if true;
+      allow create: if isAdmin();
+    }
+
+    match /system/commands/active/{commandId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /meeting_room_chat/{msgId} {
+      allow read: if isVerified() || isAdmin();
+      allow create: if (isVerified() || isAdmin()) && isValidMessage(incoming());
+      allow update, delete: if isAdmin();
+    }
+  }
+}

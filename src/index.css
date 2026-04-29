@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Space+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-mono: "JetBrains Mono", "Space Mono", ui-monospace, SFMono-Regular, monospace;
+  --color-tactical-cyan: #00E5FF;
+  --color-kipher-orange: #F59E0B;
+  --color-absolute-black: #000000;
+  --color-slate-950: #020617;
+  --color-slate-900: #0f172a;
+  --color-slate-800: #1e293b;
+}
+
+@layer base {
+  body {
+    @apply bg-absolute-black text-slate-300 font-mono uppercase selection:bg-kipher-orange selection:text-absolute-black;
+  }
+}
+
+@utility custom-scrollbar {
+  &::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--color-tactical-cyan);
+  }
+}
+
+@utility kipher-border {
+  @apply border border-slate-800 focus-within:border-tactical-cyan transition-colors;
+}
+
+@utility kipher-button {
+  @apply px-4 py-2 bg-transparent border border-slate-700 hover:border-tactical-cyan hover:text-tactical-cyan transition-all uppercase text-[10px] tracking-widest font-bold disabled:opacity-50;
+}
+
+@utility kipher-input {
+  @apply bg-transparent border-b border-slate-800 focus:border-tactical-cyan outline-none px-2 py-1 placeholder:text-slate-700 transition-colors text-xs;
+}
+
+@utility kipher-panel {
+  @apply bg-absolute-black p-4 kipher-border;
+}
+
+@utility bento-container {
+  @apply grid grid-cols-12 gap-px bg-slate-800 p-px border-4 border-slate-900 w-full h-full;
+}
+
+@utility bento-item {
+  @apply bg-absolute-black flex flex-col overflow-hidden;
+}
+
+@utility bento-header {
+  @apply p-4 border-b border-slate-800 bg-slate-950 flex justify-between items-center;
+}
+
+@utility bento-label {
+  @apply text-[10px] font-bold text-white uppercase tracking-[0.2em];
+}
+
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility mask-fade-right {
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+}
+
+.kipher-glitch {
+  position: relative;
+}
+
+.kipher-glitch::before,
+.kipher-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.8;
+}
+
+.kipher-glitch::before {
+  color: #0ff;
+  z-index: -1;
+  animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+}
+
+.kipher-glitch::after {
+  color: #f0f;
+  z-index: -2;
+  animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) reverse both infinite;
+}
+
+@keyframes glitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+  100% { transform: translate(0); }
+}

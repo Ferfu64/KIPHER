@@ -1,0 +1,134 @@
+{
+  "entities": {
+    "User": {
+      "title": "KIPHER User",
+      "description": "A user profile in the KIPHER network",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string", "description": "Used as the Codename for login" },
+        "password": { "type": "string", "description": "Stored password for closed-system auth" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["ASSET", "OWNER", "SUPERUSER"] },
+        "isOwner": { "type": "boolean" },
+        "clearanceLevel": { "type": "integer", "description": "0 to 5 level" },
+        "isBanned": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE", "REDACTED"] },
+        "lastSeen": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "password", "role", "isOwner", "clearanceLevel", "isBanned"]
+    },
+    "Safehouse": {
+      "title": "Safehouse Room",
+      "description": "A secure communication channel",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "hostId": { "type": "string" },
+        "passcode": { "type": "string", "description": "4-digit numeric code" },
+        "name": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "hostId", "passcode"]
+    },
+    "Message": {
+      "title": "Secure Message",
+      "description": "A tactical communication log entry",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["TEXT", "ALERT", "SYSTEM"] }
+      },
+      "required": ["senderId", "text", "timestamp"]
+    },
+    "Vault": {
+      "title": "Intel Vault",
+      "description": "Secure storage for classified intelligence",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "content": { "type": "string" },
+        "clearanceRequired": { "type": "integer" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["id", "title", "content", "clearanceRequired"]
+    },
+    "ClearanceRequest": {
+      "title": "Clearance Request",
+      "description": "Request for access to a vault",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "vaultId": { "type": "string" },
+        "vaultTitle": { "type": "string" },
+        "status": { "type": "string", "enum": ["PENDING", "APPROVED", "DENIED"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "vaultId", "status"]
+    },
+    "Connection": {
+      "title": "Network Link",
+      "description": "A verified connection between two users",
+      "type": "object",
+      "properties": {
+        "users": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["PENDING", "LINKED"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["users", "status"]
+    },
+    "SystemCommand": {
+      "title": "KIPHER Command",
+      "description": "Live network manipulation command",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["ALERT", "MEDIA", "BLACKOUT"] },
+        "payload": { "type": "string" },
+        "targetUserId": { "type": "string", "description": "Optional specific target" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "active": { "type": "boolean" }
+      },
+      "required": ["type", "timestamp", "active"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data"
+    },
+    "/safehouses/{safehouseId}": {
+      "schema": "Safehouse",
+      "description": "Safehouse metadata"
+    },
+    "/safehouses/{safehouseId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Messages within a safehouse"
+    },
+    "/vaults/{vaultId}": {
+      "schema": "Vault",
+      "description": "Intelligence vaults"
+    },
+    "/clearance_requests/{requestId}": {
+      "schema": "ClearanceRequest",
+      "description": "Vault access requests"
+    },
+    "/connections/{connectionId}": {
+      "schema": "Connection",
+      "description": "User-to-user links"
+    },
+    "/connections/{connectionId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Private messages between linked users"
+    },
+    "/system/commands/active/{commandId}": {
+      "schema": "SystemCommand",
+      "description": "Real-time system commands from KIPHER"
+    }
+  }
+}
