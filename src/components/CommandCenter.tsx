@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../lib/firebase';
-import { collection, addDoc, serverTimestamp, query, orderBy, limit, onSnapshot, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, orderBy, limit, onSnapshot, getDocs, doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { UserProfile } from '../types';
 import { 
@@ -19,10 +19,13 @@ import {
   Info,
   ExternalLink,
   ShieldHalf,
-  RefreshCw
+  RefreshCw,
+  X,
+  Trash2
 } from 'lucide-react';
 import CreateAgentForm from './CreateAgentForm';
 import { handleFirestoreError, OperationType, ensureDate } from '../lib/utils';
+import { audioService } from '../services/audioService';
 
 export default function CommandCenter({ currentUser }: { currentUser: UserProfile }) {
   const [activeTab, setActiveTab] = useState<'BROADCAST' | 'USERS' | 'CREATE' | 'LOGS'>('BROADCAST');
@@ -47,39 +50,15 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
   const sendBroadcast = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!broadcast) return;
-
-    try {
-      // Ensure auth session
-      if (!auth.currentUser) await signInAnonymously(auth);
-
-      await addDoc(collection(db, 'system_alerts'), {
-        message: broadcast,
-        timestamp: serverTimestamp(),
-        author: currentUser.displayName
-      });
-      setBroadcast('');
-    } catch (err) {
-      console.error('Failed to send broadcast:', err);
-    }
+    await sendDirectCommand('', 'ALERT', broadcast);
+    setBroadcast('');
   };
 
   const injectMedia = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!mediaUrl) return;
-
-    try {
-      // Ensure auth session
-      if (!auth.currentUser) await signInAnonymously(auth);
-
-      await addDoc(collection(db, 'media_injects'), {
-        url: mediaUrl,
-        timestamp: serverTimestamp(),
-        author: currentUser.displayName
-      });
-      setMediaUrl('');
-    } catch (err) {
-      console.error('Failed to inject media:', err);
-    }
+    await sendDirectCommand('', 'MEDIA', mediaUrl);
+    setMediaUrl('');
   };
 
   const updateUserLevel = async (uid: string, level: number) => {
@@ -88,6 +67,18 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
       await updateDoc(doc(db, 'users', uid), { clearanceLevel: level });
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `users/${uid}`);
+    }
+  };
+
+  const deleteUser = async (uid: string) => {
+    if (confirm(`PERMANENTLY_DELETE_USER_${uid}? THIS_ACTION_IS_IRREVERSIBLE.`)) {
+      try {
+        if (!auth.currentUser) await signInAnonymously(auth);
+        await deleteDoc(doc(db, 'users', uid));
+        audioService.playError();
+      } catch (err) {
+        handleFirestoreError(err, OperationType.DELETE, `users/${uid}`);
+      }
     }
   };
 
@@ -105,17 +96,53 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
   const sendDirectCommand = async (uid: string, type: 'REDIRECT' | 'SAFETY' | 'RESTORE' | 'ALERT' | 'MEDIA', payload: string = '') => {
     try {
       if (!auth.currentUser) await signInAnonymously(auth);
-      // For global commands, uid is empty
+      // Use 'GLOBAL' instead of null for better querying reliability
       await addDoc(collection(db, 'system_commands'), {
         type,
         payload,
-        targetUserId: uid || null,
+        targetUserId: uid || 'GLOBAL',
         timestamp: serverTimestamp(),
         active: true,
         author: currentUser.displayName
       });
+      audioService.playBlip();
     } catch (err) {
       console.error(err);
+      handleFirestoreError(err, OperationType.WRITE, 'system_commands');
+    }
+  };
+
+  const purgeMeetingHub = async () => {
+    if (confirm('ENGAGE_PROTOCOL_VOID: PURGE_ALL_MEETING_HUB_COMMUNICATIONS?')) {
+      try {
+        const snap = await getDocs(collection(db, 'meeting_room_chat'));
+        const deletes = snap.docs.map(d => deleteDoc(doc(db, 'meeting_room_chat', d.id)));
+        await Promise.all(deletes);
+        audioService.playSuccess();
+        alert('COMMUNICATION_WIPE_COMPLETE');
+      } catch (err) {
+        handleFirestoreError(err, OperationType.DELETE, 'meeting_room_chat');
+      }
+    }
+  };
+
+  const purgeAllNodes = async () => {
+    if (confirm('ENGAGE_PROTOCOL_VOID: PURGE_ALL_SAFEHOUSE_NODES_AND_MESSAGES?')) {
+      try {
+        const snap = await getDocs(collection(db, 'safehouses'));
+        const deletes = snap.docs.map(async (sDoc) => {
+          // Clear sub-messages first
+          const mSnap = await getDocs(collection(db, 'safehouses', sDoc.id, 'messages'));
+          await Promise.all(mSnap.docs.map(m => deleteDoc(doc(db, 'safehouses', sDoc.id, 'messages', m.id))));
+          // Delete safehouse
+          return deleteDoc(doc(db, 'safehouses', sDoc.id));
+        });
+        await Promise.all(deletes);
+        audioService.playSuccess();
+        alert('GLOBAL_NODE_PURGE_COMPLETE');
+      } catch (err) {
+        handleFirestoreError(err, OperationType.DELETE, 'safehouses');
+      }
     }
   };
 
@@ -187,6 +214,26 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
               </div>
 
               <div className="space-y-6">
+                <div className="space-y-2">
+                  <div className="text-[8px] text-slate-500 font-bold uppercase italic">Data_Sanitization</div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={purgeMeetingHub}
+                      className="flex-1 py-3 border border-white/10 text-white/40 text-[9px] font-black uppercase hover:border-red-500 hover:text-red-500 transition-all flex flex-col items-center gap-1"
+                    >
+                      <Trash2 size={16} />
+                      PURGE_HUB
+                    </button>
+                    <button 
+                      onClick={purgeAllNodes}
+                      className="flex-1 py-3 border border-white/10 text-white/40 text-[9px] font-black uppercase hover:border-red-500 hover:text-red-500 transition-all flex flex-col items-center gap-1"
+                    >
+                      <Trash2 size={16} />
+                      PURGE_NODES
+                    </button>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <div className="text-[8px] text-slate-500 font-bold uppercase italic">Media_Inject (Remote_Static)</div>
                   <form onSubmit={(e) => { e.preventDefault(); injectMedia(); }} className="flex gap-2">
@@ -293,6 +340,15 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
                             >
                               <ShieldHalf size={10} />
                               <div className="absolute bottom-full right-0 mb-1 px-2 py-1 bg-red-500 text-black text-[7px] font-black rounded opacity-0 group-hover/cmd:opacity-100 pointer-events-none">PANIC</div>
+                            </button>
+                            <button 
+                              onClick={() => deleteUser(u.uid)} 
+                              className="p-1 border border-white/5 hover:border-red-600 text-white/20 hover:text-red-600 transition-all relative group/btn"
+                            >
+                              <X size={10} />
+                              <div className="absolute bottom-full right-0 mb-1 px-2 py-1 bg-red-600 text-white text-[7px] font-black rounded opacity-0 group-hover/btn:opacity-100 pointer-events-none whitespace-nowrap">
+                                DELETE
+                              </div>
                             </button>
                             <button 
                               onClick={() => banUser(u.uid)} 

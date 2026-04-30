@@ -43,18 +43,22 @@ export default function TheVault({ currentUser, compact }: { currentUser: UserPr
 
     try {
       if (!auth.currentUser) await signInAnonymously(auth);
+      const authUid = auth.currentUser?.uid;
+      
       await addDoc(collection(db, 'vaults'), {
         title: newVaultName || 'DATA_VAULT',
         description: 'SECURED_INTEL_STORAGE',
         passcode: newVaultCode,
         clearanceRequired: newVaultLVL,
         ownerId: currentUser.uid,
+        ownerAuthId: authUid, // For Rules
         files: [],
         createdAt: serverTimestamp()
       });
       setShowCreate(false);
       setNewVaultName('');
       setNewVaultCode('');
+      audioService.playSuccess();
     } catch (e) {
       handleFirestoreError(e, OperationType.WRITE, 'vaults');
     }

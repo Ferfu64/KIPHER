@@ -38,16 +38,16 @@ service cloud.firestore {
 
     function isValidMessage(data) {
       return data.senderAuthId == request.auth.uid &&
-             data.text is string && data.text.size() <= 2000 &&
+             data.text is string && data.text.size() <= 4000 &&
              data.timestamp == request.time &&
-             data.type in ['TEXT', 'SYSTEM', 'ALERT', 'VAULT', 'NODE'];
+             data.type in ['TEXT', 'SYSTEM', 'ALERT', 'VAULT', 'NODE', 'MEDIA'];
     }
 
     function isValidVault(data) {
       return data.title is string && data.title.size() <= 100 &&
              data.passcode is string && data.passcode.matches('^[0-9]{4}$') &&
              data.clearanceRequired is int &&
-             data.ownerId == request.auth.uid;
+             data.ownerAuthId == request.auth.uid;
     }
 
     function isValidRequest(data) {
@@ -58,7 +58,7 @@ service cloud.firestore {
 
     function isValidConnection(data) {
       return data.users.size() == 2 &&
-             request.auth.uid in data.users &&
+             request.auth.uid in data.authIds &&
              data.status in ['PENDING', 'LINKED'];
     }
 
@@ -71,7 +71,7 @@ service cloud.firestore {
     // --- MATCH BLOCKS ---
 
     match /system_commands/{id} {
-      allow read: if isSignedIn() && (resource.data.targetUserId == null || resource.data.targetUserId == request.auth.uid || isAdmin());
+      allow read: if isSignedIn();
       allow create: if isAdmin();
       allow update: if isAdmin();
     }
@@ -80,27 +80,33 @@ service cloud.firestore {
       allow get: if isSignedIn();
       allow list: if isSignedIn();
       allow create: if isAdmin() && isValidUser(incoming()) && incoming().uid == userId;
-      allow update: if isAdmin() || (isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['lastSeen', 'currentAuthUid']));
+      allow update: if isAdmin() || (isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['lastSeen', 'currentAuthUid', 'status']));
+      allow delete: if isAdmin();
     }
 
     match /safehouses/{safehouseId} {
       allow read: if true; // Publicly viewable rooms list
       allow create: if (isVerified() || isAdmin()) && isValidSafehouse(incoming());
       allow update: if isAdmin() || (
-        isSignedIn() && existing().hostAuthId == request.auth.uid && isValidSafehouse(incoming())
+        isSignedIn() && (
+          (existing().hostAuthId == request.auth.uid && isValidSafehouse(incoming())) ||
+          (incoming().diff(existing()).affectedKeys().hasOnly(['lastMessage', 'lastSenderName', 'lastSenderAuthId', 'lastMessageAt']))
+        )
       );
       allow delete: if isAdmin() || (isSignedIn() && existing().hostAuthId == request.auth.uid);
 
       match /messages/{messageId} {
         allow read: if isVerified() || isAdmin(); 
         allow create: if (isVerified() || isAdmin()) && isValidMessage(incoming());
+        allow update: if isAdmin();
+        allow delete: if isAdmin() || (isSignedIn() && (existing().senderAuthId == request.auth.uid || get(/databases/$(database)/documents/safehouses/$(safehouseId)).data.hostAuthId == request.auth.uid));
       }
     }
 
     match /vaults/{vaultId} {
       allow read: if true;
       allow create: if (isVerified() || isAdmin()) && isValidVault(incoming());
-      allow update, delete: if isAdmin() || (isSignedIn() && existing().ownerId == request.auth.uid);
+      allow update, delete: if isAdmin() || (isSignedIn() && existing().ownerAuthId == request.auth.uid);
     }
 
     match /clearance_requests/{requestId} {
@@ -110,14 +116,17 @@ service cloud.firestore {
     }
 
     match /connections/{connectionId} {
-      allow read: if isSignedIn() && request.auth.uid in resource.data.users;
+      allow read: if (isSignedIn() && request.auth.uid in resource.data.authIds) || isAdmin();
       allow create: if (isVerified() || isAdmin()) && isValidConnection(incoming());
-      allow update: if (isVerified() || isAdmin()) && request.auth.uid in existing().users && isValidConnection(incoming());
+      allow update: if (isVerified() || isAdmin()) && (request.auth.uid in existing().authIds || isAdmin()) && (
+        isValidConnection(incoming()) ||
+        incoming().diff(existing()).affectedKeys().hasOnly(['lastMessage', 'lastSenderName', 'lastSenderAuthId', 'updatedAt'])
+      );
 
       match /messages/{messageId} {
-        allow read: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/connections/$(connectionId)).data.users;
+        allow read: if isAdmin() || (isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/connections/$(connectionId)).data.authIds);
         allow create: if (isVerified() || isAdmin()) && isValidMessage(incoming()) && 
-                       request.auth.uid in get(/databases/$(database)/documents/connections/$(connectionId)).data.users;
+                       (isAdmin() || request.auth.uid in get(/databases/$(database)/documents/connections/$(connectionId)).data.authIds);
       }
     }
 
@@ -145,7 +154,13 @@ service cloud.firestore {
     match /meeting_room_chat/{msgId} {
       allow read: if isVerified() || isAdmin();
       allow create: if (isVerified() || isAdmin()) && isValidMessage(incoming());
-      allow update, delete: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin() || (isSignedIn() && existing().senderAuthId == request.auth.uid);
+    }
+
+    match /voice_activity/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == userId;
     }
   }
 }

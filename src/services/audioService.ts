@@ -96,6 +96,33 @@ class TacticalAudioService {
     osc.stop(this.ctx.currentTime + 0.2);
   }
 
+  playNotification() {
+    if (!this.ctx || this.isMuted) return;
+    const osc1 = this.ctx.createOscillator();
+    const osc2 = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(660, this.ctx.currentTime);
+    osc1.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.1);
+
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(440, this.ctx.currentTime + 0.1);
+    osc2.frequency.exponentialRampToValueAtTime(660, this.ctx.currentTime + 0.2);
+
+    g.gain.setValueAtTime(0.1, this.ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+
+    osc1.connect(g);
+    osc2.connect(g);
+    g.connect(this.masterGain!);
+
+    osc1.start();
+    osc1.stop(this.ctx.currentTime + 0.1);
+    osc2.start(this.ctx.currentTime + 0.1);
+    osc2.stop(this.ctx.currentTime + 0.3);
+  }
+
   // Ambient: Low background "ghost" drone
   startAmbient() {
     if (!this.ctx || this.isMuted || this.ambientDrone) return;

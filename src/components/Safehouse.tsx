@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../lib/firebase';
-import { collection, query, addDoc, onSnapshot, serverTimestamp, orderBy, limit, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, addDoc, onSnapshot, serverTimestamp, orderBy, limit, doc, deleteDoc, where, getDocs, updateDoc } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
-import { UserProfile, Safehouse as SafehouseType, ChatMessage } from '../types';
+import { UserProfile, Safehouse as SafehouseType, ChatMessage, VaultItem, VaultFile } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Send, LogOut, Plus, Lock, MessageCircle, Terminal, Trash2, Info } from 'lucide-react';
+import { Shield, Send, LogOut, Plus, Lock, MessageCircle, Terminal, Trash2, Info, Archive, FileText, X } from 'lucide-react';
 import { handleFirestoreError, OperationType, ensureDate } from '../lib/utils';
 import { audioService } from '../services/audioService';
 
@@ -283,13 +283,15 @@ export default function Safehouse({ currentUser }: { currentUser: UserProfile })
 function SafehouseChat({ room, user, onExit }: { room: SafehouseType, user: UserProfile, onExit: () => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [spamWarning, setSpamWarning] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const lastMessageTimes = useRef<number[]>([]);
 
   useEffect(() => {
     const q = query(
       collection(db, 'safehouses', room.id, 'messages'),
       orderBy('timestamp', 'asc'),
-      limit(100)
+      limit(30)
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const list: ChatMessage[] = [];
@@ -304,29 +306,113 @@ function SafehouseChat({ room, user, onExit }: { room: SafehouseType, user: User
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const scroll = () => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      };
+      scroll();
+      const timer = setTimeout(scroll, 100);
+      return () => clearTimeout(timer);
     }
   }, [messages]);
 
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim()) return;
+  const sendMessage = async (e?: React.FormEvent, textOverride?: string, typeOverride?: ChatMessage['type']) => {
+    if (e) e.preventDefault();
+    const textToSend = textOverride || newMessage;
+    if (!textToSend.trim()) return;
+
+    // Spam detection: max 3 messages in 3 seconds
+    const now = Date.now();
+    lastMessageTimes.current = lastMessageTimes.current.filter(t => now - t < 3000);
+    if (lastMessageTimes.current.length >= 3 && !textOverride) {
+      setSpamWarning('SPAM_DETECTED: COOLING_DOWN');
+      audioService.playError();
+      setTimeout(() => setSpamWarning(null), 3000);
+      return;
+    }
+    if (!textOverride) lastMessageTimes.current.push(now);
 
     try {
       if (!auth.currentUser) await signInAnonymously(auth);
       const authUid = auth.currentUser?.uid;
       
+      // Auto-prune if too many messages
+      if (messages.length >= 30 && !textOverride) {
+        const oldest = messages[0];
+        if (oldest.id) {
+          deleteDoc(doc(db, 'safehouses', room.id, 'messages', oldest.id)).catch(console.error);
+        }
+      }
+
       await addDoc(collection(db, 'safehouses', room.id, 'messages'), {
         senderId: user.uid,
         senderAuthId: authUid, // For Rules
         senderName: user.displayName,
-        text: newMessage,
+        text: textToSend,
         timestamp: serverTimestamp(),
-        type: 'TEXT'
+        type: typeOverride || 'TEXT'
       });
-      setNewMessage('');
+
+      // Update parent safehouse to trigger global listeners
+      await updateDoc(doc(db, 'safehouses', room.id), {
+        lastMessage: textToSend.startsWith('data:image') ? '[MEDIA]' : textToSend,
+        lastSenderName: user.displayName,
+        lastSenderAuthId: authUid,
+        lastMessageAt: serverTimestamp()
+      });
+
+      if (!textOverride) setNewMessage('');
+      audioService.playBlip();
     } catch (error) {
-      console.error('Send failed:', error);
+       handleFirestoreError(error, OperationType.WRITE, `safehouses/${room.id}/messages`);
+    }
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const base64 = event.target?.result as string;
+            sendMessage(undefined, base64, 'MEDIA');
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+  };
+
+  const [showVaultPicker, setShowVaultPicker] = useState(false);
+  const [userVaults, setUserVaults] = useState<VaultItem[]>([]);
+
+  useEffect(() => {
+    if (showVaultPicker) {
+      const q = query(collection(db, 'vaults'), where('ownerId', '==', user.uid));
+      getDocs(q).then(snap => {
+        const list: VaultItem[] = [];
+        snap.forEach(doc => list.push({ id: doc.id, ...doc.data() } as VaultItem));
+        setUserVaults(list);
+      });
+    }
+  }, [showVaultPicker, user.uid]);
+
+  const shareVaultFile = (file: VaultFile) => {
+    const intelStr = `[VAULT_INTEL_EXTRACTED] FILE: ${file.name} // TYPE: ${file.type} // LINK: ${file.url}`;
+    sendMessage(undefined, intelStr, 'SYSTEM');
+    setShowVaultPicker(false);
+  };
+
+  const deleteMessage = async (msgId: string) => {
+    try {
+      if (!auth.currentUser) await signInAnonymously(auth);
+      await deleteDoc(doc(db, 'safehouses', room.id, 'messages', msgId));
+      audioService.playSuccess();
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `safehouses/${room.id}/messages/${msgId}`);
     }
   };
 
@@ -350,39 +436,113 @@ function SafehouseChat({ room, user, onExit }: { room: SafehouseType, user: User
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 font-mono scrollbar-hide">
         {messages.map((msg, i) => {
           const isMe = msg.senderId === user.uid;
+          const canDelete = isMe || user.uid === room.hostId || user.role === 'OWNER';
+          
           return (
-            <div key={msg.id || `safe-msg-${i}`} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+            <div key={msg.id || `safe-msg-${i}`} className={`flex flex-col group ${isMe ? 'items-end' : 'items-start'}`}>
               <div className="flex items-center gap-2 mb-1 px-1">
-                <span className={`text-[10px] font-black ${isMe ? 'text-tactical-cyan' : 'text-slate-500'}`}>
-                  {isMe ? 'YOU' : msg.senderName}
-                </span>
+                {!isMe && <span className="text-[10px] font-black text-slate-500">{msg.senderName}</span>}
+                {isMe && <span className="text-[10px] font-black text-tactical-cyan text-right">YOU</span>}
                 <span className="text-[8px] text-slate-700">
                   {ensureDate(msg.timestamp).toLocaleTimeString()}
                 </span>
+                {canDelete && msg.id && (
+                  <button 
+                    onClick={() => deleteMessage(msg.id!)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-700 hover:text-red-500"
+                    title="DESTRUCT_MESSAGE"
+                  >
+                    <Trash2 size={10} />
+                  </button>
+                )}
               </div>
               <div className={`max-w-[80%] px-3 py-2 text-xs border ${
                 isMe 
                   ? 'border-tactical-cyan bg-tactical-cyan/5 text-tactical-cyan' 
                   : 'border-slate-800 bg-slate-900/50 text-slate-300'
               }`}>
-                {msg.text}
+                {msg.type === 'MEDIA' ? (
+                   <img src={msg.text} alt="ENCRYPTED_MEDIA" className="max-w-full rounded border border-white/10" referrerPolicy="no-referrer" />
+                ) : (
+                  msg.text
+                )}
               </div>
             </div>
           );
         })}
       </div>
 
+      {spamWarning && (
+        <div className="bg-red-600/20 border-y border-red-600/40 px-4 py-1 text-[10px] font-black text-red-500 uppercase tracking-widest text-center animate-pulse">
+          {spamWarning}
+        </div>
+      )}
+
       <form onSubmit={sendMessage} className="p-4 bg-absolute-black border-t border-slate-800 flex gap-2">
+        <button 
+          type="button" 
+          onClick={() => setShowVaultPicker(true)}
+          className="w-12 h-12 bg-slate-950 border border-slate-800 flex items-center justify-center text-slate-500 hover:text-tactical-cyan transition-colors"
+        >
+          <Archive size={18} />
+        </button>
         <input 
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="SEND_ENCRYPTED_MESSAGE..."
-          className="flex-1 kipher-input border-slate-800 bg-slate-950/50 px-4 h-12"
+          onPaste={handlePaste}
+          placeholder={spamWarning ? 'TERMINAL_LOCKED...' : 'SEND_ENCRYPTED_MESSAGE...'}
+          disabled={!!spamWarning}
+          className="flex-1 kipher-input border-slate-800 bg-slate-950/50 px-4 h-12 text-sm"
         />
-        <button type="submit" className="px-8 bg-tactical-cyan text-absolute-black h-12 font-black tracking-widest hover:bg-white transition-colors">
+        <button 
+          type="submit" 
+          disabled={!!spamWarning}
+          className="px-8 bg-tactical-cyan text-absolute-black h-12 font-black tracking-widest hover:bg-white transition-colors disabled:opacity-30"
+        >
           <Send size={18} />
         </button>
       </form>
+
+      {/* Vault Picker Modal */}
+      <AnimatePresence>
+        {showVaultPicker && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4">
+             <div className="max-w-md w-full kipher-panel max-h-[80vh] flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-sm font-black text-tactical-cyan flex items-center gap-2">
+                     <Archive size={16} /> SELECT_INTEL_FOR_EXTRACTION
+                   </h3>
+                   <button onClick={() => setShowVaultPicker(false)} className="text-slate-500 hover:text-white"><X size={20} /></button>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+                   {userVaults.length === 0 ? (
+                     <div className="text-center py-10 text-[10px] text-slate-600 font-bold uppercase italic">NO_VAULTS_FOUND_ON_ASSET</div>
+                   ) : userVaults.map(vault => (
+                     <div key={vault.id} className="space-y-2">
+                        <div className="text-[10px] font-black text-slate-500 uppercase border-b border-white/5 pb-1">{vault.title}</div>
+                        {vault.files && vault.files.length > 0 ? vault.files.map(file => (
+                          <button 
+                            key={file.id} 
+                            onClick={() => shareVaultFile(file)}
+                            className="w-full flex items-center justify-between p-3 bg-slate-900/50 border border-slate-800 hover:border-tactical-cyan group transition-all"
+                          >
+                             <div className="flex items-center gap-3">
+                                <FileText size={14} className="text-slate-600 group-hover:text-tactical-cyan" />
+                                <span className="text-[10px] font-black text-slate-300 group-hover:text-white uppercase truncate max-w-[150px]">{file.name}</span>
+                             </div>
+                             <span className="text-[8px] font-bold text-slate-600 group-hover:text-tactical-cyan uppercase">EXTRACT</span>
+                          </button>
+                        )) : (
+                          <div className="text-[9px] text-slate-700 italic pl-2">EMPTY_STORAGE</div>
+                        )}
+                     </div>
+                   ))}
+                </div>
+             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

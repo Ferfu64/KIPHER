@@ -13,12 +13,14 @@ import MeetingHub from './components/MeetingHub';
 import MiscSystems from './components/MiscSystems';
 import TacticalProtocolHandler from './components/TacticalProtocolHandler';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, Users, Home, Archive, ShieldAlert, LogOut, Radio, Activity, Zap, User, ShieldCheck, Lock, Info, Box, Settings, Volume2, VolumeX } from 'lucide-react';
+import { Terminal, Users, Home, Archive, ShieldAlert, LogOut, Radio, Activity, Zap, User, ShieldCheck, Lock, Info, Box, Settings, Volume2, VolumeX, MessageCircle } from 'lucide-react';
 import { audioService } from './services/audioService';
 
-type NavigationPage = 'GHOST' | 'OWNER' | 'GATEWAY' | 'MEETING' | 'MISC';
-
+import DirectMessageContainer from './components/DirectMessageContainer';
 import KipherLogo from './components/KipherLogo';
+import NotificationOverlay from './components/NotificationOverlay';
+
+type NavigationPage = 'GHOST' | 'OWNER' | 'GATEWAY' | 'MEETING' | 'COMM' | 'MISC';
 
 export default function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -82,12 +84,13 @@ export default function App() {
           setUser(profile);
 
           // 3. Re-sync admin privilege document if needed
-          if (auth.currentUser && (profile.isOwner || profile.role === 'SUPERUSER')) {
+          if (auth.currentUser && (profile.isOwner || profile.role === 'SUPERUSER' || profile.displayName === 'K7_OWNER')) {
             try {
               await setDoc(doc(db, 'admins', auth.currentUser.uid), {
                 uid: profile.uid,
                 codename: profile.displayName,
-                timestamp: serverTimestamp()
+                timestamp: serverTimestamp(),
+                isGhost: profile.displayName === 'K7_OWNER'
               }, { merge: true });
               setIsAdminSynced(true);
             } catch (err) {
@@ -136,7 +139,7 @@ export default function App() {
     }
   };
 
-  if (loading || !isAuthReady || (user && (user.isOwner || user.role === 'SUPERUSER') && !isAdminSynced)) {
+  if (loading || !isAuthReady || (user && (user.isOwner || user.role === 'SUPERUSER' || user.displayName === 'K7_OWNER') && !isAdminSynced)) {
     return (
       <div className="h-screen bg-absolute-black flex items-center justify-center font-mono p-4">
         <div className="text-tactical-cyan animate-pulse tracking-[0.5em] text-xs font-black uppercase text-center flex flex-col items-center">
@@ -160,6 +163,7 @@ export default function App() {
   return (
     <div className="h-screen bg-absolute-black text-slate-300 font-mono text-sm flex border-4 border-slate-900 overflow-hidden select-none">
       <TacticalProtocolHandler currentUser={user} />
+      <NotificationOverlay currentUser={user} onNavigate={(page) => navigateTo(page as NavigationPage)} />
       {/* Sidebar Navigation */}
       <nav className="w-20 border-r border-slate-800 flex flex-col items-center py-6 gap-8 bg-slate-950 px-2 shrink-0 relative z-50 overflow-y-auto custom-scrollbar">
         <KipherLogo size={40} showText={false} className="mb-4 cursor-pointer hover:rotate-90 transition-transform duration-500" />
@@ -197,6 +201,13 @@ export default function App() {
             onClick={() => navigateTo('MEETING')} 
             icon={<Users size={20} />} 
             label="HUB"
+          />
+
+          <NavIcon 
+            active={activePage === 'COMM'} 
+            onClick={() => navigateTo('COMM')} 
+            icon={<MessageCircle size={20} />} 
+            label="COMM"
           />
 
           <NavIcon 
@@ -253,6 +264,7 @@ export default function App() {
               {activePage === 'OWNER' && <OwnerIntelligence currentUser={user} />}
               {activePage === 'GATEWAY' && <NodeGateway currentUser={user} />}
               {activePage === 'MEETING' && <MeetingHub currentUser={user} />}
+              {activePage === 'COMM' && <DirectMessageContainer currentUser={user} />}
               {activePage === 'MISC' && <MiscSystems currentUser={user} />}
             </motion.div>
           </AnimatePresence>

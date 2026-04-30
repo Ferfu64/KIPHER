@@ -4,6 +4,7 @@ import { collection, query, where, onSnapshot, orderBy, limit, serverTimestamp, 
 import { UserProfile, SystemCommand } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, AlertTriangle, Ghost, RefreshCw, X, Search, Globe, Lock } from 'lucide-react';
+import { handleFirestoreError, OperationType } from '../lib/utils';
 import { audioService } from '../services/audioService';
 
 export default function TacticalProtocolHandler({ currentUser }: { currentUser: UserProfile }) {
@@ -19,9 +20,7 @@ export default function TacticalProtocolHandler({ currentUser }: { currentUser: 
     const q = query(
       collection(db, 'system_commands'),
       where('active', '==', true),
-      where('targetUserId', 'in', [null, currentUser.uid]),
-      orderBy('timestamp', 'desc'),
-      limit(5)
+      where('targetUserId', 'in', ['GLOBAL', currentUser.uid])
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -29,21 +28,19 @@ export default function TacticalProtocolHandler({ currentUser }: { currentUser: 
         if (change.type === 'added') {
           const cmd = change.doc.data() as SystemCommand;
           const timestamp = cmd.timestamp as Timestamp | null;
-          if (!timestamp) return; // Ignore docs with unresolved server timestamps
-
-          const cmdTime = timestamp.toMillis();
           
-          // only process commands sent after mount
-          const isFresh = cmdTime > (mountTime.current - 10000); // 10s grace
+          // If no timestamp yet, it's a local optimistic update or just sent
+          // We still want to process it if we can
+          const cmdTime = timestamp ? timestamp.toMillis() : Date.now();
+          
+          const isFresh = cmdTime > (mountTime.current - 30000); // 30s grace
           
           if (isFresh) {
-            if (!cmd.targetUserId || cmd.targetUserId === currentUser.uid) {
-              handleIncomingCommand(cmd);
-            }
+            handleIncomingCommand(cmd);
           }
         }
       });
-    }, (err) => console.error('Tactical Listener Error:', err));
+    }, (err) => handleFirestoreError(err, OperationType.LIST, 'system_commands'));
 
     return unsubscribe;
   }, [currentUser.uid]);

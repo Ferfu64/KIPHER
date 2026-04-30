@@ -50,13 +50,16 @@ export interface ChatMessage {
   senderName: string;
   text: string;
   timestamp: string;
-  type: 'TEXT' | 'SYSTEM' | 'ALERT';
+  type: 'TEXT' | 'SYSTEM' | 'ALERT' | 'MEDIA' | 'VAULT' | 'NODE';
 }
 
 export interface Connection {
   id: string;
   users: string[]; // [uid1, uid2]
-  status: 'ESTABLISHED' | 'PENDING' | 'REDACTED';
+  authIds?: string[];
+  usernames?: string[];
+  status: 'ESTABLISHED' | 'PENDING' | 'REDACTED' | 'LINKED';
+  createdAt?: any;
 }
 
 export interface SystemCommand {

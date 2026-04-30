@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Users, ExternalLink } from 'lucide-react';
 import { handleFirestoreError, OperationType, ensureDate } from '../lib/utils';
 
-export default function TheGrid({ currentUser, compact }: { currentUser: UserProfile, compact?: boolean }) {
+export default function TheGrid({ currentUser, compact, onSelect }: { currentUser: UserProfile, compact?: boolean, onSelect?: (asset: UserProfile) => void }) {
   const [assets, setAssets] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,12 +21,12 @@ export default function TheGrid({ currentUser, compact }: { currentUser: UserPro
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const list: UserProfile[] = [];
       snapshot.forEach(doc => list.push(doc.data() as UserProfile));
-      setAssets(list);
+      setAssets(list.filter(a => a.uid !== currentUser.uid));
       setLoading(false);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'users', true));
 
     return unsubscribe;
-  }, []);
+  }, [currentUser.uid]);
 
   if (loading) return <div className="p-8 text-tactical-cyan animate-pulse">SCANNING_NETWORK...</div>;
 
@@ -44,20 +44,28 @@ export default function TheGrid({ currentUser, compact }: { currentUser: UserPro
 
       <div className={compact ? "flex flex-col bg-slate-800 space-y-px" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-slate-800"}>
         {assets.map((asset) => (
-          <AssetCard key={asset.uid} asset={asset} compact={compact} />
+          <AssetCard key={asset.uid} asset={asset} compact={compact} onClick={() => onSelect?.(asset)} />
         ))}
       </div>
     </div>
   );
 }
 
-function AssetCard({ asset, compact }: { asset: UserProfile, compact?: boolean, key?: string | number }) {
+interface AssetCardProps {
+  asset: UserProfile;
+  compact?: boolean;
+  onClick?: () => void;
+  key?: string;
+}
+
+function AssetCard({ asset, compact, onClick }: AssetCardProps) {
   const assetDate = ensureDate(asset.lastSeen);
   const isOnline = new Date().getTime() - assetDate.getTime() < 300000;
 
   return (
     <motion.div 
       whileHover={{ backgroundColor: 'rgba(15, 23, 42, 0.5)' }}
+      onClick={onClick}
       className={`bg-absolute-black group cursor-pointer border-l-2 transition-all ${isOnline ? 'border-tactical-cyan' : 'border-transparent'} ${compact ? 'p-3 flex items-center justify-between gap-4' : 'p-6'}`}
     >
       <div className={compact ? 'flex flex-col overflow-hidden' : 'flex items-start justify-between mb-4'}>
