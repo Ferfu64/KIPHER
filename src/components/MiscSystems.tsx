@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
 import { Settings, ShieldCheck, Activity, Terminal, Key, User, FileText } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { audioService } from '../services/audioService';
 
-export default function MiscSystems({ currentUser }: { currentUser: UserProfile }) {
+export default function MiscSystems({ currentUser, onOpenTitles }: { currentUser: UserProfile, onOpenTitles: () => void }) {
   const [activeTab, setActiveTab] = useState<'PROFILE' | 'CLEARANCE' | 'LOGS'>('PROFILE');
+  const [secretClicks, setSecretClicks] = useState(0);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-slate-950/20 p-6 space-y-6">
@@ -75,7 +77,22 @@ export default function MiscSystems({ currentUser }: { currentUser: UserProfile 
                      <button className="w-full kipher-button border-red-500/30 text-red-500 font-black tracking-widest hover:bg-red-500 hover:text-black">REVOKE_EXISTING_KEYS</button>
                   </div>
                   <div className="kipher-panel p-6 bg-slate-900/10">
-                     <h4 className="text-xs font-black text-white mb-4">PROTOCOL_SETTINGS</h4>
+                     <h4 
+                       className="text-xs font-black text-white mb-4 cursor-pointer hover:text-tactical-cyan transition-colors select-none"
+                       onClick={() => {
+                         setSecretClicks(prev => {
+                           const next = prev + 1;
+                           if (next >= 3) {
+                             audioService.playSuccess();
+                             return 0;
+                           }
+                           return next;
+                         });
+                         setTimeout(() => setSecretClicks(0), 5000);
+                       }}
+                     >
+                       PROTOCOL_SETTINGS
+                     </h4>
                      <div className="space-y-4">
                         {['STEALTH_MODE', 'NOTIF_ALERTS', '2FA_ENFORCE'].map(s => (
                           <div key={s} className="flex justify-between items-center group cursor-pointer">
@@ -85,6 +102,28 @@ export default function MiscSystems({ currentUser }: { currentUser: UserProfile 
                              </div>
                           </div>
                         ))}
+                        
+                        {/* Secret Setting revealed by clicks */}
+                        <AnimatePresence>
+                          {(secretClicks === 0 && (window as any).protocolUnlocked) || secretClicks >= 3 ? (
+                            <motion.div 
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              className="pt-4 border-t border-white/5 overflow-hidden"
+                            >
+                              <button 
+                                onClick={() => {
+                                  (window as any).protocolUnlocked = true;
+                                  onOpenTitles();
+                                }}
+                                className="w-full flex items-center justify-between group cursor-pointer"
+                              >
+                                 <span className="text-[10px] text-tactical-cyan font-black italic tracking-widest group-hover:shadow-[0_0_10px_#0ea5e966]">HONOR_RECOGNITION_PROTOCOL</span>
+                                 <Activity size={14} className="text-tactical-cyan animate-pulse" />
+                              </button>
+                            </motion.div>
+                          ) : null}
+                        </AnimatePresence>
                      </div>
                   </div>
                </div>

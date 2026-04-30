@@ -5,11 +5,12 @@ interface KipherLogoProps {
   className?: string;
   size?: number;
   showText?: boolean;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
-export default function KipherLogo({ className = "", size = 120, showText = true }: KipherLogoProps) {
+export default function KipherLogo({ className = "", size = 120, showText = true, onClick }: KipherLogoProps) {
   return (
-    <div className={`flex flex-col items-center gap-4 ${className}`}>
+    <div className={`flex flex-col items-center gap-4 ${className}`} onClick={(e) => onClick?.(e)}>
       <motion.svg 
         width={size} 
         height={size} 
@@ -59,7 +60,11 @@ export default function KipherLogo({ className = "", size = 120, showText = true
           r="10"
           fill="white"
           animate={{ opacity: [0.2, 1, 0.2] }}
-          transition={{ duration: 2, repeat: Infinity }}
+          transition={{ 
+            duration: 2, 
+            repeat: 999999,
+            ease: "easeInOut"
+          }}
         />
 
         {/* Outer Tech Accents */}

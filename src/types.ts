@@ -8,6 +8,8 @@ export interface UserProfile {
   clearanceLevel: number;
   isBanned: boolean;
   status?: string;
+  titles?: string[];
+  activeTitle?: string;
   lastSeen: any;
   currentAuthUid?: string;
 }
@@ -63,7 +65,7 @@ export interface Connection {
 }
 
 export interface SystemCommand {
-  type: 'ALERT' | 'MEDIA' | 'BLACKOUT' | 'REDIRECT' | 'SAFETY' | 'RESTORE';
+  type: 'ALERT' | 'MEDIA' | 'BLACKOUT' | 'REDIRECT' | 'SAFETY' | 'RESTORE' | 'SPAWN_CUTSCENE';
   payload: string;
   targetUserId?: string;
   timestamp: any;

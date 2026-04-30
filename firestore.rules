@@ -130,6 +130,18 @@ service cloud.firestore {
       }
     }
 
+    match /safehouses/{safehouseId}/voice_members/{memberId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && memberId == request.auth.uid;
+      allow delete: if isSignedIn() && memberId == request.auth.uid;
+    }
+
+    match /safehouses/{safehouseId}/voice_signals/{signalId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && incoming().from == request.auth.uid;
+      allow update, delete: if isSignedIn() && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+    }
+
     match /admins/{authUid} {
       allow read: if isVerified() || isAdmin();
       allow create, update: if isSignedIn() && request.auth.uid == authUid;

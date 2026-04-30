@@ -13,6 +13,7 @@ export default function TacticalProtocolHandler({ currentUser }: { currentUser: 
   const [systemAlert, setSystemAlert] = useState<string | null>(null);
   const [safetyConfig, setSafetyConfig] = useState({ link: 'https://classroom.google.com' });
   const [gestureStart, setGestureStart] = useState<{ x: number, y: number } | null>(null);
+  const clickData = useRef({ count: 0, lastTime: 0 });
   const mountTime = useRef(Date.now());
 
   // 1. Listen for Remote Commands
@@ -49,17 +50,11 @@ export default function TacticalProtocolHandler({ currentUser }: { currentUser: 
     switch (cmd.type) {
       case 'REDIRECT':
         if (cmd.payload) {
-          audioService.playError();
-          // Hide existing UI if any
-          setPanicMode(false);
-          setSystemAlert(`REDIRECTING_TO: ${cmd.payload}`);
-          setTimeout(() => {
-            window.location.href = cmd.payload.startsWith('http') ? cmd.payload : `https://${cmd.payload}`;
-          }, 3000);
+          window.location.href = cmd.payload.startsWith('http') ? cmd.payload : `https://${cmd.payload}`;
         }
         break;
       case 'SAFETY':
-        activatePanicMode(cmd.payload || 'https://classroom.google.com');
+        activatePanicMode(cmd.payload);
         break;
       case 'RESTORE':
         respawn();
@@ -72,19 +67,35 @@ export default function TacticalProtocolHandler({ currentUser }: { currentUser: 
         setMediaInject(cmd.payload);
         setTimeout(() => setMediaInject(null), 30000); // 30s TTL
         break;
+      case 'SPAWN_CUTSCENE':
+        window.dispatchEvent(new CustomEvent('kipher:spawnCutscene', { detail: cmd.payload }));
+        break;
     }
   };
 
   const activatePanicMode = (targetLink?: string) => {
     setPanicMode(true);
     if (targetLink) setSafetyConfig({ link: targetLink });
-    // Silent as requested
   };
 
-  // 2. Gesture Detection: Horizontal Line
+  // 2. Gesture Detection: Horizontal Line & 6 Clicks
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
       setGestureStart({ x: e.clientX, y: e.clientY });
+      
+      // 6-Click Detection
+      const now = Date.now();
+      if (now - clickData.current.lastTime < 500) {
+        clickData.current.count++;
+      } else {
+        clickData.current.count = 1;
+      }
+      clickData.current.lastTime = now;
+
+      if (clickData.current.count >= 6) {
+        activatePanicMode();
+        clickData.current.count = 0;
+      }
     };
 
     const handleMouseUp = (e: MouseEvent) => {
@@ -111,14 +122,11 @@ export default function TacticalProtocolHandler({ currentUser }: { currentUser: 
     };
   }, [gestureStart]);
 
-  // 3. Panic Mode & Return Keybind
+  // 3. Global Return Keybind
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (panicMode) {
-        // Redirect to classroom on ANY key if in panic mode
-        if (e.key !== 'Shift' && e.key !== 'Alt' && e.key !== 'Control') {
-          window.location.href = safetyConfig.link;
-        }
+        // If in panic mode, any scroll/key usually does nothing but secret return
       }
 
       // Secret Return Key: Shift + Alt + R
@@ -129,7 +137,7 @@ export default function TacticalProtocolHandler({ currentUser }: { currentUser: 
 
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [panicMode, safetyConfig]);
+  }, [panicMode]);
 
   const respawn = () => {
     setPanicMode(false);
@@ -180,23 +188,43 @@ export default function TacticalProtocolHandler({ currentUser }: { currentUser: 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[20000] bg-white flex flex-col items-center select-none cursor-default"
+            className="fixed inset-0 z-[60000] bg-white flex flex-col items-center select-none cursor-default"
           >
-            {/* The "Safe" tab layout */}
-            <div className="w-full h-full flex flex-col bg-white overflow-hidden">
+            {/* The "Safety Buffer" - Iframe to a real educational resource */}
+            <div className="w-full h-full relative group">
                <iframe 
-                 src={safetyConfig.link}
-                 className="w-full h-full border-none"
+                 src="https://www.google.com/search?igu=1&q=advanced+mathematics+definitions"
+                 className="w-full h-full border-none shadow-inner"
                  title="Safety_Buffer"
                  referrerPolicy="no-referrer"
                />
                
-               {/* Overlay to intercept clicks/keys but keep iframe visible? No, iframe will eat them. 
-                   Actually, let's just make it look like a real classroom but use our secret key listener 
-                   on the parent window. The iframe might prevent some events but usually Alt+Shift+R works 
-                   if the focus is properly managed or if the user clicks outside.
+               {/* 
+                  Enhanced return capture. We use a larger, invisible area that doesn't block 
+                  the main content interactions but is easy to hit for the emergency return.
                */}
-               <div className="absolute top-0 left-0 w-full h-1 z-[20001] bg-transparent pointer-events-none" />
+               <div 
+                 className="absolute inset-x-0 top-0 h-24 bg-transparent z-[60001] cursor-default"
+                 onMouseDown={(e) => {
+                   const now = Date.now();
+                   // If last click was more than 1s ago, reset
+                   if (now - clickData.current.lastTime > 1000) {
+                     clickData.current.count = 1;
+                   } else {
+                     clickData.current.count++;
+                   }
+                   clickData.current.lastTime = now;
+
+                   if (clickData.current.count >= 6) {
+                     respawn();
+                     clickData.current.count = 0;
+                   }
+                 }}
+               />
+               
+               <div className="absolute bottom-4 right-4 text-[8px] text-gray-300 font-mono pointer-events-none opacity-20">
+                 BUFFER_ACTIVE // ENCRYPTION_STABLE
+               </div>
             </div>
           </motion.div>
         )}

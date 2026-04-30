@@ -13,12 +13,14 @@ import MeetingHub from './components/MeetingHub';
 import MiscSystems from './components/MiscSystems';
 import TacticalProtocolHandler from './components/TacticalProtocolHandler';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, Users, Home, Archive, ShieldAlert, LogOut, Radio, Activity, Zap, User, ShieldCheck, Lock, Info, Box, Settings, Volume2, VolumeX, MessageCircle } from 'lucide-react';
+import { Terminal, Users, Home, Archive, ShieldAlert, LogOut, Radio, Activity, Zap, User, ShieldCheck, Lock, Info, Box, Settings, Volume2, VolumeX, MessageCircle, X } from 'lucide-react';
 import { audioService } from './services/audioService';
 
 import DirectMessageContainer from './components/DirectMessageContainer';
 import KipherLogo from './components/KipherLogo';
 import NotificationOverlay from './components/NotificationOverlay';
+import CortexCutscene from './components/CortexCutscene';
+import { titleService } from './services/titleService';
 
 type NavigationPage = 'GHOST' | 'OWNER' | 'GATEWAY' | 'MEETING' | 'COMM' | 'MISC';
 
@@ -32,6 +34,10 @@ export default function App() {
   const [activePage, setActivePage] = useState<NavigationPage>('GATEWAY');
   const [isMuted, setIsMuted] = useState(true);
   const [audioInitialized, setAudioInitialized] = useState(false);
+  const [isCutsceneActive, setIsCutsceneActive] = useState(false);
+  const [forcedCutscene, setForcedCutscene] = useState<string | null>(null);
+  const [isTitleMenuOpen, setIsTitleMenuOpen] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
 
   useEffect(() => {
     // Stop ambient drone on unmount
@@ -54,6 +60,47 @@ export default function App() {
   const navigateTo = (page: NavigationPage) => {
     setActivePage(page);
     if (audioInitialized) audioService.playBlip();
+  };
+
+  const handleTitleMenuGesture = () => {
+    setClickCount(prev => {
+      const next = prev + 1;
+      if (next >= 5) {
+        setIsTitleMenuOpen(true);
+        audioService.playSuccess();
+        return 0;
+      }
+      return next;
+    });
+    // Reset click count after 3s of inactivity
+    setTimeout(() => setClickCount(0), 3000);
+  };
+
+  useEffect(() => {
+    const handleSpawn = (e: any) => {
+      setForcedCutscene(e.detail);
+      setIsCutsceneActive(true);
+      audioService.playSuccess();
+    };
+    window.addEventListener('kipher:spawnCutscene', handleSpawn);
+    return () => window.removeEventListener('kipher:spawnCutscene', handleSpawn);
+  }, []);
+
+  const handleCutsceneComplete = async (rarity: string) => {
+    setIsCutsceneActive(false);
+    setForcedCutscene(null);
+    if (!user) return;
+
+    // Award titles based on rarity/type
+    if (rarity.includes('ANGELIC_SYMPHONY')) {
+       await titleService.awardTitle(user.uid, 'ANGELIC_SYMPHONY');
+    } else if (rarity.includes('SINGULARITY')) {
+      await titleService.awardTitle(user.uid, 'THE_OMEGA_POINT');
+    } else if (rarity.includes('EPIC')) {
+      await titleService.awardTitle(user.uid, 'NETWORK_ANOMALY');
+    } else if (rarity.includes('RARE')) {
+       await titleService.awardTitle(user.uid, 'ELITE_ASSET');
+    }
   };
   
   // Set default page based on role once user is loaded
@@ -164,9 +211,37 @@ export default function App() {
     <div className="h-screen bg-absolute-black text-slate-300 font-mono text-sm flex border-4 border-slate-900 overflow-hidden select-none">
       <TacticalProtocolHandler currentUser={user} />
       <NotificationOverlay currentUser={user} onNavigate={(page) => navigateTo(page as NavigationPage)} />
+      
+      <AnimatePresence>
+        {isCutsceneActive && (
+          <CortexCutscene onComplete={handleCutsceneComplete} forcedType={forcedCutscene || undefined} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isTitleMenuOpen && user && (
+          <TitleManagerUI 
+            user={user} 
+            onClose={() => setIsTitleMenuOpen(false)} 
+            onUpdate={(updated) => setUser(updated)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar Navigation */}
       <nav className="w-20 border-r border-slate-800 flex flex-col items-center py-6 gap-8 bg-slate-950 px-2 shrink-0 relative z-50 overflow-y-auto custom-scrollbar">
-        <KipherLogo size={40} showText={false} className="mb-4 cursor-pointer hover:rotate-90 transition-transform duration-500" />
+        <KipherLogo 
+          size={40} 
+          showText={false} 
+          className="mb-4 cursor-pointer hover:rotate-90 transition-transform duration-500" 
+          onClick={(e) => {
+             if (e.detail >= 5 || clickCount >= 4) {
+               handleTitleMenuGesture();
+             } else {
+               setIsCutsceneActive(true);
+             }
+          }}
+        />
         
         <div className="flex-1 flex flex-col gap-6 w-full">
           {isGhost && (
@@ -244,7 +319,12 @@ export default function App() {
             </button>
             <div className="text-right">
               <div className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">{user.role} // LVL_{user.clearanceLevel}</div>
-              <div className="text-xs text-tactical-cyan font-black uppercase">{user.displayName}</div>
+              <div className="text-xs text-tactical-cyan font-black uppercase flex flex-col items-end">
+                {user.activeTitle && (
+                  <span className="text-[7px] text-tactical-cyan/60 mb-0.5 tracking-[0.3em]">« {user.activeTitle} »</span>
+                )}
+                <span>{user.displayName}</span>
+              </div>
             </div>
           </div>
         </header>
@@ -265,7 +345,7 @@ export default function App() {
               {activePage === 'GATEWAY' && <NodeGateway currentUser={user} />}
               {activePage === 'MEETING' && <MeetingHub currentUser={user} />}
               {activePage === 'COMM' && <DirectMessageContainer currentUser={user} />}
-              {activePage === 'MISC' && <MiscSystems currentUser={user} />}
+              {activePage === 'MISC' && <MiscSystems currentUser={user} onOpenTitles={() => setIsTitleMenuOpen(true)} />}
             </motion.div>
           </AnimatePresence>
         </main>
@@ -288,5 +368,101 @@ function NavIcon({ active, onClick, icon, label, color = "text-slate-500" }: { a
       <span className={`text-[8px] font-black tracking-widest ${active ? 'text-white' : 'text-slate-700'}`}>{label}</span>
       {active && <div className="absolute left-0 top-1/4 bottom-1/4 w-0.5 bg-tactical-cyan"></div>}
     </button>
+  );
+}
+
+function TitleManagerUI({ user, onClose, onUpdate }: { user: UserProfile, onClose: () => void, onUpdate: (u: UserProfile) => void }) {
+  const [titles, setTitles] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetch = async () => {
+      const list = await titleService.getAvailableTitles(user.uid);
+      
+      // Auto-award special titles if missing
+      const specialTitles: string[] = [];
+      if (user.displayName === 'K7_OWNER' && !list.includes('KIPHER_FOUNDER')) {
+        specialTitles.push('KIPHER_FOUNDER');
+      }
+      if (user.isOwner && !list.includes('SYSTEM_ARCHITECT')) {
+        specialTitles.push('SYSTEM_ARCHITECT');
+      }
+      
+      if (specialTitles.length > 0) {
+        for (const t of specialTitles) {
+          await titleService.awardTitle(user.uid, t);
+          list.push(t);
+        }
+      }
+
+      setTitles(list);
+      setLoading(false);
+    };
+    fetch();
+  }, [user]);
+
+  const selectTitle = async (t: string | null) => {
+    await titleService.setActiveTitle(user.uid, t);
+    onUpdate({ ...user, activeTitle: t || undefined });
+    audioService.playBlip();
+    onClose();
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[70000] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4"
+    >
+      <div className="max-w-md w-full kipher-panel bg-slate-950 border-tactical-cyan/20">
+        <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
+          <div className="flex items-center gap-2">
+            <Zap className="text-tactical-cyan" size={16} />
+            <h2 className="text-xs font-black text-white tracking-[0.5em] uppercase">TITLE_MANAGEMENT</h2>
+          </div>
+          <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="h-40 flex items-center justify-center text-tactical-cyan animate-pulse text-[10px] font-black italic">
+            QUERYING_USER_METADATA...
+          </div>
+        ) : (
+          <div className="space-y-4">
+             <div className="text-[8px] text-slate-500 font-bold uppercase italic mb-2">Available_Honors</div>
+             <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                <button 
+                  onClick={() => selectTitle(null)}
+                  className={`w-full p-4 border text-left transition-all ${!user.activeTitle ? 'border-tactical-cyan bg-tactical-cyan/10 text-tactical-cyan' : 'border-white/5 text-white/40 hover:border-white/20'}`}
+                >
+                  <div className="text-[10px] font-black uppercase tracking-widest">[ NONE ]</div>
+                </button>
+                {titles.map(t => (
+                  <button 
+                    key={t}
+                    onClick={() => selectTitle(t)}
+                    className={`w-full p-4 border text-left transition-all ${user.activeTitle === t ? 'border-tactical-cyan bg-tactical-cyan/10 text-tactical-cyan shadow-[inset_0_0_20px_rgba(4,217,217,0.1)]' : 'border-white/5 text-white hover:border-tactical-cyan/40'}`}
+                  >
+                    <div className="text-[12px] font-black uppercase tracking-[0.2em] mb-1">« {t} »</div>
+                    <div className="text-[7px] opacity-50 uppercase font-bold italic">AUTHENTICATED_ACHIEVEMENT</div>
+                  </button>
+                ))}
+             </div>
+             {titles.length === 0 && (
+               <div className="text-center py-8 text-white/20 text-[9px] italic border border-dashed border-white/5 uppercase">
+                 No honors detected. Land rare cutscenes or receive recognition from KIPHER root.
+               </div>
+             )}
+          </div>
+        )}
+
+        <div className="mt-6 pt-4 border-t border-white/5 text-center">
+           <p className="text-[8px] text-white/30 uppercase tracking-[0.3em]">Credentials verified by KIPHER Core</p>
+        </div>
+      </div>
+    </motion.div>
   );
 }

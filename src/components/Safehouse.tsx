@@ -1,12 +1,244 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../lib/firebase';
-import { collection, query, addDoc, onSnapshot, serverTimestamp, orderBy, limit, doc, deleteDoc, where, getDocs, updateDoc } from 'firebase/firestore';
+import { collection, query, addDoc, onSnapshot, serverTimestamp, orderBy, limit, doc, deleteDoc, where, getDocs, updateDoc, setDoc } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { UserProfile, Safehouse as SafehouseType, ChatMessage, VaultItem, VaultFile } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Send, LogOut, Plus, Lock, MessageCircle, Terminal, Trash2, Info, Archive, FileText, X } from 'lucide-react';
+import { Shield, Send, LogOut, Plus, Lock, MessageCircle, Terminal, Trash2, Info, Archive, FileText, X, Mic, MicOff, Radio, Volume2 } from 'lucide-react';
 import { handleFirestoreError, OperationType, ensureDate } from '../lib/utils';
 import { audioService } from '../services/audioService';
+
+function SafehouseVoiceManager({ roomId, currentUser }: { roomId: string, currentUser: UserProfile }) {
+  const [remoteStreams, setRemoteStreams] = useState<Record<string, { stream: MediaStream, name: string }>>({});
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const peersRef = useRef<Record<string, RTCPeerConnection>>({});
+  
+  const iceConfig = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+    ]
+  };
+
+  useEffect(() => {
+    let active = true;
+    const authId = auth.currentUser?.uid;
+    if (!authId) return;
+
+    let unsubMembers: () => void;
+    let unsubSignals: () => void;
+
+    const startVoice = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (!active) return;
+        setLocalStream(stream);
+
+        // Sign in as active member
+        const memberRef = doc(db, 'safehouses', roomId, 'voice_members', authId);
+        await setDoc(memberRef, {
+          uid: currentUser.uid,
+          displayName: currentUser.displayName,
+          joinedAt: serverTimestamp()
+        });
+
+        // Listen for other members
+        const membersQ = query(collection(db, 'safehouses', roomId, 'voice_members'));
+        unsubMembers = onSnapshot(membersQ, (snap) => {
+          snap.docChanges().forEach(async (change) => {
+            const memberData = change.doc.data();
+            const memberId = change.doc.id;
+            
+            if (memberId === authId) return;
+
+            if (change.type === 'added') {
+              if (authId < memberId) {
+                await initiatePeerConnection(memberId, stream, memberData.displayName);
+              }
+            } else if (change.type === 'removed') {
+              removePeer(memberId);
+            }
+          });
+        });
+
+        // Listen for incoming signals
+        const signalsQ = query(
+          collection(db, 'safehouses', roomId, 'voice_signals'), 
+          where('to', '==', authId)
+        );
+        unsubSignals = onSnapshot(signalsQ, (snap) => {
+          snap.docChanges().forEach(async (change) => {
+            if (change.type === 'added') {
+              const signal = change.doc.data();
+              await handleSignal(change.doc.id, signal, stream);
+            }
+          });
+        });
+
+      } catch (err) {
+        console.error('VOICE_INIT_FAILED:', err);
+        alert('VOICE_HARDWARE_ACCESS_DENIED or NOT_FOUND');
+      }
+    };
+
+    startVoice();
+
+    return () => {
+      active = false;
+      if (unsubMembers) unsubMembers();
+      if (unsubSignals) unsubSignals();
+      
+      const memberRef = doc(db, 'safehouses', roomId, 'voice_members', authId);
+      deleteDoc(memberRef).catch(console.error);
+
+      localStream?.getTracks().forEach(t => t.stop());
+      Object.keys(peersRef.current).forEach(key => {
+        peersRef.current[key].close();
+        delete peersRef.current[key];
+      });
+    };
+  }, [roomId, auth.currentUser?.uid]);
+
+  const initiatePeerConnection = async (targetAuthId: string, stream: MediaStream, name: string) => {
+    const pc = createPeerConnection(targetAuthId, stream, name);
+    peersRef.current[targetAuthId] = pc;
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    await addDoc(collection(db, 'safehouses', roomId, 'voice_signals'), {
+      from: auth.currentUser?.uid,
+      to: targetAuthId,
+      type: 'offer',
+      sdp: pc.localDescription?.sdp,
+      timestamp: serverTimestamp()
+    });
+  };
+
+  const handleSignal = async (signalId: string, signal: any, stream: MediaStream) => {
+    const fromAuthId = signal.from;
+    
+    // Auto-cleanup processed signals
+    await deleteDoc(doc(db, 'safehouses', roomId, 'voice_signals', signalId));
+
+    if (signal.type === 'offer') {
+      const pc = createPeerConnection(fromAuthId, stream, 'REMOTE_AGENT');
+      peersRef.current[fromAuthId] = pc;
+
+      await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: signal.sdp }));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      await addDoc(collection(db, 'safehouses', roomId, 'voice_signals'), {
+        from: auth.currentUser?.uid,
+        to: fromAuthId,
+        type: 'answer',
+        sdp: pc.localDescription?.sdp,
+        timestamp: serverTimestamp()
+      });
+    } else if (signal.type === 'answer') {
+      const pc = peersRef.current[fromAuthId];
+      if (pc) {
+        await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: signal.sdp }));
+      }
+    } else if (signal.type === 'candidate') {
+      const pc = peersRef.current[fromAuthId];
+      if (pc) {
+        await pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
+      }
+    }
+  };
+
+  const createPeerConnection = (targetAuthId: string, stream: MediaStream, name: string) => {
+    const pc = new RTCPeerConnection(iceConfig);
+
+    stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+    pc.onicecandidate = async (event) => {
+      if (event.candidate) {
+        await addDoc(collection(db, 'safehouses', roomId, 'voice_signals'), {
+          from: auth.currentUser?.uid,
+          to: targetAuthId,
+          type: 'candidate',
+          candidate: event.candidate.toJSON(),
+          timestamp: serverTimestamp()
+        });
+      }
+    };
+
+    pc.ontrack = (event) => {
+      console.log('VOICE_STREAM_RECEIVED from:', targetAuthId);
+      setRemoteStreams(prev => ({
+        ...prev,
+        [targetAuthId]: { stream: event.streams[0], name }
+      }));
+    };
+
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+        removePeer(targetAuthId);
+      }
+    };
+
+    return pc;
+  };
+
+  const removePeer = (authId: string) => {
+    const pc = peersRef.current[authId];
+    if (pc) {
+      pc.close();
+      delete peersRef.current[authId];
+    }
+    setRemoteStreams(prev => {
+      const next = { ...prev };
+      delete next[authId];
+      return next;
+    });
+  };
+
+  return (
+    <div className="absolute top-16 right-4 z-50 flex flex-col gap-2">
+      {Object.keys(remoteStreams).map((id) => {
+        const data = remoteStreams[id] as { stream: MediaStream, name: string };
+        return <RemoteVoice key={id} stream={data.stream} name={data.name} />;
+      })}
+      {localStream && (
+        <div className="kipher-panel py-1 px-3 bg-red-500/10 border-red-500/30 flex items-center gap-2 animate-pulse">
+           <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+           <span className="text-[10px] font-black text-red-500 uppercase tracking-tighter">VOICE_LINK_ESTABLISHED</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const RemoteVoice: React.FC<{ stream: MediaStream, name: string }> = ({ stream, name }) => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.srcObject = stream;
+    }
+  }, [stream]);
+
+  const MotionVolume = motion(Volume2);
+
+  return (
+    <div className="kipher-panel py-2 px-4 bg-slate-900 border-tactical-cyan/30 flex items-center gap-3">
+       <MotionVolume 
+         size={14} 
+         className="text-tactical-cyan" 
+         animate={{ y: [0, -4, 0] }}
+         transition={{ duration: 0.6, repeat: 999999, ease: "easeInOut" }}
+       />
+       <div className="flex flex-col">
+         <span className="text-[8px] font-black text-white uppercase tracking-widest">{name}</span>
+         <span className="text-[7px] text-tactical-cyan font-bold uppercase">AUDIO_RECEPTION_LIVE</span>
+       </div>
+       <audio ref={audioRef} autoPlay />
+    </div>
+  );
+};
 
 export default function Safehouse({ currentUser }: { currentUser: UserProfile }) {
   const [safehouses, setSafehouses] = useState<SafehouseType[]>([]);
@@ -284,6 +516,7 @@ function SafehouseChat({ room, user, onExit }: { room: SafehouseType, user: User
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [spamWarning, setSpamWarning] = useState<string | null>(null);
+  const [voiceActive, setVoiceActive] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastMessageTimes = useRef<number[]>([]);
 
@@ -425,13 +658,35 @@ function SafehouseChat({ room, user, onExit }: { room: SafehouseType, user: User
           </div>
           <div>
             <div className="text-xs font-black uppercase tracking-widest">{room.name}</div>
-            <div className="text-[10px] text-slate-500 font-bold tracking-widest uppercase">NODE_STATUS: SECURE // LINK: ACTIVE</div>
+            <div className="text-[10px] text-slate-500 font-bold tracking-widest uppercase flex items-center gap-2">
+               NODE_STATUS: SECURE // LINK: ACTIVE 
+               {voiceActive && <span className="flex items-center gap-1 text-red-500 animate-pulse"><Radio size={10} /> VOICE_LIVE</span>}
+            </div>
           </div>
         </div>
-        <button onClick={onExit} className="kipher-button text-red-500/70 border-red-900/30">
-          <LogOut size={14} className="mr-2 inline" /> DISCONNECT
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => {
+              setVoiceActive(!voiceActive);
+              audioService.playBlip();
+            }}
+            className={`flex items-center gap-2 px-3 py-1.5 border text-[10px] font-black transition-all ${voiceActive ? 'bg-red-500/10 border-red-500 text-red-500' : 'bg-slate-900 border-slate-800 text-slate-500'}`}
+          >
+            {voiceActive ? <MicOff size={14} /> : <Mic size={14} />}
+            {voiceActive ? 'VOICE_DISCONNECT' : 'VOICE_ESTABLISH'}
+          </button>
+          <button onClick={onExit} className="kipher-button text-red-500/70 border-red-900/30">
+            <LogOut size={14} className="mr-2 inline" /> DISCONNECT
+          </button>
+        </div>
       </div>
+
+      {voiceActive && (
+        <SafehouseVoiceManager 
+          roomId={room.id} 
+          currentUser={user} 
+        />
+      )}
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 font-mono scrollbar-hide">
         {messages.map((msg, i) => {

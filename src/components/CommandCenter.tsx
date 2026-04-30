@@ -21,17 +21,21 @@ import {
   ShieldHalf,
   RefreshCw,
   X,
-  Trash2
+  Trash2,
+  Database
 } from 'lucide-react';
 import CreateAgentForm from './CreateAgentForm';
 import { handleFirestoreError, OperationType, ensureDate } from '../lib/utils';
 import { audioService } from '../services/audioService';
+import { titleService } from '../services/titleService';
 
 export default function CommandCenter({ currentUser }: { currentUser: UserProfile }) {
   const [activeTab, setActiveTab] = useState<'BROADCAST' | 'USERS' | 'CREATE' | 'LOGS'>('BROADCAST');
   const [broadcast, setBroadcast] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
   const [systemUsers, setSystemUsers] = useState<UserProfile[]>([]);
+  const [showTitleGrant, setShowTitleGrant] = useState<string | null>(null);
+  const [newTitle, setNewTitle] = useState('');
 
   useEffect(() => {
     // Only fetch users if we are an owner or superuser
@@ -90,6 +94,36 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
       } catch (err) {
         handleFirestoreError(err, OperationType.UPDATE, `users/${uid}`);
       }
+    }
+  };
+
+  const grantTitle = async (uid: string) => {
+    if (!newTitle) return;
+    await titleService.awardTitle(uid, newTitle);
+    setNewTitle('');
+    audioService.playSuccess();
+  };
+
+  const revokeTitle = async (uid: string, title: string) => {
+    await titleService.removeTitle(uid, title);
+    audioService.playError();
+  };
+
+  const spawnCutscene = async (uid: string, cutsceneType: string = '') => {
+    try {
+      if (!auth.currentUser) await signInAnonymously(auth);
+      await addDoc(collection(db, 'system_commands'), {
+        type: 'SPAWN_CUTSCENE',
+        payload: cutsceneType,
+        targetUserId: uid || 'GLOBAL',
+        timestamp: serverTimestamp(),
+        active: true,
+        author: currentUser.displayName
+      });
+      audioService.playSuccess();
+    } catch (err) {
+      console.error(err);
+      handleFirestoreError(err, OperationType.WRITE, 'system_commands');
     }
   };
 
@@ -296,8 +330,9 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
                   <div key={u.uid} className={`p-3 border rounded transition-all flex flex-col gap-2 ${u.isBanned ? 'bg-blood-red/5 border-blood-red/20 opacity-50' : 'bg-slate-900/40 border-white/5 hover:border-tactical-cyan/30'}`}>
                     <div className="flex justify-between items-start">
                       <div className="flex flex-col">
-                        <span className={`text-[11px] font-black tracking-widest ${u.isBanned ? 'text-blood-red' : 'text-white'}`}>
+                        <span className={`text-[11px] font-black tracking-widest ${u.isBanned ? 'text-blood-red' : 'text-white'} flex items-center gap-2`}>
                           {u.displayName}
+                          {u.uid === currentUser.uid && <span className="text-[7px] bg-tactical-cyan text-black px-1 rounded animate-pulse">YOU</span>}
                         </span>
                         <div className="flex items-center gap-1 mt-0.5">
                           <span className={`text-[8px] px-1 rounded ${u.role === 'SUPERUSER' ? 'bg-tactical-cyan/20 text-tactical-cyan' : 'bg-white/10 text-white/40'}`}>
@@ -322,6 +357,20 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
                         >
                           {[1,2,3,4,5].map(v => <option key={v} value={v}>L_{v}</option>)}
                         </select>
+                        <button 
+                          onClick={() => setShowTitleGrant(showTitleGrant === u.uid ? null : u.uid)}
+                          className="p-1 border border-white/5 hover:border-tactical-cyan text-white/20 hover:text-tactical-cyan transition-all relative group/cmd"
+                        >
+                          <Database size={10} />
+                          <div className="absolute bottom-full right-0 mb-1 px-2 py-1 bg-tactical-cyan text-black text-[7px] font-black rounded opacity-0 group-hover/cmd:opacity-100 pointer-events-none">TITLE</div>
+                        </button>
+                        <button 
+                          onClick={() => spawnCutscene(u.uid, 'ANGELIC_SYMPHONY')}
+                          className="p-1 border border-white/5 hover:border-tactical-cyan text-white/20 hover:text-tactical-cyan transition-all relative group/cmd"
+                        >
+                          <Zap size={10} />
+                          <div className="absolute bottom-full right-0 mb-1 px-2 py-1 bg-tactical-cyan text-black text-[7px] font-black rounded opacity-0 group-hover/cmd:opacity-100 pointer-events-none">FORCE_ANGEL_VISION</div>
+                        </button>
                         {!u.isBanned && !u.isOwner && (
                           <div className="flex gap-1">
                             <button 
@@ -363,6 +412,47 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
                         )}
                       </div>
                     </div>
+                    {showTitleGrant === u.uid && (
+                      <div className="mt-2 space-y-2 animate-in slide-in-from-top-1">
+                        <div className="flex gap-2">
+                          <input 
+                            value={newTitle}
+                            onChange={(e) => setNewTitle(e.target.value)}
+                            placeholder="ASSIGN_TITLE..."
+                            className="flex-1 bg-black/40 border border-tactical-cyan/30 rounded text-[8px] px-2 py-1 text-tactical-cyan outline-none"
+                            autoFocus
+                            onKeyDown={(e) => e.key === 'Enter' && grantTitle(u.uid)}
+                          />
+                          <button 
+                            onClick={() => grantTitle(u.uid)}
+                            className="px-2 py-1 bg-tactical-cyan text-black text-[8px] font-black uppercase rounded shadow-[0_0_10px_#0ea5e966]"
+                          >
+                            GRANT
+                          </button>
+                        </div>
+                        
+                        {u.titles && u.titles.length > 0 && (
+                          <div className="flex flex-wrap gap-1 p-2 bg-black/20 rounded border border-white/5">
+                            {u.titles.map(t => (
+                              <div key={t} className="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/10 group/tit">
+                                <span className="text-[7px] text-white/60 uppercase font-bold">{t}</span>
+                                <button 
+                                  onClick={() => revokeTitle(u.uid, t)}
+                                  className="text-red-500 hover:text-red-400 transition-colors"
+                                >
+                                  <X size={8} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {u.activeTitle && (
+                      <div className="text-[7px] text-tactical-cyan/60 font-black uppercase tracking-widest mt-1">
+                        ACTIVE_TITLE: <span className="text-tactical-cyan">« {u.activeTitle} »</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
