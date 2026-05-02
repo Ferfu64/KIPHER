@@ -124,7 +124,7 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
     const isVideo = type === 'ANGELIC_SYMPHONY' || type === 'ETERNAL_OPPRESSION' || type === 'SUPREME_SOVEREIGN' || type === 'ANONYMOUS_DEITY';
     
     // Safety timer for EVERY cutscene (fallback)
-    const timeoutDuration = isVideo ? 15000 : ((type === 'SINGULARITY' || type === 'STARS_ZOOM') ? 6000 : 3500);
+    const timeoutDuration = isVideo ? 30000 : ((type === 'SINGULARITY' || type === 'STARS_ZOOM') ? 6000 : 3500);
     
     const timer = setTimeout(() => {
       setStatus('DISPLAY_RARITY');
@@ -543,42 +543,71 @@ function BioHazardEffect() {
 
 function VideoCutscene({ src, label, onEnded }: { src: string, label?: string, onEnded?: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
+    // Safety timeout: If video doesn't start playing within 10 seconds, skip it
+    const timer = setTimeout(() => {
+      if (loading && onEnded) {
+        console.warn(`Video ${label} timed out loading from CDN`);
+        onEnded();
+      }
+    }, 10000);
+
     if (videoRef.current) {
-      videoRef.current.play().catch(error => {
-        console.warn("Autoplay blocked, attempting muted playback", error);
-        if (videoRef.current) {
-          videoRef.current.muted = true;
-          videoRef.current.play();
-        }
+      videoRef.current.load(); // Force fresh load
+      videoRef.current.play().catch(err => {
+        console.warn("Autoplay interaction required or blocked:", err);
+        // We catch here, but we'll wait for the user to potentially interact if needed
+        // or just let the safety timeout handle it
       });
     }
-  }, [src]);
+
+    return () => clearTimeout(timer);
+  }, [src, loading, label, onEnded]);
+
+  const handleCanPlay = () => {
+    setLoading(false);
+  };
+
+  const handleVideoError = () => {
+    console.error(`Failed to load video: ${src}`);
+    setError(true);
+    if (onEnded) onEnded();
+  };
 
   return (
     <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden font-sans">
+      {loading && !error && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-black">
+          <motion.div 
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-12 h-12 border-4 border-t-lime-500 border-r-transparent border-b-transparent border-l-transparent rounded-full mb-4"
+          />
+          <div className="text-lime-500/50 text-[10px] font-mono tracking-[0.3em] animate-pulse uppercase">
+            ESTABLISHING_LINK... {label}
+          </div>
+        </div>
+      )}
+      
       <video 
         ref={videoRef}
         playsInline
-        className="min-w-full min-h-full object-cover"
+        className={`min-w-full min-h-full object-cover transition-opacity duration-1000 ${loading ? 'opacity-0' : 'opacity-100'}`}
         onEnded={onEnded}
-        onError={onEnded}
+        onError={handleVideoError}
+        onCanPlay={handleCanPlay}
       >
         <source src={src} type="video/mp4" />
         Your browser does not support the video tag.
       </video>
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black opacity-30 pointer-events-none" />
-      {label && (
-        <div className="absolute bottom-20 z-20 text-center w-full px-4">
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 1 }}
-            className="text-white font-black text-3xl tracking-[1em] uppercase italic drop-shadow-[0_0_15px_rgba(255,255,255,1)]"
-          >
-            {label}
-          </motion.div>
+
+      {!loading && label && (
+        <div className="absolute bottom-10 left-10 z-20">
+          <div className="text-white/20 text-[8px] font-mono tracking-[0.5em] mb-1">SIGNAL_SOURCE_IDENTIFIED</div>
+          <div className="text-white text-xl font-black tracking-tighter italic uppercase">{label}</div>
         </div>
       )}
     </div>
