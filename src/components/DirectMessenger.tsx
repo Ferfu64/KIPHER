@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../lib/firebase';
-import { collection, query, addDoc, onSnapshot, serverTimestamp, orderBy, limit, doc, where, getDocs, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, addDoc, onSnapshot, serverTimestamp, orderBy, limit, doc, where, getDocs, setDoc } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { UserProfile, ChatMessage, Connection } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, MessageSquare, Shield, Trash2, X, AlertTriangle } from 'lucide-react';
 import { handleFirestoreError, OperationType } from '../lib/utils';
 import { audioService } from '../services/audioService';
+
+import ChatUserDisplay from './ChatUserDisplay';
 
 export default function DirectMessenger({ currentUser, targetUser, onBack }: { currentUser: UserProfile, targetUser: UserProfile | null, onBack?: () => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -95,12 +97,12 @@ export default function DirectMessenger({ currentUser, targetUser, onBack }: { c
       });
 
       // Update parent connection to trigger global listeners
-      await updateDoc(doc(db, 'connections', connection.id), {
+      await setDoc(doc(db, 'connections', connection.id), {
         lastMessage: textToSend.startsWith('data:image') ? '[MEDIA]' : textToSend,
         lastSenderName: currentUser.displayName,
         lastSenderAuthId: auth.currentUser?.uid,
         updatedAt: serverTimestamp()
-      });
+      }, { merge: true });
 
       if (!textOverride) setNewMessage('');
       audioService.playSuccess();
@@ -159,6 +161,9 @@ export default function DirectMessenger({ currentUser, targetUser, onBack }: { c
           const isMe = msg.senderId === currentUser.uid;
           return (
             <div key={msg.id || i} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+              <div className="mb-1 px-1">
+                 <ChatUserDisplay uid={msg.senderId} defaultName={msg.senderName} isMe={isMe} />
+              </div>
               <div className={`max-w-[80%] px-3 py-2 text-xs border ${
                 isMe 
                   ? 'border-tactical-cyan bg-tactical-cyan/5 text-tactical-cyan' 

@@ -29,8 +29,19 @@ interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null, silent: boolean = false) {
+  // Use a safer error conversion that avoids circular references
+  const getErrorMessage = (err: any): string => {
+    try {
+      if (err instanceof Error) return err.message;
+      if (typeof err === 'string') return err;
+      return String(err);
+    } catch (e) {
+      return 'UNIDENTIFIED_ERROR_STRUCTURE';
+    }
+  };
+
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: getErrorMessage(error),
     authInfo: {
       userId: auth.currentUser?.uid || null,
       email: auth.currentUser?.email || null,
@@ -46,7 +57,14 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     path
   };
   
-  const errorMessage = JSON.stringify(errInfo);
+  let errorMessage: string;
+  try {
+    errorMessage = JSON.stringify(errInfo);
+  } catch (jsonErr) {
+    console.error('CRITICAL_SERIALIZATION_FAILURE', jsonErr);
+    errorMessage = `{"error": "SERIALIZATION_FAILED", "originalError": "${getErrorMessage(error)}"}`;
+  }
+
   console.error('Firestore Error Details:', errorMessage);
   
   if (silent) return;

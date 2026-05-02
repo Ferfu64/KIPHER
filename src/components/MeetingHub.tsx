@@ -7,6 +7,7 @@ import { MessageSquare, Mic, MicOff, Paperclip, Share2, Terminal, Users, Search,
 import { handleFirestoreError, OperationType, ensureDate } from '../lib/utils';
 import { signInAnonymously } from 'firebase/auth';
 import { audioService } from '../services/audioService';
+import ChatUserDisplay from './ChatUserDisplay';
 
 export default function MeetingHub({ currentUser }: { currentUser: UserProfile }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -283,7 +284,7 @@ export default function MeetingHub({ currentUser }: { currentUser: UserProfile }
                           <Trash2 size={10} />
                         </button>
                       )}
-                      <div className="text-[9px] text-slate-600 font-bold">{msg.senderName}</div>
+                      <ChatUserDisplay uid={msg.senderId} defaultName={msg.senderName} isMe={isMe} />
                       {canDelete && msg.id && !isMe && (
                         <button 
                           onClick={() => deleteMessage(msg.id!)}

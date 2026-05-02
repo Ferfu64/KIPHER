@@ -148,6 +148,50 @@ class TacticalAudioService {
       this.ambientDrone = null;
     }
   }
+
+  playCelestialSymphony() {
+     if (!this.ctx || this.isMuted) return;
+     const now = this.ctx.currentTime;
+     
+     // Series of ethereal rising tones
+     [261.63, 329.63, 392.00, 523.25, 659.25, 783.99].forEach((freq, i) => {
+        const osc = this.ctx!.createOscillator();
+        const g = this.ctx!.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + i * 0.4);
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.5, now + i * 0.4 + 1);
+        
+        g.gain.setValueAtTime(0, now + i * 0.4);
+        g.gain.linearRampToValueAtTime(0.05, now + i * 0.4 + 0.2);
+        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.4 + 2);
+        
+        osc.connect(g);
+        g.connect(this.masterGain!);
+        
+        osc.start(now + i * 0.4);
+        osc.stop(now + i * 0.4 + 2.5);
+     });
+  }
+
+  setVolume(value: number) {
+    if (this.masterGain && this.ctx) {
+      this.masterGain.gain.setTargetAtTime(value, this.ctx.currentTime, 0.1);
+    }
+  }
+
+  getVolume() {
+    return this.masterGain ? this.masterGain.gain.value : 0;
+  }
+
+  ensureMinVolume(min: number) {
+    if (this.masterGain && this.ctx && !this.isMuted) {
+      const current = this.masterGain.gain.value;
+      if (current < min) {
+        this.masterGain.gain.setTargetAtTime(min, this.ctx.currentTime, 0.1);
+      }
+    }
+  }
 }
 
 export const audioService = new TacticalAudioService();

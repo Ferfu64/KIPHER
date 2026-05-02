@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../lib/firebase';
-import { collection, query, addDoc, onSnapshot, serverTimestamp, orderBy, limit, doc, deleteDoc, where, getDocs, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, query, addDoc, onSnapshot, serverTimestamp, orderBy, limit, doc, deleteDoc, where, getDocs, setDoc } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { UserProfile, Safehouse as SafehouseType, ChatMessage, VaultItem, VaultFile } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Send, LogOut, Plus, Lock, MessageCircle, Terminal, Trash2, Info, Archive, FileText, X, Mic, MicOff, Radio, Volume2 } from 'lucide-react';
 import { handleFirestoreError, OperationType, ensureDate } from '../lib/utils';
 import { audioService } from '../services/audioService';
+
+import ChatUserDisplay from './ChatUserDisplay';
 
 function SafehouseVoiceManager({ roomId, currentUser }: { roomId: string, currentUser: UserProfile }) {
   const [remoteStreams, setRemoteStreams] = useState<Record<string, { stream: MediaStream, name: string }>>({});
@@ -229,7 +231,7 @@ const RemoteVoice: React.FC<{ stream: MediaStream, name: string }> = ({ stream, 
          size={14} 
          className="text-tactical-cyan" 
          animate={{ y: [0, -4, 0] }}
-         transition={{ duration: 0.6, repeat: 999999, ease: "easeInOut" }}
+         transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut" }}
        />
        <div className="flex flex-col">
          <span className="text-[8px] font-black text-white uppercase tracking-widest">{name}</span>
@@ -588,12 +590,12 @@ function SafehouseChat({ room, user, onExit }: { room: SafehouseType, user: User
       });
 
       // Update parent safehouse to trigger global listeners
-      await updateDoc(doc(db, 'safehouses', room.id), {
+      await setDoc(doc(db, 'safehouses', room.id), {
         lastMessage: textToSend.startsWith('data:image') ? '[MEDIA]' : textToSend,
         lastSenderName: user.displayName,
         lastSenderAuthId: authUid,
         lastMessageAt: serverTimestamp()
-      });
+      }, { merge: true });
 
       if (!textOverride) setNewMessage('');
       audioService.playBlip();
@@ -696,8 +698,7 @@ function SafehouseChat({ room, user, onExit }: { room: SafehouseType, user: User
           return (
             <div key={msg.id || `safe-msg-${i}`} className={`flex flex-col group ${isMe ? 'items-end' : 'items-start'}`}>
               <div className="flex items-center gap-2 mb-1 px-1">
-                {!isMe && <span className="text-[10px] font-black text-slate-500">{msg.senderName}</span>}
-                {isMe && <span className="text-[10px] font-black text-tactical-cyan text-right">YOU</span>}
+                <ChatUserDisplay uid={msg.senderId} defaultName={msg.senderName} isMe={isMe} />
                 <span className="text-[8px] text-slate-700">
                   {ensureDate(msg.timestamp).toLocaleTimeString()}
                 </span>

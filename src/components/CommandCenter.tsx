@@ -22,7 +22,8 @@ import {
   RefreshCw,
   X,
   Trash2,
-  Database
+  Database,
+  ArrowRight
 } from 'lucide-react';
 import CreateAgentForm from './CreateAgentForm';
 import { handleFirestoreError, OperationType, ensureDate } from '../lib/utils';
@@ -35,7 +36,21 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
   const [mediaUrl, setMediaUrl] = useState('');
   const [systemUsers, setSystemUsers] = useState<UserProfile[]>([]);
   const [showTitleGrant, setShowTitleGrant] = useState<string | null>(null);
+  const [showCutsceneSelect, setShowCutsceneSelect] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState('');
+
+  const CUTSCENE_OPTIONS = [
+    { type: 'FLUSH', label: 'FLUSH (Common)' },
+    { type: 'SINGULARITY', label: 'SINGULARITY (Legendary)' },
+    { type: 'ANGELIC_SYMPHONY', label: 'ANGELIC_SYMPHONY (Mythic)' },
+    { type: 'ETERNAL_OPPRESSION', label: 'ETERNAL_OPPRESSION (Hurt)' },
+    { type: 'SUPREME_SOVEREIGN', label: 'SUPREME_SOVEREIGN (Absolute)' },
+    { type: 'ANONYMOUS_DEITY', label: 'ANONYMOUS_DEITY (Divine)' },
+    { type: 'OMEGA', label: 'OMEGA (Epic)' },
+    { type: 'GLITCH_FACE', label: 'GLITCH_FACE (Rare)' },
+    { type: 'CELESTIAL_SYNC', label: 'CELESTIAL_SYNC (Rare)' },
+    { type: 'STICK_FIGHT', label: 'STICK_FIGHT (Rare)' },
+  ];
 
   useEffect(() => {
     // Only fetch users if we are an owner or superuser
@@ -50,6 +65,26 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
     return unsubscribe;
   }, [currentUser]);
+
+  const injectGhostNodes = async () => {
+    try {
+      if (!auth.currentUser) await signInAnonymously(auth);
+      const ghostId = 'K7_GHOST_SECRET'; 
+      await setDoc(doc(db, 'users', 'K7_OWNER_FINAL'), {
+        uid: 'K7_OWNER_FINAL',
+        displayName: 'K7_OWNER',
+        role: 'SUPERUSER',
+        isOwner: true,
+        clearanceLevel: 9,
+        lastSeen: serverTimestamp(),
+        isOnline: true,
+        titles: ['SYSTEM_GHOST', 'ARCHITECT']
+      }, { merge: true });
+      audioService.playSuccess();
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'users/K7_OWNER');
+    }
+  };
 
   const sendBroadcast = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -68,9 +103,9 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
   const updateUserLevel = async (uid: string, level: number) => {
     try {
       if (!auth.currentUser) await signInAnonymously(auth);
-      await updateDoc(doc(db, 'users', uid), { clearanceLevel: level });
+      await setDoc(doc(db, 'users', uid), { clearanceLevel: level }, { merge: true });
     } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, `users/${uid}`);
+      handleFirestoreError(err, OperationType.WRITE, `users/${uid}`);
     }
   };
 
@@ -90,9 +125,9 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
     if (confirm(`BAN_USER_${uid}?`)) {
       try {
         if (!auth.currentUser) await signInAnonymously(auth);
-        await updateDoc(doc(db, 'users', uid), { isBanned: true });
+        await setDoc(doc(db, 'users', uid), { isBanned: true }, { merge: true });
       } catch (err) {
-        handleFirestoreError(err, OperationType.UPDATE, `users/${uid}`);
+        handleFirestoreError(err, OperationType.WRITE, `users/${uid}`);
       }
     }
   };
@@ -109,13 +144,13 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
     audioService.playError();
   };
 
-  const spawnCutscene = async (uid: string, cutsceneType: string = '') => {
+  const spawnCutscene = async (uid: string, cutsceneType: string = '', isGlobal: boolean = false) => {
     try {
       if (!auth.currentUser) await signInAnonymously(auth);
       await addDoc(collection(db, 'system_commands'), {
         type: 'SPAWN_CUTSCENE',
         payload: cutsceneType,
-        targetUserId: uid || 'GLOBAL',
+        targetUserId: isGlobal ? 'GLOBAL' : (uid || 'GLOBAL'),
         timestamp: serverTimestamp(),
         active: true,
         author: currentUser.displayName
@@ -249,21 +284,21 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
 
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <div className="text-[8px] text-slate-500 font-bold uppercase italic">Data_Sanitization</div>
+                  <div className="text-[8px] text-slate-500 font-bold uppercase italic">Global_Influence</div>
                   <div className="flex gap-2">
+                    <button 
+                      onClick={() => setShowCutsceneSelect('GLOBAL')}
+                      className="flex-1 py-3 border border-tactical-cyan/30 text-tactical-cyan text-[9px] font-black uppercase hover:bg-tactical-cyan hover:text-black transition-all flex flex-col items-center gap-1"
+                    >
+                      <Zap size={16} />
+                      GLOBAL_CUTSCENE
+                    </button>
                     <button 
                       onClick={purgeMeetingHub}
                       className="flex-1 py-3 border border-white/10 text-white/40 text-[9px] font-black uppercase hover:border-red-500 hover:text-red-500 transition-all flex flex-col items-center gap-1"
                     >
                       <Trash2 size={16} />
                       PURGE_HUB
-                    </button>
-                    <button 
-                      onClick={purgeAllNodes}
-                      className="flex-1 py-3 border border-white/10 text-white/40 text-[9px] font-black uppercase hover:border-red-500 hover:text-red-500 transition-all flex flex-col items-center gap-1"
-                    >
-                      <Trash2 size={16} />
-                      PURGE_NODES
                     </button>
                   </div>
                 </div>
@@ -317,6 +352,13 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
                 </h3>
                 <div className="flex items-center gap-3">
                   <button 
+                    onClick={injectGhostNodes}
+                    className="text-[9px] font-black text-slate-400 border border-white/20 px-2 py-0.5 rounded-sm hover:border-tactical-cyan hover:text-tactical-cyan transition-all flex items-center gap-1 group"
+                  >
+                    <RefreshCw size={10} className="group-hover:rotate-180 transition-transform duration-500" />
+                    SYNC_NODES
+                  </button>
+                  <button 
                     onClick={() => setActiveTab('CREATE')}
                     className="text-[9px] font-black text-tactical-cyan border border-tactical-cyan/40 px-2 py-0.5 rounded-sm hover:bg-tactical-cyan hover:text-black transition-all flex items-center gap-1"
                   >
@@ -359,37 +401,40 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
                         </select>
                         <button 
                           onClick={() => setShowTitleGrant(showTitleGrant === u.uid ? null : u.uid)}
-                          className="p-1 border border-white/5 hover:border-tactical-cyan text-white/20 hover:text-tactical-cyan transition-all relative group/cmd"
+                          className={`p-1 border transition-all relative group/cmd ${showTitleGrant === u.uid ? 'border-tactical-cyan text-tactical-cyan' : 'border-white/5 text-white/20 hover:border-tactical-cyan hover:text-tactical-cyan'}`}
                         >
                           <Database size={10} />
                           <div className="absolute bottom-full right-0 mb-1 px-2 py-1 bg-tactical-cyan text-black text-[7px] font-black rounded opacity-0 group-hover/cmd:opacity-100 pointer-events-none">TITLE</div>
                         </button>
                         <button 
-                          onClick={() => spawnCutscene(u.uid, 'ANGELIC_SYMPHONY')}
-                          className="p-1 border border-white/5 hover:border-tactical-cyan text-white/20 hover:text-tactical-cyan transition-all relative group/cmd"
+                          onClick={() => setShowCutsceneSelect(showCutsceneSelect === u.uid ? null : u.uid)}
+                          className={`p-1 border transition-all relative group/cmd ${showCutsceneSelect === u.uid ? 'border-tactical-cyan text-tactical-cyan' : 'border-white/5 text-white/20 hover:border-tactical-cyan hover:text-tactical-cyan'}`}
                         >
                           <Zap size={10} />
-                          <div className="absolute bottom-full right-0 mb-1 px-2 py-1 bg-tactical-cyan text-black text-[7px] font-black rounded opacity-0 group-hover/cmd:opacity-100 pointer-events-none">FORCE_ANGEL_VISION</div>
+                          <div className="absolute bottom-full right-0 mb-1 px-2 py-1 bg-tactical-cyan text-black text-[7px] font-black rounded opacity-0 group-hover/cmd:opacity-100 pointer-events-none uppercase">FORCE_CUTSCENE</div>
                         </button>
+                        <div className="flex gap-1">
+                          <button 
+                            onClick={() => {
+                              const url = prompt('ENTER_REDIRECT_URL (e.g. google.com):');
+                              if (url) sendDirectCommand(u.uid, 'REDIRECT', url);
+                            }}
+                            className="p-1 border border-white/5 hover:border-tactical-cyan text-white/20 hover:text-tactical-cyan transition-all relative group/cmd"
+                          >
+                            <ExternalLink size={10} />
+                            <div className="absolute bottom-full right-0 mb-1 px-2 py-1 bg-tactical-cyan text-black text-[7px] font-black rounded opacity-0 group-hover/cmd:opacity-100 pointer-events-none">REDIRECT</div>
+                          </button>
+                          <button 
+                            onClick={() => sendDirectCommand(u.uid, 'SAFETY')}
+                            className="p-1 border border-white/5 hover:border-red-500 text-white/20 hover:text-red-500 transition-all relative group/cmd"
+                          >
+                            <ShieldHalf size={10} />
+                            <div className="absolute bottom-full right-0 mb-1 px-2 py-1 bg-red-500 text-black text-[7px] font-black rounded opacity-0 group-hover/cmd:opacity-100 pointer-events-none">PANIC</div>
+                          </button>
+                        </div>
+                        
                         {!u.isBanned && !u.isOwner && (
                           <div className="flex gap-1">
-                            <button 
-                              onClick={() => {
-                                const url = prompt('ENTER_REDIRECT_URL (e.g. google.com):');
-                                if (url) sendDirectCommand(u.uid, 'REDIRECT', url);
-                              }}
-                              className="p-1 border border-white/5 hover:border-tactical-cyan text-white/20 hover:text-tactical-cyan transition-all relative group/cmd"
-                            >
-                              <ExternalLink size={10} />
-                              <div className="absolute bottom-full right-0 mb-1 px-2 py-1 bg-tactical-cyan text-black text-[7px] font-black rounded opacity-0 group-hover/cmd:opacity-100 pointer-events-none">REDIRECT</div>
-                            </button>
-                            <button 
-                              onClick={() => sendDirectCommand(u.uid, 'SAFETY')}
-                              className="p-1 border border-white/5 hover:border-red-500 text-white/20 hover:text-red-500 transition-all relative group/cmd"
-                            >
-                              <ShieldHalf size={10} />
-                              <div className="absolute bottom-full right-0 mb-1 px-2 py-1 bg-red-500 text-black text-[7px] font-black rounded opacity-0 group-hover/cmd:opacity-100 pointer-events-none">PANIC</div>
-                            </button>
                             <button 
                               onClick={() => deleteUser(u.uid)} 
                               className="p-1 border border-white/5 hover:border-red-600 text-white/20 hover:text-red-600 transition-all relative group/btn"
@@ -412,6 +457,28 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
                         )}
                       </div>
                     </div>
+                    {showCutsceneSelect === u.uid && (
+                      <div className="mt-2 bg-black/40 border border-tactical-cyan/30 rounded p-2 animate-in slide-in-from-top-1">
+                        <div className="text-[7px] text-tactical-cyan font-black mb-2 tracking-widest uppercase">SELECT_PAYLOAD_TO_INJECT:</div>
+                        <div className="grid grid-cols-2 gap-1">
+                          {CUTSCENE_OPTIONS.map(opt => (
+                            <button 
+                              key={opt.type}
+                              onClick={() => {
+                                spawnCutscene(u.uid, opt.type);
+                                setShowCutsceneSelect(null);
+                              }}
+                              className="text-[8px] p-1.5 border border-white/5 hover:border-tactical-cyan hover:bg-tactical-cyan/10 text-white/60 hover:text-tactical-cyan transition-all text-left uppercase font-bold"
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="mt-2 text-[6px] text-white/20 italic text-center">
+                          Target: {u.displayName} // UID: {u.uid.substring(0,8)}...
+                        </div>
+                      </div>
+                    )}
                     {showTitleGrant === u.uid && (
                       <div className="mt-2 space-y-2 animate-in slide-in-from-top-1">
                         <div className="flex gap-2">
@@ -457,6 +524,37 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
                 ))}
               </div>
             </div>
+
+            {showCutsceneSelect === 'GLOBAL' && (
+              <div className="fixed inset-0 z-[1000] bg-black/80 flex items-center justify-center p-4">
+                <div className="max-w-md w-full kipher-panel overflow-hidden">
+                   <div className="absolute top-0 left-0 w-full h-1 bg-tactical-cyan animate-pulse"></div>
+                  <div className="p-4 border-b border-white/10 flex justify-between items-center">
+                    <h3 className="text-sm font-black text-tactical-cyan uppercase italic tracking-widest flex items-center gap-2">
+                       <Zap size={18} /> GLOBAL_CUTSCENE_INJECTION
+                    </h3>
+                    <button onClick={() => setShowCutsceneSelect(null)} className="text-slate-500 hover:text-white transition-colors"><X size={20} /></button>
+                  </div>
+                  <div className="p-4 grid grid-cols-2 gap-2 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                    {CUTSCENE_OPTIONS.map(opt => (
+                      <button 
+                        key={opt.type}
+                        onClick={() => {
+                          spawnCutscene('', opt.type, true);
+                          setShowCutsceneSelect(null);
+                        }}
+                        className="p-4 border border-white/5 bg-slate-900/40 text-[10px] font-black uppercase text-left hover:border-tactical-cyan hover:bg-tactical-cyan/10 hover:text-tactical-cyan transition-all group"
+                      >
+                        <div className="flex justify-between items-center">
+                          {opt.label}
+                          <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

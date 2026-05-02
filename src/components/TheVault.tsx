@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../lib/firebase';
-import { collection, query, onSnapshot, where, orderBy, getDocs, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { collection, query, onSnapshot, where, orderBy, getDocs, addDoc, serverTimestamp, deleteDoc, doc, setDoc, arrayUnion } from 'firebase/firestore';
 import { UserProfile, VaultItem, VaultFile } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Archive, Lock, FileText, Database, ShieldAlert, X, ChevronRight, Plus, Download, Trash2, Key, Info } from 'lucide-react';
@@ -256,9 +256,9 @@ function VaultModal({ item, currentUser, onClose }: { item: VaultItem, currentUs
            uploadedBy: currentUser.displayName,
            timestamp: new Date().toISOString()
         };
-        await updateDoc(doc(db, 'vaults', item.id), {
+        await setDoc(doc(db, 'vaults', item.id), {
           files: arrayUnion(newFile)
-        });
+        }, { merge: true });
         setUploading(false);
         if (audioService.getMuteStatus() === false) audioService.playSuccess();
       } catch (e) {
@@ -273,7 +273,7 @@ function VaultModal({ item, currentUser, onClose }: { item: VaultItem, currentUs
     if (!confirm('ERASE_ENTRY?')) return;
     try {
       const updated = item.files.filter(f => f.id !== fileId);
-      await updateDoc(doc(db, 'vaults', item.id), { files: updated });
+      await setDoc(doc(db, 'vaults', item.id), { files: updated }, { merge: true });
       if (audioService.getMuteStatus() === false) audioService.playError();
     } catch (e) {
       console.error(e);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../lib/firebase';
 import { signInWithEmailAndPassword, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
-import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Lock, Terminal, Activity, User, Key, Info } from 'lucide-react';
 import { UserProfile } from '../types';
@@ -76,10 +76,10 @@ export default function KipherGateway({ onAuthChange }: { onAuthChange: (user: U
 
       // 4. Update the user's last seen and associate the session UID
       try {
-        await updateDoc(doc(db, 'users', userDoc.id), {
+        await setDoc(doc(db, 'users', userDoc.id), {
           lastSeen: serverTimestamp(),
           currentAuthUid: authUid
-        });
+        }, { merge: true });
       } catch (updateErr) {
         console.warn('User status update failed', updateErr);
       }

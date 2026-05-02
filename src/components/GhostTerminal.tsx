@@ -8,6 +8,8 @@ import { ShieldAlert, Users, Radio, Activity, MessageSquare, Eye } from 'lucide-
 import { motion, AnimatePresence } from 'framer-motion';
 import { handleFirestoreError, OperationType, ensureDate } from '../lib/utils';
 
+import ChatUserDisplay from './ChatUserDisplay';
+
 export default function GhostTerminal({ currentUser }: { currentUser: UserProfile }) {
   const [activeTab, setActiveTab] = useState<'COMMAND' | 'USERS' | 'COMM'>('COMMAND');
 
@@ -193,7 +195,7 @@ function ConnectionMessages({ connectionId }: { connectionId: string }) {
       {messages.map(m => (
         <div key={m.id} className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <span className="text-[8px] font-black text-red-500 uppercase">{m.senderName}</span>
+            <ChatUserDisplay uid={m.senderId} defaultName={m.senderName} />
             <span className="text-[8px] text-slate-700 font-mono">[{ensureDate(m.timestamp).toLocaleTimeString()}]</span>
           </div>
           <div className="text-[10px] text-slate-300 bg-white/5 p-2 border-l border-red-500/30 font-mono break-words">

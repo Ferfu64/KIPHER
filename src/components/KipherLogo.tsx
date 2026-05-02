@@ -62,7 +62,7 @@ export default function KipherLogo({ className = "", size = 120, showText = true
           animate={{ opacity: [0.2, 1, 0.2] }}
           transition={{ 
             duration: 2, 
-            repeat: 999999,
+            repeat: Infinity,
             ease: "easeInOut"
           }}
         />

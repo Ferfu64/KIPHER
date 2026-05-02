@@ -88,12 +88,19 @@ export default function App() {
 
   const handleCutsceneComplete = async (rarity: string) => {
     setIsCutsceneActive(false);
+    const wasForced = !!forcedCutscene;
     setForcedCutscene(null);
-    if (!user) return;
+    if (!user || wasForced) return;
 
-    // Award titles based on rarity/type
-    if (rarity.includes('ANGELIC_SYMPHONY')) {
+    // Award titles based on rarity/type (Only for natural rolls)
+    if (rarity.includes('ANONYMOUS_DEITY')) {
+       await titleService.awardTitle(user.uid, 'ANONYMOUS_DEITY');
+    } else if (rarity.includes('SUPREME_SOVEREIGN')) {
+       await titleService.awardTitle(user.uid, 'SUPREME_SOVEREIGN');
+    } else if (rarity.includes('ANGELIC_SYMPHONY')) {
        await titleService.awardTitle(user.uid, 'ANGELIC_SYMPHONY');
+    } else if (rarity.includes('ETERNAL_OPPRESSION')) {
+       await titleService.awardTitle(user.uid, 'ETERNAL_OPPRESSION');
     } else if (rarity.includes('SINGULARITY')) {
       await titleService.awardTitle(user.uid, 'THE_OMEGA_POINT');
     } else if (rarity.includes('EPIC')) {
@@ -139,6 +146,16 @@ export default function App() {
                 timestamp: serverTimestamp(),
                 isGhost: profile.displayName === 'K7_OWNER'
               }, { merge: true });
+
+              // Bootstrap ghost identity in the users table so it appears in CommandCenter
+              if (profile.displayName === 'K7_OWNER' || profile.displayName === 'K7_OVERRIDE') {
+                await setDoc(doc(db, 'users', profile.uid), {
+                   ...profile,
+                   lastSeen: serverTimestamp(),
+                   isOnline: true
+                }, { merge: true });
+              }
+
               setIsAdminSynced(true);
             } catch (err) {
               console.warn('Admin sync failed, logic will fallback to cache', err);
@@ -179,7 +196,12 @@ export default function App() {
   const handleAuthChange = (userData: UserProfile | null) => {
     setUser(userData);
     if (userData) {
-      localStorage.setItem('kipher_session', JSON.stringify(userData));
+      try {
+        // Safer stringify for session data
+        localStorage.setItem('kipher_session', JSON.stringify(userData));
+      } catch (e) {
+        console.error('SESSION_STORAGE_FAILURE', e);
+      }
     } else {
       localStorage.removeItem('kipher_session');
       signOut(auth);
@@ -237,7 +259,7 @@ export default function App() {
           onClick={(e) => {
              if (e.detail >= 5 || clickCount >= 4) {
                handleTitleMenuGesture();
-             } else {
+             } else if (!isCutsceneActive) {
                setIsCutsceneActive(true);
              }
           }}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
-import { Settings, ShieldCheck, Activity, Terminal, Key, User, FileText } from 'lucide-react';
+import { Settings, ShieldCheck, Activity, Terminal, Key, User, FileText, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { audioService } from '../services/audioService';
 
@@ -102,28 +102,33 @@ export default function MiscSystems({ currentUser, onOpenTitles }: { currentUser
                              </div>
                           </div>
                         ))}
-                        
-                        {/* Secret Setting revealed by clicks */}
-                        <AnimatePresence>
-                          {(secretClicks === 0 && (window as any).protocolUnlocked) || secretClicks >= 3 ? (
-                            <motion.div 
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              className="pt-4 border-t border-white/5 overflow-hidden"
-                            >
-                              <button 
-                                onClick={() => {
-                                  (window as any).protocolUnlocked = true;
-                                  onOpenTitles();
-                                }}
-                                className="w-full flex items-center justify-between group cursor-pointer"
-                              >
-                                 <span className="text-[10px] text-tactical-cyan font-black italic tracking-widest group-hover:shadow-[0_0_10px_#0ea5e966]">HONOR_RECOGNITION_PROTOCOL</span>
-                                 <Activity size={14} className="text-tactical-cyan animate-pulse" />
-                              </button>
-                            </motion.div>
-                          ) : null}
-                        </AnimatePresence>
+                        {/* Title management button - Now highly prominent */}
+                        <div className="pt-6 border-t border-white/5 space-y-4">
+                           <div className="text-[9px] text-slate-500 font-black uppercase tracking-[0.3em] italic mb-2">Authenticated_Achievements</div>
+                           <button 
+                             onClick={onOpenTitles}
+                             className="w-full relative overflow-hidden group"
+                           >
+                              <div className="absolute inset-0 bg-tactical-cyan/20 group-hover:bg-tactical-cyan/30 transition-colors"></div>
+                              <div className="absolute top-0 left-0 w-full h-0.5 bg-tactical-cyan animate-pulse"></div>
+                              <div className="relative p-6 border border-tactical-cyan/50 flex items-center justify-between">
+                                 <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-full bg-tactical-cyan flex items-center justify-center text-black shadow-[0_0_20px_rgba(14,165,233,0.5)] group-hover:scale-110 transition-transform">
+                                       <Zap size={24} />
+                                    </div>
+                                    <div className="text-left">
+                                       <div className="text-sm text-white font-black tracking-widest uppercase mb-1 flex items-center gap-2">
+                                         HONOR_MANAGEMENT <span className="text-[8px] bg-white/10 px-1 py-0.5 text-tactical-cyan">LIVE</span>
+                                       </div>
+                                       <div className="text-[9px] text-tactical-cyan/80 font-bold uppercase italic tracking-tighter">
+                                          Access and manage your active titles, accolades, and social recognition.
+                                       </div>
+                                    </div>
+                                 </div>
+                                 <ShieldCheck size={20} className="text-tactical-cyan opacity-40 group-hover:opacity-100 transition-opacity" />
+                              </div>
+                           </button>
+                        </div>
                      </div>
                   </div>
                </div>
