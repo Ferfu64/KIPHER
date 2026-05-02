@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../lib/firebase';
 import { collection, query, onSnapshot, where, orderBy, getDocs, addDoc, serverTimestamp, deleteDoc, doc, setDoc, arrayUnion } from 'firebase/firestore';
 import { UserProfile, VaultItem, VaultFile } from '../types';
@@ -239,34 +239,55 @@ function VaultCard({ item, user, onOpen, onDelete, compact }: { item: VaultItem,
 
 function VaultModal({ item, currentUser, onClose }: { item: VaultItem, currentUser: UserProfile, onClose: () => void }) {
   const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const simulateUpload = async () => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
     setUploading(true);
     if (audioService.getMuteStatus() === false) audioService.playBlip();
-    
-    setTimeout(async () => {
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
       try {
+        const base64 = event.target?.result as string;
         const id = Math.random().toString(36).substring(7);
         const newFile: VaultFile = {
            id,
-           name: `INTEL_${id.toUpperCase()}.DAT`,
-           url: '#',
-           type: ['ENCRYPTED', 'RAW_SIGNAL', 'BIOMETRIC', 'GEOLOC'][Math.floor(Math.random() * 4)],
-           size: Math.random() * 50000,
+           name: file.name,
+           url: base64,
+           type: file.type || 'UNKNOWN',
+           size: file.size,
            uploadedBy: currentUser.displayName,
            timestamp: new Date().toISOString()
         };
+        
         await setDoc(doc(db, 'vaults', item.id), {
           files: arrayUnion(newFile)
         }, { merge: true });
+        
         setUploading(false);
         if (audioService.getMuteStatus() === false) audioService.playSuccess();
+        if (fileInputRef.current) fileInputRef.current.value = '';
       } catch (e) {
         console.error(e);
         setUploading(false);
         if (audioService.getMuteStatus() === false) audioService.playError();
       }
-    }, 1500);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const downloadFile = (file: VaultFile) => {
+    if (file.url === '#') return alert('FILE_DATA_CORRUPT_OR_MISSING');
+    const link = document.createElement('a');
+    link.href = file.url;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    audioService.playSuccess();
   };
 
   const removeFile = async (fileId: string) => {
@@ -298,6 +319,12 @@ function VaultModal({ item, currentUser, onClose }: { item: VaultItem, currentUs
           <div className="flex-1 flex overflow-hidden">
              {/* Info Sidebar */}
              <div className="w-64 border-r border-slate-900 p-6 space-y-6 hidden md:block">
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
                 <div>
                    <h4 className="text-[10px] font-black text-slate-500 mb-2 uppercase">Integrity</h4>
                    <div className="h-1 bg-slate-900 w-full overflow-hidden">
@@ -317,7 +344,7 @@ function VaultModal({ item, currentUser, onClose }: { item: VaultItem, currentUs
                 
                 <button 
                   disabled={uploading}
-                  onClick={simulateUpload}
+                  onClick={() => fileInputRef.current?.click()}
                   className="w-full kipher-button border-tactical-cyan/30 text-tactical-cyan hover:bg-tactical-cyan hover:text-black font-black uppercase text-[10px] py-3 mt-8"
                 >
                   {uploading ? 'UPLOADING...' : 'PUSH_FILE'}
@@ -351,7 +378,10 @@ function VaultModal({ item, currentUser, onClose }: { item: VaultItem, currentUs
                            <div className="px-2 py-1 bg-slate-950 border border-slate-800 text-[8px] font-black text-tactical-cyan self-center">
                              {file.type}
                            </div>
-                           <button className="p-2 border border-slate-800 hover:border-tactical-cyan text-slate-600 hover:text-tactical-cyan transition-all">
+                           <button 
+                             onClick={() => downloadFile(file)}
+                             className="p-2 border border-slate-800 hover:border-tactical-cyan text-slate-600 hover:text-tactical-cyan transition-all"
+                           >
                               <Download size={14} />
                            </button>
                            {item.ownerId === currentUser.uid && (

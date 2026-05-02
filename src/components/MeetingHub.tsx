@@ -14,6 +14,52 @@ export default function MeetingHub({ currentUser }: { currentUser: UserProfile }
   const [newMessage, setNewMessage] = useState('');
   const [spamWarning, setSpamWarning] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(true);
+  const [isFilterActive, setIsFilterActive] = useState(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const filterNodeRef = useRef<BiquadFilterNode | null>(null);
+  const streamSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+
+  useEffect(() => {
+    if (!isMuted && isFilterActive) {
+      initAudioFilter();
+    } else {
+      stopAudioFilter();
+    }
+    return () => stopAudioFilter();
+  }, [isMuted, isFilterActive]);
+
+  const initAudioFilter = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioContextRef.current = new AudioContext();
+      streamSourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
+      
+      // High-pass filter to remove low end rumble
+      const hpf = audioContextRef.current.createBiquadFilter();
+      hpf.type = 'highpass';
+      hpf.frequency.value = 150;
+      
+      // Low-pass filter to remove high end hiss
+      const lpf = audioContextRef.current.createBiquadFilter();
+      lpf.type = 'lowpass';
+      lpf.frequency.value = 3500;
+
+      streamSourceRef.current.connect(hpf);
+      hpf.connect(lpf);
+      lpf.connect(audioContextRef.current.destination);
+      
+      filterNodeRef.current = lpf;
+    } catch (e) {
+      console.warn('AUDIO_FILTER_INIT_FAILED', e);
+    }
+  };
+
+  const stopAudioFilter = () => {
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+  };
   const [activeMembers, setActiveMembers] = useState<string[]>([currentUser.displayName]);
   const [nodes, setNodes] = useState<SafehouseType[]>([]);
   const [vaults, setVaults] = useState<VaultItem[]>([]);
@@ -240,6 +286,14 @@ export default function MeetingHub({ currentUser }: { currentUser: UserProfile }
                className={`w-10 h-10 border flex items-center justify-center transition-all ${isMuted ? 'border-slate-800 text-slate-600' : 'border-tactical-cyan text-tactical-cyan bg-tactical-cyan/5 animate-pulse'}`}
              >
                {isMuted ? <MicOff size={16} /> : <Mic size={16} />}
+             </button>
+             <button 
+               onClick={() => setIsFilterActive(!isFilterActive)}
+               disabled={isMuted}
+               className={`px-3 h-10 border text-[9px] font-black tracking-widest uppercase transition-all ${isFilterActive ? 'border-green-500 text-green-500 bg-green-500/10' : 'border-slate-800 text-slate-600'}`}
+               title={isFilterActive ? 'Noise Reduction Active' : 'Enable Noise Filter'}
+             >
+               {isFilterActive ? 'FILTER_ON' : 'FILTER_OFF'}
              </button>
              <div className="h-6 w-px bg-slate-800"></div>
              <div className="flex -space-x-2">

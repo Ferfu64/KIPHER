@@ -1,7 +1,18 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { audioService } from '../services/audioService';
-import { ShieldAlert, Zap, Globe, Infinity as InfinityIcon, Scan, Cpu, Eye, Activity, HardDrive, Smartphone, Search, Share2, Repeat, Layers, Box, Camera, Database, Hash, Play, Wind, Sun, Satellite, Radar, Key, CircuitBoard, Atom, Clock, Rocket, Mountain, ArrowRight, AlertTriangle, User, Music, Music2 } from 'lucide-react';
+import { ShieldAlert, Zap, Globe, Infinity as InfinityIcon, Scan, Cpu, Eye, Activity, HardDrive, Smartphone, Search, Share2, Repeat, Layers, Box, Camera, Database, Hash, Play, Wind, Sun, Satellite, Radar, Key, CircuitBoard, Atom, Clock, Rocket, Mountain, ArrowRight, AlertTriangle, User, Music, Music2, ExternalLink, Ghost, RotateCw, Unlink, Network, Terminal, Lock, Unlock, FileCode, Dice5, CloudRain, Radio, Signal } from 'lucide-react';
+
+// --- VIDEO SOURCES CONFIGURATION ---
+// REPLACE THESE WITH CLOUDINARY OR FIREBASE STORAGE URLS TO BYPASS SCHOOL BLOCKS & NETLIFY LIMITS
+// Example: "https://res.cloudinary.com/yourname/video/upload/v12345/angelic_symphony.mp4"
+const VIDEO_SOURCES = {
+  ANONYMOUS_DEITY: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_6_gideou.mp4",
+  ANGELIC_SYMPHONY: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_2_hkdudn.mp4",
+  ETERNAL_OPPRESSION: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_5_online-video-cutter.com_vjopio.mp4",
+  SUPREME_SOVEREIGN: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_5_online-video-cutter.com_1_wrfhem.mp4"
+};
+// -----------------------------------
 
 interface CutsceneProps {
   onComplete: (rarity: string) => void;
@@ -14,6 +25,15 @@ type CutsceneType =
   | 'VOID_EYE' | 'SILICON_CITY' | 'FRACTAL_GROWTH' | 'DRONE_SURVEILLANCE' | 'CODE_VORTEX' | 'GLITCH_FACE' | 'BIO_HAZARD' | 'NEON_GHOST' | 'ORBITAL_STRIKE' | 'SYNTH_WAVE' | 'CHRONO_TRIGGER' | 'CELESTIAL_SYNC'
   | 'OMEGA' | 'QUANTUM_BIT' | 'CORE_PULSE' | 'TIME_FLUX' | 'STARS_ZOOM' | 'VOLCANIC_DEBUG' | 'SINGULARITY' | 'PRISM_SHIFT' | 'GALAXY_COLLISION' | 'SOLAR_FLARE' | 'VOID_TRESPASS'
   | 'ANGELIC_SYMPHONY' | 'ETERNAL_OPPRESSION' | 'SUPREME_SOVEREIGN' | 'ANONYMOUS_DEITY'
+  | 'COBALT_REIGN' | 'EMERALD_MIST' | 'SCARLET_STORM' | 'VIOLET_VORTEX' | 'AMBER_AWAKENING' | 'MAGENTA_MATRIX'
+  | 'CYAN_CORE' | 'SILVER_SHADOW' | 'GOLDEN_GATEWAY' | 'BRONZE_BEAM' | 'OBSIDIAN_OVERLAY' | 'TITANIUM_TRACE'
+  | 'PLATINUM_PULSE' | 'STEEL_SURGE' | 'IRON_INITIATIVE' | 'COPPER_CIRCUIT' | 'QUARTZ_QUAKE' | 'RUBY_RESONANCE' | 'SAPPHIRE_SCAN' | 'TOPAZ_TRANSMISSION'
+  | 'JADE_JUNCTION' | 'PEARL_PROTOCOL' | 'OPAL_OSCILLATION' | 'GARNET_GRID' | 'ONYX_OUTBREAK' | 'ZIRCON_ZERO' | 'PYRITE_PATTERN' | 'CORAL_COMMAND' | 'METEOR_MIND' | 'COMET_CRASH'
+  | 'NEBULA_NOVA' | 'SUPERNOVA_SOUL' | 'QUASAR_QUAKE' | 'BEYOND_BOUNDARY' | 'INFINITY_INIT' | 'ETERNITY_EDGE' | 'COSMOS_CORE'
+  | 'GLITCH_GHOST' | 'MALWARE_MIST' | 'VIRUS_VORTEX' | 'TROJAN_TRACE' | 'ROOTKIT_REIGN' | 'EXPLOIT_EYE' | 'ZERO_DAY_ZONE'
+  | 'PIXEL_PULSE' | 'VOXEL_VOID' | 'MESH_MATRIX' | 'VERTEX_VECTOR' | 'SHADER_SHADOW' | 'RENDER_REIGN' | 'TEXTURE_TRACE' | 'LIGHT_LINK'
+  | 'SIGNAL_SOFT' | 'WAVE_WARP' | 'PULSE_PART' | 'BIT_BEAT' | 'BYTE_BURST' | 'CHIP_CIRCUIT' | 'WIRE_WAVE' | 'FLOW_FIELD'
+  | 'PULSE_PRIME' | 'VOID_VELOCITY' | 'NEURAL_NEXUS' | 'CYBER_CRUCIBLE' | 'SILICON_STORM' | 'DATA_DREDGE' | 'BINARY_BLAST' | 'VECTOR_VORTEX' | 'FLUX_FIELD' | 'LOGIC_LEAK' | 'CORE_CRASH' | 'SHELL_SHOCK' | 'BIT_BOUNCE' | 'LINK_LOSS' | 'NET_NODE'
   | 'CHAMELEON_SHIFT' | 'GRAVITY_WELL' | 'NEBULA_DRIFT' | 'COSMIC_RAYS' | 'PHOTON_BURST' 
   | 'DARK_ENERGY' | 'STRING_VIBRATION' | 'WORMHOLE_ENTRY' | 'BLACK_HOLE_SINGULARITY' | 'PULSE_MODULATION' 
   | 'HEARTBEAT_MONITOR' | 'RADAR_PING' | 'SONAR_SWEEP' | 'THERMAL_VISION' | 'NIGHT_MODE'
@@ -71,7 +91,10 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
           const epicPool: CutsceneType[] = [
             'OMEGA', 'QUANTUM_BIT', 'CORE_PULSE', 'TIME_FLUX', 'STARS_ZOOM', 
             'VOLCANIC_DEBUG', 'PRISM_SHIFT', 'GALAXY_COLLISION', 'SOLAR_FLARE', 'VOID_TRESPASS',
-            'BLACK_HOLE_SINGULARITY', 'WORMHOLE_ENTRY', 'DARK_ENERGY', 'SUPERNOVA_REMNANT', 'EVENT_HORIZON', 'WHITE_HOLE_EMISSION'
+            'BLACK_HOLE_SINGULARITY', 'WORMHOLE_ENTRY', 'DARK_ENERGY', 'SUPERNOVA_REMNANT', 'EVENT_HORIZON', 'WHITE_HOLE_EMISSION',
+            'JADE_JUNCTION', 'PEARL_PROTOCOL', 'OPAL_OSCILLATION', 'GARNET_GRID', 'ONYX_OUTBREAK', 'ZIRCON_ZERO', 'PYRITE_PATTERN', 'CORAL_COMMAND', 'METEOR_MIND', 'COMET_CRASH',
+            'NEBULA_NOVA', 'SUPERNOVA_SOUL', 'QUASAR_QUAKE', 'BEYOND_BOUNDARY', 'INFINITY_INIT', 'ETERNITY_EDGE', 'COSMOS_CORE',
+            'PULSE_PRIME', 'VOID_VELOCITY', 'NEURAL_NEXUS'
           ];
           selected = epicPool[Math.floor(Math.random() * epicPool.length)];
           text = `1 IN 500 (EPIC_${selected}_PROTOCOL)`;
@@ -79,7 +102,10 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
           const rarePool: CutsceneType[] = [
             'VOID_EYE', 'SILICON_CITY', 'FRACTAL_GROWTH', 'DRONE_SURVEILLANCE', 
             'CODE_VORTEX', 'GLITCH_FACE', 'BIO_HAZARD', 'NEON_GHOST', 'ORBITAL_STRIKE', 'SYNTH_WAVE', 'CHRONO_TRIGGER', 'CELESTIAL_SYNC',
-            'GRAVITY_WELL', 'NEBULA_DRIFT', 'COSMIC_RAYS', 'PHOTON_BURST', 'STRING_VIBRATION', 'QUANTUM_LEAP', 'DIMENSIONAL_SHIFT', 'DARK_MATTER_HUNT', 'ZENITH_POINT', 'NADIR_COLLAPSE'
+            'GRAVITY_WELL', 'NEBULA_DRIFT', 'COSMIC_RAYS', 'PHOTON_BURST', 'STRING_VIBRATION', 'QUANTUM_LEAP', 'DIMENSIONAL_SHIFT', 'DARK_MATTER_HUNT', 'ZENITH_POINT', 'NADIR_COLLAPSE',
+            'PLATINUM_PULSE', 'STEEL_SURGE', 'IRON_INITIATIVE', 'COPPER_CIRCUIT', 'QUARTZ_QUAKE', 'RUBY_RESONANCE', 'SAPPHIRE_SCAN', 'TOPAZ_TRANSMISSION',
+            'GLITCH_GHOST', 'MALWARE_MIST', 'VIRUS_VORTEX', 'TROJAN_TRACE', 'ROOTKIT_REIGN', 'EXPLOIT_EYE', 'ZERO_DAY_ZONE',
+            'CYBER_CRUCIBLE', 'SILICON_STORM', 'DATA_DREDGE', 'BINARY_BLAST'
           ];
           selected = rarePool[Math.floor(Math.random() * rarePool.length)];
           text = `1 IN 100 (RARE_${selected}_EVENT)`;
@@ -88,7 +114,10 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
             'VISAGE', 'LIFEFORM', 'SATELLITE_LINK', 'RADAR_SWEEP', 'ENCRYPTION_KEY', 
             'HYPER_LOOP', 'NEURAL_SYNC', 'DATA_ERASURE', 'FIREWALL_BREACH', 'GRID_LOCK', 'VECTOR_FIELD',
             'STATIC_RAIN', 'PULSE_WIDTH', 'MIRROR_EDGE', 'PULSE_MODULATION', 'HEARTBEAT_MONITOR', 'RADAR_PING', 'SONAR_SWEEP', 'THERMAL_VISION', 'NIGHT_MODE',
-            'NEURAL_REWIRE', 'DEEP_CORE_SCAN', 'ATMOSPHERIC_ENTRY', 'ORBITAL_DESCENT', 'PLASMA_STORM', 'GHOST_PROTOCOL', 'CELESTIAL_SYNC'
+            'NEURAL_REWIRE', 'DEEP_CORE_SCAN', 'ATMOSPHERIC_ENTRY', 'ORBITAL_DESCENT', 'PLASMA_STORM', 'GHOST_PROTOCOL', 'CELESTIAL_SYNC',
+            'CYAN_CORE', 'SILVER_SHADOW', 'GOLDEN_GATEWAY', 'BRONZE_BEAM', 'OBSIDIAN_OVERLAY', 'TITANIUM_TRACE',
+            'PIXEL_PULSE', 'VOXEL_VOID', 'MESH_MATRIX', 'VERTEX_VECTOR', 'SHADER_SHADOW', 'RENDER_REIGN', 'TEXTURE_TRACE', 'LIGHT_LINK',
+            'VECTOR_VORTEX', 'FLUX_FIELD', 'LOGIC_LEAK', 'CORE_CRASH'
           ];
           selected = uncommonPool[Math.floor(Math.random() * uncommonPool.length)];
           text = `1 IN 20 (UNCOMMON_${selected}_LINK)`;
@@ -96,7 +125,10 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
           const commonPool: CutsceneType[] = [
             'FLUSH', 'SPIKE', 'BREACH', 'GHOST', 'DATA_FALL', 'BINARY_WAVE', 
             'SYSTEM_SCAN', 'NOISE', 'PIXEL_DRIFT', 'GLITCH_STORM', 'TICKER_TAPE', 'HEX_DUMP', 'CHAMELEON_SHIFT',
-            'NEON_GRID', 'CIRCUIT_FLOW', 'DNA_SEQUENCE', 'PULSAR', 'NEURAL_MAP', 'FROST_STATIC', 'DEEP_SEA_LINK', 'STICK_FIGHT', 'CYBER_PULSE', 'SIGNAL_INTERFERENCE', 'BINARY_FISSION'
+            'NEON_GRID', 'CIRCUIT_FLOW', 'DNA_SEQUENCE', 'PULSAR', 'NEURAL_MAP', 'FROST_STATIC', 'DEEP_SEA_LINK', 'STICK_FIGHT', 'CYBER_PULSE', 'SIGNAL_INTERFERENCE', 'BINARY_FISSION',
+            'COBALT_REIGN', 'EMERALD_MIST', 'SCARLET_STORM', 'VIOLET_VORTEX', 'AMBER_AWAKENING', 'MAGENTA_MATRIX',
+            'SIGNAL_SOFT', 'WAVE_WARP', 'PULSE_PART', 'BIT_BEAT', 'BYTE_BURST', 'CHIP_CIRCUIT', 'WIRE_WAVE', 'FLOW_FIELD',
+            'SHELL_SHOCK', 'BIT_BOUNCE', 'LINK_LOSS', 'NET_NODE'
           ];
           selected = commonPool[Math.floor(Math.random() * commonPool.length)];
           text = `1 IN 5 (COMMON_${selected}_MAINTENANCE)`;
@@ -232,7 +264,106 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
              {type === 'DIMENSIONAL_SHIFT' && <DimensionalShiftEffect />}
              {type === 'EVENT_HORIZON' && <EventHorizonEffect />}
              {type === 'WHITE_HOLE_EMISSION' && <WhiteHoleEmissionEffect />}
-             {type === 'ANONYMOUS_DEITY' && <VideoCutscene src="/assets/videos/Anonymous_Deity.mp4" label="ANONYMOUS_DEITY" onEnded={() => setStatus('DISPLAY_RARITY')} />}
+             
+             {/* New Tactical Series */}
+             {type === 'COBALT_REIGN' && <TacticalColorEffect color="#1d4ed8" label="COBALT" icon={<ShieldAlert />} />}
+             {type === 'EMERALD_MIST' && <TacticalColorEffect color="#059669" label="EMERALD" icon={<Wind />} />}
+             {type === 'SCARLET_STORM' && <TacticalColorEffect color="#dc2626" label="SCARLET" icon={<Zap />} />}
+             {type === 'VIOLET_VORTEX' && <TacticalColorEffect color="#7c3aed" label="VIOLET" icon={<InfinityIcon />} />}
+             {type === 'AMBER_AWAKENING' && <TacticalColorEffect color="#d97706" label="AMBER" icon={<Sun />} />}
+             {type === 'MAGENTA_MATRIX' && <TacticalColorEffect color="#c026d3" label="MAGENTA" icon={<Layers />} grid />}
+             
+             {type === 'CYAN_CORE' && <TacticalColorEffect color="#0891b2" label="CYAN" icon={<Cpu />} />}
+             {type === 'SILVER_SHADOW' && <TacticalColorEffect color="#94a3b8" label="SILVER" icon={<Ghost />} />}
+             {type === 'GOLDEN_GATEWAY' && <TacticalColorEffect color="#eab308" label="GOLDEN" icon={<Key />} />}
+             {type === 'BRONZE_BEAM' && <TacticalColorEffect color="#92400e" label="BRONZE" icon={<Zap />} />}
+             {type === 'OBSIDIAN_OVERLAY' && <TacticalColorEffect color="#020617" label="OBSIDIAN" icon={<Eye />} />}
+             {type === 'TITANIUM_TRACE' && <TacticalColorEffect color="#64748b" label="TITANIUM" icon={<Scan />} />}
+             
+             {type === 'PLATINUM_PULSE' && <TacticalColorEffect color="#cbd5e1" label="PLATINUM" icon={<Activity />} pulse />}
+             {type === 'STEEL_SURGE' && <TacticalColorEffect color="#475569" label="STEEL" icon={<Zap />} surge />}
+             {type === 'IRON_INITIATIVE' && <TacticalColorEffect color="#334155" label="IRON" icon={<ShieldAlert />} />}
+             {type === 'COPPER_CIRCUIT' && <TacticalColorEffect color="#9a3412" label="COPPER" icon={<CircuitBoard />} />}
+             {type === 'QUARTZ_QUAKE' && <TacticalColorEffect color="#e2e8f0" label="QUARTZ" icon={<Activity />} quake />}
+             {type === 'RUBY_RESONANCE' && <TacticalColorEffect color="#991b1b" label="RUBY" icon={<Music />} pulse />}
+             {type === 'SAPPHIRE_SCAN' && <TacticalColorEffect color="#1e3a8a" label="SAPPHIRE" icon={<Search />} scan />}
+             {type === 'TOPAZ_TRANSMISSION' && <TacticalColorEffect color="#a16207" label="TOPAZ" icon={<Satellite />} />}
+             
+             {type === 'JADE_JUNCTION' && <TacticalColorEffect color="#065f46" label="JADE" icon={<Layers />} junction />}
+             {type === 'PEARL_PROTOCOL' && <TacticalColorEffect color="#f1f5f9" label="PEARL" icon={<ShieldAlert />} pulse />}
+             {type === 'OPAL_OSCILLATION' && <TacticalColorEffect color="#9333ea" label="OPAL" icon={<Repeat />} rotate />}
+             {type === 'GARNET_GRID' && <TacticalColorEffect color="#7f1d1d" label="GARNET" icon={<Hash />} grid />}
+             {type === 'ONYX_OUTBREAK' && <TacticalColorEffect color="#0a0a0a" label="ONYX" icon={<AlertTriangle />} pulse />}
+             {type === 'ZIRCON_ZERO' && <TacticalColorEffect color="#0d9488" label="ZIRCON" icon={<Box />} />}
+             {type === 'PYRITE_PATTERN' && <TacticalColorEffect color="#ca8a04" label="PYRITE" icon={<Cpu />} grid />}
+             {type === 'CORAL_COMMAND' && <TacticalColorEffect color="#f43f5e" label="CORAL" icon={<Smartphone />} />}
+             {type === 'METEOR_MIND' && <TacticalColorEffect color="#4b5563" label="METEOR" icon={<Rocket />} surge />}
+             {type === 'COMET_CRASH' && <TacticalColorEffect color="#1e293b" label="COMET" icon={<Mountain />} quake />}
+
+             {/* 30 Additional Cutscenes */}
+             {/* Epic Series */}
+             {type === 'NEBULA_NOVA' && <TacticalColorEffect color="#7e22ce" label="NEBULA" icon={<Globe />} pulse surge />}
+             {type === 'SUPERNOVA_SOUL' && <TacticalColorEffect color="#fde047" label="SUPERNOVA" icon={<Sun />} surge quake />}
+             {type === 'QUASAR_QUAKE' && <TacticalColorEffect color="#3b82f6" label="QUASAR" icon={<Activity />} quake scan />}
+             {type === 'BEYOND_BOUNDARY' && <TacticalColorEffect color="#ffffff" label="BEYOND" icon={<InfinityIcon />} rotate pulse />}
+             {type === 'INFINITY_INIT' && <TacticalColorEffect color="#4f46e5" label="INFINITY" icon={<Repeat />} junction rotate />}
+             {type === 'ETERNITY_EDGE' && <TacticalColorEffect color="#1e1b4b" label="ETERNITY" icon={<Layers />} grid rotate />}
+             {type === 'COSMOS_CORE' && <TacticalColorEffect color="#0ea5e9" label="COSMOS" icon={<Atom />} pulse junction />}
+
+             {/* Rare Series */}
+             {type === 'GLITCH_GHOST' && <TacticalColorEffect color="#9f1239" label="GLITCH" icon={<Ghost />} grid quake />}
+             {type === 'MALWARE_MIST' && <TacticalColorEffect color="#166534" label="MALWARE" icon={<Wind />} scan pulse />}
+             {type === 'VIRUS_VORTEX' && <TacticalColorEffect color="#991b1b" label="VIRUS" icon={<RotateCw />} rotate surge />}
+             {type === 'TROJAN_TRACE' && <TacticalColorEffect color="#15803d" label="TROJAN" icon={<Search />} scan grid />}
+             {type === 'ROOTKIT_REIGN' && <TacticalColorEffect color="#111827" label="ROOTKIT" icon={<ShieldAlert />} pulse grid />}
+             {type === 'EXPLOIT_EYE' && <TacticalColorEffect color="#b91c1c" label="EXPLOIT" icon={<Eye />} scan rotate />}
+             {type === 'ZERO_DAY_ZONE' && <TacticalColorEffect color="#334155" label="ZERO_DAY" icon={<AlertTriangle />} quake junction />}
+
+             {/* Uncommon Series */}
+             {type === 'PIXEL_PULSE' && <TacticalColorEffect color="#06b6d4" label="PIXEL" icon={<Box />} grid pulse />}
+             {type === 'VOXEL_VOID' && <TacticalColorEffect color="#1e293b" label="VOXEL" icon={<Layers />} surge scan />}
+             {type === 'MESH_MATRIX' && <TacticalColorEffect color="#10b981" label="MESH" icon={<Hash />} grid junction />}
+             {type === 'VERTEX_VECTOR' && <TacticalColorEffect color="#6366f1" label="VERTEX" icon={<ArrowRight />} rotate junction />}
+             {type === 'SHADER_SHADOW' && <TacticalColorEffect color="#0f172a" label="SHADER" icon={<Scan />} pulse scan />}
+             {type === 'RENDER_REIGN' && <TacticalColorEffect color="#f59e0b" label="RENDER" icon={<Camera />} scan rotate />}
+             {type === 'TEXTURE_TRACE' && <TacticalColorEffect color="#84cc16" label="TEXTURE" icon={<Database />} surge grid />}
+             {type === 'LIGHT_LINK' && <TacticalColorEffect color="#fef08a" label="LIGHT" icon={<Zap />} pulse rotate />}
+
+             {/* Common Series */}
+             {type === 'SIGNAL_SOFT' && <TacticalColorEffect color="#94a3b8" label="SIGNAL" icon={<Radar />} scan />}
+             {type === 'WAVE_WARP' && <TacticalColorEffect color="#3b82f6" label="WAVE" icon={<Wind />} surge />}
+             {type === 'PULSE_PART' && <TacticalColorEffect color="#dc2626" label="PULSE" icon={<Activity />} pulse />}
+             {type === 'BIT_BEAT' && <TacticalColorEffect color="#10b981" label="BIT" icon={<Cpu />} grid />}
+             {type === 'BYTE_BURST' && <TacticalColorEffect color="#f97316" label="BYTE" icon={<Zap />} surge />}
+             {type === 'CHIP_CIRCUIT' && <TacticalColorEffect color="#0ea5e9" label="CHIP" icon={<CircuitBoard />} junction />}
+             {type === 'WIRE_WAVE' && <TacticalColorEffect color="#6366f1" label="WIRE" icon={<Repeat />} rotate />}
+             {type === 'FLOW_FIELD' && <TacticalColorEffect color="#ec4899" label="FLOW" icon={<Layers />} scan />}
+
+             {/* 15 New Cutscenes */}
+             {/* Epic Series */}
+             {type === 'PULSE_PRIME' && <TacticalColorEffect color="#fbbf24" label="PRIME" icon={<Zap />} pulse surge scan />}
+             {type === 'VOID_VELOCITY' && <TacticalColorEffect color="#ffffff" label="VOID" icon={<Rocket />} surge rotate grid />}
+             {type === 'NEURAL_NEXUS' && <TacticalColorEffect color="#a855f7" label="NEXUS" icon={<Network />} junction rotate pulse />}
+
+             {/* Rare Series */}
+             {type === 'CYBER_CRUCIBLE' && <TacticalColorEffect color="#f97316" label="CRUCIBLE" icon={<ShieldAlert />} surge grid />}
+             {type === 'SILICON_STORM' && <TacticalColorEffect color="#94a3b8" label="STORM" icon={<CloudRain />} scan rotate />}
+             {type === 'DATA_DREDGE' && <TacticalColorEffect color="#166534" label="DREDGE" icon={<Search />} scan junction />}
+             {type === 'BINARY_BLAST' && <TacticalColorEffect color="#22c55e" label="BLAST" icon={<Cpu />} grid surge />}
+
+             {/* Uncommon Series */}
+             {type === 'VECTOR_VORTEX' && <TacticalColorEffect color="#14b8a6" label="VORTEX" icon={<Repeat />} rotate />}
+             {type === 'FLUX_FIELD' && <TacticalColorEffect color="#d946ef" label="FLUX" icon={<Layers />} pulse junction />}
+             {type === 'LOGIC_LEAK' && <TacticalColorEffect color="#facc15" label="LOGIC" icon={<Terminal />} scan quake />}
+             {type === 'CORE_CRASH' && <TacticalColorEffect color="#ef4444" label="CORE" icon={<AlertTriangle />} quake pulse />}
+
+             {/* Common Series */}
+             {type === 'SHELL_SHOCK' && <TacticalColorEffect color="#3b82f6" label="SHELL" icon={<Box />} scan />}
+             {type === 'BIT_BOUNCE' && <TacticalColorEffect color="#84cc16" label="BIT" icon={<Dice5 />} pulse />}
+             {type === 'LINK_LOSS' && <TacticalColorEffect color="#64748b" label="LINK" icon={<Unlink />} scan />}
+             {type === 'NET_NODE' && <TacticalColorEffect color="#06b6d4" label="NODE" icon={<Signal />} junction />}
+
+             {type === 'ANONYMOUS_DEITY' && <VideoCutscene src={VIDEO_SOURCES.ANONYMOUS_DEITY} label="ANONYMOUS_DEITY" onEnded={() => setStatus('DISPLAY_RARITY')} />}
              {type === 'CHAMELEON_SHIFT' && <ChameleonShiftEffect />}
              {type === 'GRAVITY_WELL' && <GravityWellEffect />}
              {type === 'NEBULA_DRIFT' && <NebulaDriftEffect />}
@@ -248,9 +379,9 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
              {type === 'SONAR_SWEEP' && <SonarSweepEffect />}
              {type === 'THERMAL_VISION' && <ThermalVisionEffect />}
              {type === 'NIGHT_MODE' && <NightModeEffect />}
-             {type === 'ANGELIC_SYMPHONY' && <VideoCutscene src="/assets/videos/angelic_symphony.mp4" label="ANGELIC_SYMPHONY" onEnded={() => setStatus('DISPLAY_RARITY')} />}
-             {type === 'ETERNAL_OPPRESSION' && <VideoCutscene src="/assets/videos/eternal_oppression.mp4" label="ETERNAL_OPPRESSION" onEnded={() => setStatus('DISPLAY_RARITY')} />}
-             {type === 'SUPREME_SOVEREIGN' && <VideoCutscene src="/assets/videos/supereme_soverign.mp4" label="SUPREME_SOVEREIGN" onEnded={() => setStatus('DISPLAY_RARITY')} />}
+             {type === 'ANGELIC_SYMPHONY' && <VideoCutscene src={VIDEO_SOURCES.ANGELIC_SYMPHONY} label="ANGELIC_SYMPHONY" onEnded={() => setStatus('DISPLAY_RARITY')} />}
+             {type === 'ETERNAL_OPPRESSION' && <VideoCutscene src={VIDEO_SOURCES.ETERNAL_OPPRESSION} label="ETERNAL_OPPRESSION" onEnded={() => setStatus('DISPLAY_RARITY')} />}
+             {type === 'SUPREME_SOVEREIGN' && <VideoCutscene src={VIDEO_SOURCES.SUPREME_SOVEREIGN} label="SUPREME_SOVEREIGN" onEnded={() => setStatus('DISPLAY_RARITY')} />}
            </AnimatePresence>
           </motion.div>
 
@@ -545,27 +676,54 @@ function VideoCutscene({ src, label, onEnded }: { src: string, label?: string, o
   const videoRef = useRef<HTMLVideoElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [showBypass, setShowBypass] = useState(false);
 
   useEffect(() => {
-    // Safety timeout: If video doesn't start playing within 10 seconds, skip it
-    const timer = setTimeout(() => {
+    // Show manual bypass after 3 seconds if still loading
+    const bypassTimer = setTimeout(() => {
+      if (loading) setShowBypass(true);
+    }, 3000);
+
+    // Skip entirely after 25 seconds as a final fail-safe
+    const safetyTimer = setTimeout(() => {
       if (loading && onEnded) {
-        console.warn(`Video ${label} timed out loading from CDN`);
+        console.warn(`Video ${label} timed out`);
         onEnded();
       }
-    }, 10000);
+    }, 25000);
 
     if (videoRef.current) {
-      videoRef.current.load(); // Force fresh load
-      videoRef.current.play().catch(err => {
-        console.warn("Autoplay interaction required or blocked:", err);
-        // We catch here, but we'll wait for the user to potentially interact if needed
-        // or just let the safety timeout handle it
+      videoRef.current.load();
+      videoRef.current.play().then(() => {
+        setLoading(false);
+        setShowBypass(false);
+      }).catch(err => {
+        console.warn("Autoplay interaction blocked:", err);
+        setShowBypass(true);
       });
     }
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(bypassTimer);
+      clearTimeout(safetyTimer);
+    };
   }, [src, loading, label, onEnded]);
+
+  const handleManualPlay = () => {
+    // Attempt to resume audio context or play audio service music
+    audioService.ensureMinVolume(0.3);
+    audioService.playCelestialSymphony();
+    
+    if (videoRef.current) {
+      videoRef.current.play().then(() => {
+        setLoading(false);
+        setShowBypass(false);
+      }).catch(err => {
+        console.error("Manual play failed:", err);
+        if (onEnded) onEnded();
+      });
+    }
+  };
 
   const handleCanPlay = () => {
     setLoading(false);
@@ -579,41 +737,222 @@ function VideoCutscene({ src, label, onEnded }: { src: string, label?: string, o
 
   return (
     <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden font-sans">
-      {loading && !error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-black">
+      {/* Cinematic Overlays */}
+      <div className="absolute inset-0 pointer-events-none z-10 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.8)_100%)] opacity-60" />
+      <div className="absolute inset-0 pointer-events-none z-10 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] opacity-20" />
+      
+      {(loading || showBypass) && !error && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-50 bg-black/95 backdrop-blur-md">
           <motion.div 
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="w-12 h-12 border-4 border-t-lime-500 border-r-transparent border-b-transparent border-l-transparent rounded-full mb-4"
+            animate={{ 
+                rotate: 360,
+                boxShadow: ["0 0 20px rgba(0,255,255,0.2)", "0 0 50px rgba(0,255,255,0.4)", "0 0 20px rgba(0,255,255,0.2)"] 
+            }}
+            transition={{ rotate: { duration: 2, repeat: Infinity, ease: "linear" }, boxShadow: { duration: 2, repeat: Infinity } }}
+            className="w-16 h-16 border-t-2 border-tactical-cyan rounded-full mb-8"
           />
-          <div className="text-lime-500/50 text-[10px] font-mono tracking-[0.3em] animate-pulse uppercase">
-            ESTABLISHING_LINK... {label}
+          
+          <div className="flex flex-col items-center gap-2">
+            <div className="text-tactical-cyan text-[10px] font-mono tracking-[0.6em] animate-pulse uppercase">
+                ESTABLISHING_NEURAL_LINK
+            </div>
           </div>
+          
+          {showBypass && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-12 flex flex-col items-center gap-6"
+            >
+              <button 
+                onClick={handleManualPlay}
+                className="group relative px-10 py-5 bg-tactical-cyan/10 border border-tactical-cyan/30 rounded-full hover:bg-tactical-cyan/20 transition-all duration-500 overflow-hidden"
+              >
+                <div className="absolute inset-0 translate-y-full group-hover:translate-y-0 bg-tactical-cyan transition-transform duration-500 opacity-20" />
+                <div className="flex items-center gap-4 relative z-10">
+                   <div className="w-10 h-10 flex items-center justify-center rounded-full bg-tactical-cyan text-black">
+                      <Play size={20} fill="currentColor" />
+                   </div>
+                   <div className="text-left">
+                     <div className="text-white text-xs font-black tracking-widest uppercase">INITIALIZE_CARRIAGE</div>
+                     <div className="text-tactical-cyan/60 text-[9px] font-mono uppercase tracking-tighter">Bypass_Browser_Audio_Lock</div>
+                   </div>
+                </div>
+              </button>
+              
+              <button 
+                onClick={onEnded}
+                className="text-[10px] text-white/20 hover:text-white/80 transition-colors uppercase tracking-[0.4em] font-mono border-b border-white/5 pb-1"
+              >
+                SKIP_ENCRYPTED_STREAM
+              </button>
+            </motion.div>
+          )}
         </div>
       )}
       
       <video 
-        ref={videoRef}
-        playsInline
-        className={`min-w-full min-h-full object-cover transition-opacity duration-1000 ${loading ? 'opacity-0' : 'opacity-100'}`}
-        onEnded={onEnded}
-        onError={handleVideoError}
-        onCanPlay={handleCanPlay}
+          ref={videoRef}
+          playsInline
+          className={`min-w-full min-h-full object-cover transition-all duration-3000 ease-in-out ${loading ? 'opacity-0 scale-110 blur-xl' : 'opacity-100 scale-100 blur-none'}`}
+          onEnded={onEnded}
+          onError={handleVideoError}
+          onCanPlay={handleCanPlay}
       >
-        <source src={src} type="video/mp4" />
-        Your browser does not support the video tag.
+          <source src={src} type="video/mp4" />
+          Your browser does not support the video tag.
       </video>
 
-      {!loading && label && (
-        <div className="absolute bottom-10 left-10 z-20">
-          <div className="text-white/20 text-[8px] font-mono tracking-[0.5em] mb-1">SIGNAL_SOURCE_IDENTIFIED</div>
-          <div className="text-white text-xl font-black tracking-tighter italic uppercase">{label}</div>
-        </div>
+      {/* Decorative Tactical Elements */}
+      {!loading && (
+        <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 pointer-events-none z-20"
+        >
+            {/* Corner Brackets */}
+            <div className="absolute top-5 left-5 w-10 h-10 border-t border-l border-white/20" />
+            <div className="absolute top-5 right-5 w-10 h-10 border-t border-r border-white/20" />
+            <div className="absolute bottom-5 left-5 w-10 h-10 border-b border-l border-white/20" />
+            <div className="absolute bottom-5 right-5 w-10 h-10 border-b border-r border-white/20" />
+        </motion.div>
       )}
     </div>
   );
 }
 
+function TacticalColorEffect({ color, label, icon, pulse, scan, surge, quake, junction, grid, rotate }: { 
+    color: string, 
+    label: string, 
+    icon: React.ReactNode, 
+    pulse?: boolean, 
+    scan?: boolean, 
+    surge?: boolean, 
+    quake?: boolean,
+    junction?: boolean,
+    grid?: boolean,
+    rotate?: boolean
+}) {
+    return (
+        <div className="w-full h-full relative overflow-hidden bg-slate-950 flex items-center justify-center">
+            {/* Background Atmosphere */}
+            <div className="absolute inset-0 opacity-20" style={{ backgroundColor: `${color}10` }} />
+            
+            {/* Dynamic Grid Background */}
+            <div 
+                className="absolute inset-0 opacity-10" 
+                style={{ 
+                    backgroundImage: `radial-gradient(circle at 2px 2px, ${color} 1px, transparent 0)`,
+                    backgroundSize: '40px 40px'
+                }} 
+            />
+
+            {/* Effect Layers */}
+            {scan && (
+                <motion.div 
+                    animate={{ y: ["-100%", "200%"] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    className="absolute w-full h-[30%] z-10 pointer-events-none"
+                    style={{ background: `linear-gradient(to bottom, transparent, ${color}40, transparent)` }}
+                />
+            )}
+
+            {surge && (
+                <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <motion.div 
+                            key={i}
+                            animate={{ scale: [0, 4], opacity: [0.5, 0] }}
+                            transition={{ duration: 2, repeat: Infinity, delay: i * 0.4 }}
+                            className="absolute border-2 rounded-full w-40 h-40"
+                            style={{ borderColor: color }}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {grid && (
+                <div className="absolute inset-0 grid grid-cols-8 grid-rows-8 opacity-20">
+                    {Array.from({ length: 64 }).map((_, i) => (
+                        <motion.div 
+                            key={i}
+                            animate={{ opacity: [0, 1, 0] }}
+                            transition={{ duration: 1.5, repeat: Infinity, delay: Math.random() * 2 }}
+                            className="border border-white/5"
+                            style={{ backgroundColor: i % 7 === 0 ? color : 'transparent' }}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {junction && (
+                 <div className="absolute inset-0 flex items-center justify-center">
+                    <motion.div 
+                        initial={{ rotate: 0 }}
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                        className="w-[120%] h-px opacity-30"
+                        style={{ backgroundColor: color }}
+                    />
+                    <motion.div 
+                        initial={{ rotate: 90 }}
+                        animate={{ rotate: 450 }}
+                        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                        className="w-[120%] h-px opacity-30"
+                        style={{ backgroundColor: color }}
+                    />
+                 </div>
+            )}
+
+            {/* Central Focal Component */}
+            <motion.div 
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ 
+                    scale: quake ? [0.95, 1.05, 0.98, 1.02, 1] : 1,
+                    opacity: 1,
+                    boxShadow: pulse ? [`0 0 20px ${color}30`, `0 0 60px ${color}60`, `0 0 20px ${color}30`] : `0 0 40px ${color}40`,
+                    rotate: rotate ? [0, 360] : 0
+                }}
+                transition={{ 
+                    scale: quake ? { duration: 0.1, repeat: Infinity } : { duration: 0.5 },
+                    opacity: { duration: 0.5 },
+                    boxShadow: { duration: 1.5, repeat: Infinity },
+                    rotate: { duration: 4, repeat: Infinity, ease: "linear" }
+                }}
+                className="relative z-20 flex flex-col items-center justify-center p-12 bg-black/40 border border-white/10 rounded-2xl backdrop-blur-xl"
+            >
+                <div className="text-white relative" style={{ color: color }}>
+                    {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement, { size: 100 }) : icon}
+                    {pulse && (
+                        <motion.div 
+                            animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
+                            transition={{ duration: 1, repeat: Infinity }}
+                            className="absolute inset-0 rounded-full bg-current opacity-20 blur-xl"
+                        />
+                    )}
+                </div>
+                
+                <div className="mt-8 flex flex-col items-center gap-1">
+                    <div className="text-[10px] font-mono tracking-[0.6em] opacity-40 uppercase" style={{ color: color }}>
+                        SYSTEM_OVERRIDE_{label}
+                    </div>
+                    <div className="h-px w-24 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                </div>
+            </motion.div>
+
+            {/* Tactical Decals */}
+            <div className="absolute top-10 left-10 text-white/10 font-mono text-[8px] tracking-[0.5em] flex flex-col gap-1">
+                <div>HASH_SEQUENCE: {Math.random().toString(16).slice(2, 10).toUpperCase()}</div>
+                <div>SIGNAL_STRENGTH: 98.4%</div>
+            </div>
+            
+            <div className="absolute bottom-10 right-10 text-white/10 font-mono text-[8px] tracking-[0.5em] flex flex-col gap-1 items-end">
+                <div>LATENCY: 4.2ms</div>
+                <div>ENCRYPTION: AES-256-TACTICAL</div>
+            </div>
+        </div>
+    );
+}
 function PrismShiftEffect() {
     return (
         <div className="w-full h-full relative overflow-hidden bg-black">

@@ -83,7 +83,18 @@ export default function App() {
       audioService.playSuccess();
     };
     window.addEventListener('kipher:spawnCutscene', handleSpawn);
-    return () => window.removeEventListener('kipher:spawnCutscene', handleSpawn);
+
+    const handleRespawn = () => {
+      setIsCutsceneActive(false);
+      setForcedCutscene(null);
+      setIsTitleMenuOpen(false);
+    };
+    window.addEventListener('kipher:respawn', handleRespawn);
+
+    return () => {
+      window.removeEventListener('kipher:spawnCutscene', handleSpawn);
+      window.removeEventListener('kipher:respawn', handleRespawn);
+    };
   }, []);
 
   const handleCutsceneComplete = async (rarity: string) => {

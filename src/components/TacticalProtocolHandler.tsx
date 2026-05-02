@@ -125,8 +125,10 @@ export default function TacticalProtocolHandler({ currentUser }: { currentUser: 
   // 3. Global Return Keybind
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (panicMode) {
-        // If in panic mode, any scroll/key usually does nothing but secret return
+      // Direct R key for quick respawn when in panic mode
+      if (panicMode && e.key.toLowerCase() === 'r') {
+        respawn();
+        return;
       }
 
       // Secret Return Key: Shift + Alt + R
@@ -143,6 +145,7 @@ export default function TacticalProtocolHandler({ currentUser }: { currentUser: 
     setPanicMode(false);
     setMediaInject(null);
     setSystemAlert(null);
+    window.dispatchEvent(new CustomEvent('kipher:respawn'));
     audioService.playSuccess();
   };
 
