@@ -24,22 +24,33 @@ type CutsceneType =
   | 'EVENT_HORIZON' | 'WHITE_HOLE_EMISSION';
 
 export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps) {
-  const [type, setType] = useState<CutsceneType | null>(null);
+  const [type, setType] = useState<CutsceneType | null>(forcedType as CutsceneType || null);
   const [status, setStatus] = useState<'ACTIVE' | 'DISPLAY_RARITY'>('ACTIVE');
-  const [rarityText, setRarityText] = useState('');
+  const [rarityText, setRarityText] = useState(forcedType ? 'ADMIN_OVERRIDE (FORCED_RESTORE)' : '');
+  const audioInitialized = useRef(false);
   
   useEffect(() => {
-    if (type) return; // Prevent re-selection if status changes
+    // If type is already set and matches forcedType (or no forcedType is pending), we check if we need to initialize
+    const isInitialRun = !type || (forcedType && type === forcedType && rarityText === 'ADMIN_OVERRIDE (FORCED_RESTORE)' && !audioInitialized.current);
+    
+    if (!isInitialRun && type && !forcedType) return;
+    if (!isInitialRun && forcedType && type === forcedType) return;
+
+    if (forcedType) {
+        setStatus('ACTIVE');
+    }
+    
+    audioInitialized.current = true;
 
     // Total pool of 1,000,000
     const rand = Math.random() * 1000000;
-    let selected: CutsceneType = 'FLUSH';
-    let text = '';
+    let selected: CutsceneType = type || 'FLUSH';
+    let text = rarityText || '';
 
     if (forcedType) {
         selected = forcedType as CutsceneType;
         text = 'ADMIN_OVERRIDE (FORCED_RESTORE)';
-    } else {
+    } else if (!type) {
     // Tiers (Odds adjusted for more accessibility while remaining rare)
         if (rand < 500) {
           selected = 'ANONYMOUS_DEITY';
@@ -146,7 +157,7 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
             exit={{ opacity: 0 }}
             className="w-full h-full"
           >
-           <AnimatePresence mode="wait">
+           <AnimatePresence>
              {type === 'FLUSH' && <FlushEffect />}
              {type === 'SPIKE' && <SpikeEffect />}
              {type === 'BREACH' && <BreachEffect />}
@@ -237,7 +248,7 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
              {type === 'SONAR_SWEEP' && <SonarSweepEffect />}
              {type === 'THERMAL_VISION' && <ThermalVisionEffect />}
              {type === 'NIGHT_MODE' && <NightModeEffect />}
-             {type === 'ANGELIC_SYMPHONY' && <VideoCutscene src="/assets/videos/angelic_symphony.mp4" label="" onEnded={() => setStatus('DISPLAY_RARITY')} />}
+             {type === 'ANGELIC_SYMPHONY' && <VideoCutscene src="/assets/videos/angelic_symphony.mp4" label="ANGELIC_SYMPHONY" onEnded={() => setStatus('DISPLAY_RARITY')} />}
              {type === 'ETERNAL_OPPRESSION' && <VideoCutscene src="/assets/videos/eternal_oppression.mp4" label="ETERNAL_OPPRESSION" onEnded={() => setStatus('DISPLAY_RARITY')} />}
              {type === 'SUPREME_SOVEREIGN' && <VideoCutscene src="/assets/videos/supereme_soverign.mp4" label="SUPREME_SOVEREIGN" onEnded={() => setStatus('DISPLAY_RARITY')} />}
            </AnimatePresence>
@@ -531,14 +542,28 @@ function BioHazardEffect() {
 }
 
 function VideoCutscene({ src, label, onEnded }: { src: string, label?: string, onEnded?: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch(error => {
+        console.warn("Autoplay blocked, attempting muted playback", error);
+        if (videoRef.current) {
+          videoRef.current.muted = true;
+          videoRef.current.play();
+        }
+      });
+    }
+  }, [src]);
+
   return (
     <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden font-sans">
       <video 
-        autoPlay 
+        ref={videoRef}
         playsInline
         className="min-w-full min-h-full object-cover"
         onEnded={onEnded}
-        onError={onEnded} // Fail gracefully if video fails to load
+        onError={onEnded}
       >
         <source src={src} type="video/mp4" />
         Your browser does not support the video tag.
