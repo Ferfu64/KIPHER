@@ -11,6 +11,7 @@ import OwnerIntelligence from './components/OwnerIntelligence';
 import NodeGateway from './components/NodeGateway';
 import MeetingHub from './components/MeetingHub';
 import MiscSystems from './components/MiscSystems';
+import SecretSpace from './components/SecretSpace';
 import TacticalProtocolHandler from './components/TacticalProtocolHandler';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Terminal, Users, Home, Archive, ShieldAlert, LogOut, Radio, Activity, Zap, User, ShieldCheck, Lock, Info, Box, Settings, Volume2, VolumeX, MessageCircle, X } from 'lucide-react';
@@ -22,7 +23,7 @@ import NotificationOverlay from './components/NotificationOverlay';
 import CortexCutscene from './components/CortexCutscene';
 import { titleService } from './services/titleService';
 
-type NavigationPage = 'GHOST' | 'OWNER' | 'GATEWAY' | 'MEETING' | 'COMM' | 'MISC';
+type NavigationPage = 'GHOST' | 'OWNER' | 'GATEWAY' | 'MEETING' | 'COMM' | 'MISC' | 'SECRET_SPACE';
 
 export default function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -37,6 +38,7 @@ export default function App() {
   const [isCutsceneActive, setIsCutsceneActive] = useState(false);
   const [forcedCutscene, setForcedCutscene] = useState<string | null>(null);
   const [isTitleMenuOpen, setIsTitleMenuOpen] = useState(false);
+  const [isImmersive, setIsImmersive] = useState(false);
   const [clickCount, setClickCount] = useState(0);
 
   useEffect(() => {
@@ -88,12 +90,20 @@ export default function App() {
       setIsCutsceneActive(false);
       setForcedCutscene(null);
       setIsTitleMenuOpen(false);
+      setActivePage('GATEWAY'); // Reset to default page on respawn
+      audioService.playSuccess();
     };
     window.addEventListener('kipher:respawn', handleRespawn);
+
+    const handleUserUpdate = (e: any) => {
+      setUser(e.detail);
+    };
+    window.addEventListener('kipher:userUpdate', handleUserUpdate);
 
     return () => {
       window.removeEventListener('kipher:spawnCutscene', handleSpawn);
       window.removeEventListener('kipher:respawn', handleRespawn);
+      window.removeEventListener('kipher:userUpdate', handleUserUpdate);
     };
   }, []);
 
@@ -103,21 +113,40 @@ export default function App() {
     setForcedCutscene(null);
     if (!user || wasForced) return;
 
-    // Award titles based on rarity/type (Only for natural rolls)
+    let creditsEarned = 0;
+    // Award titles and credits based on rarity/type (Only for natural rolls)
     if (rarity.includes('ANONYMOUS_DEITY')) {
        await titleService.awardTitle(user.uid, 'ANONYMOUS_DEITY');
+       creditsEarned = 10000;
     } else if (rarity.includes('SUPREME_SOVEREIGN')) {
        await titleService.awardTitle(user.uid, 'SUPREME_SOVEREIGN');
+       creditsEarned = 5000;
     } else if (rarity.includes('ANGELIC_SYMPHONY')) {
        await titleService.awardTitle(user.uid, 'ANGELIC_SYMPHONY');
+       creditsEarned = 2500;
     } else if (rarity.includes('ETERNAL_OPPRESSION')) {
        await titleService.awardTitle(user.uid, 'ETERNAL_OPPRESSION');
+       creditsEarned = 1000;
     } else if (rarity.includes('SINGULARITY')) {
-      await titleService.awardTitle(user.uid, 'THE_OMEGA_POINT');
+       await titleService.awardTitle(user.uid, 'THE_OMEGA_POINT');
+       creditsEarned = 500;
     } else if (rarity.includes('EPIC')) {
-      await titleService.awardTitle(user.uid, 'NETWORK_ANOMALY');
+       await titleService.awardTitle(user.uid, 'NETWORK_ANOMALY');
+       creditsEarned = 100;
     } else if (rarity.includes('RARE')) {
        await titleService.awardTitle(user.uid, 'ELITE_ASSET');
+       creditsEarned = 25;
+    }
+
+    if (creditsEarned > 0) {
+      const newCredits = (user.credits || 0) + creditsEarned;
+      const updatedUser = { ...user, credits: newCredits };
+      setUser(updatedUser);
+      localStorage.setItem('kipher_session', JSON.stringify(updatedUser));
+      await setDoc(doc(db, 'users', user.uid), { credits: newCredits }, { merge: true });
+      audioService.playSuccess();
+      // Dispatch event for UI feedback
+      window.dispatchEvent(new CustomEvent('kipher:creditsAwarded', { detail: creditsEarned }));
     }
   };
   
@@ -240,8 +269,21 @@ export default function App() {
 
   const isGhost = user.displayName === 'K7_OWNER';
 
+  const mouseStyle = user.customization ? {
+    cursor: 'none',
+    '--mouse-color': user.customization.mouseColor || '#22d3ee',
+    '--mouse-size': `${user.customization.mouseSize || 16}px`,
+    '--mouse-glow': user.customization.neonGlow ? '0 0 15px var(--mouse-color)' : 'none'
+  } as any : {};
+
   return (
-    <div className="h-screen bg-absolute-black text-slate-300 font-mono text-sm flex border-4 border-slate-900 overflow-hidden select-none">
+    <div 
+      className="h-screen bg-absolute-black text-slate-300 font-mono text-sm flex border-4 border-slate-900 overflow-hidden select-none relative"
+      style={mouseStyle}
+    >
+      {user.customization && (
+        <CustomMouse customization={user.customization} />
+      )}
       <TacticalProtocolHandler currentUser={user} />
       <NotificationOverlay currentUser={user} onNavigate={(page) => navigateTo(page as NavigationPage)} />
       
@@ -262,105 +304,109 @@ export default function App() {
       </AnimatePresence>
 
       {/* Sidebar Navigation */}
-      <nav className="w-20 border-r border-slate-800 flex flex-col items-center py-6 gap-8 bg-slate-950 px-2 shrink-0 relative z-50 overflow-y-auto custom-scrollbar">
-        <KipherLogo 
-          size={40} 
-          showText={false} 
-          className="mb-4 cursor-pointer hover:rotate-90 transition-transform duration-500" 
-          onClick={(e) => {
-             if (e.detail >= 5 || clickCount >= 4) {
-               handleTitleMenuGesture();
-             } else if (!isCutsceneActive) {
-               setIsCutsceneActive(true);
-             }
-          }}
-        />
-        
-        <div className="flex-1 flex flex-col gap-6 w-full">
-          {isGhost && (
+      {!isImmersive && (
+        <nav className="w-20 border-r border-slate-800 flex flex-col items-center py-6 gap-8 bg-slate-950 px-2 shrink-0 relative z-50 overflow-y-auto custom-scrollbar">
+          <KipherLogo 
+            size={40} 
+            showText={false} 
+            className="mb-4 cursor-pointer hover:rotate-90 transition-transform duration-500" 
+            onClick={(e) => {
+               if (e.detail >= 5 || clickCount >= 4) {
+                 handleTitleMenuGesture();
+               } else if (!isCutsceneActive) {
+                 setIsCutsceneActive(true);
+               }
+            }}
+          />
+          
+          <div className="flex-1 flex flex-col gap-6 w-full">
+            {isGhost && (
+              <NavIcon 
+                active={activePage === 'GHOST'} 
+                onClick={() => navigateTo('GHOST')} 
+                icon={<ShieldAlert size={20} />} 
+                label="ROOT"
+                color="text-red-500"
+              />
+            )}
+
+            {user.isOwner && (
+              <NavIcon 
+                active={activePage === 'OWNER'} 
+                onClick={() => navigateTo('OWNER')} 
+                icon={<ShieldCheck size={20} />} 
+                label="INTEL"
+                color="text-tactical-cyan"
+              />
+            )}
+
             <NavIcon 
-              active={activePage === 'GHOST'} 
-              onClick={() => navigateTo('GHOST')} 
-              icon={<ShieldAlert size={20} />} 
-              label="ROOT"
-              color="text-red-500"
+              active={activePage === 'GATEWAY'} 
+              onClick={() => navigateTo('GATEWAY')} 
+              icon={<Box size={20} />} 
+              label="NODES"
             />
-          )}
 
-          {user.isOwner && (
             <NavIcon 
-              active={activePage === 'OWNER'} 
-              onClick={() => navigateTo('OWNER')} 
-              icon={<ShieldCheck size={20} />} 
-              label="INTEL"
-              color="text-tactical-cyan"
+              active={activePage === 'MEETING'} 
+              onClick={() => navigateTo('MEETING')} 
+              icon={<Users size={20} />} 
+              label="HUB"
             />
-          )}
 
-          <NavIcon 
-            active={activePage === 'GATEWAY'} 
-            onClick={() => navigateTo('GATEWAY')} 
-            icon={<Box size={20} />} 
-            label="NODES"
-          />
+            <NavIcon 
+              active={activePage === 'COMM'} 
+              onClick={() => navigateTo('COMM')} 
+              icon={<MessageCircle size={20} />} 
+              label="COMM"
+            />
 
-          <NavIcon 
-            active={activePage === 'MEETING'} 
-            onClick={() => navigateTo('MEETING')} 
-            icon={<Users size={20} />} 
-            label="HUB"
-          />
+            <NavIcon 
+              active={activePage === 'MISC'} 
+              onClick={() => navigateTo('MISC')} 
+              icon={<Settings size={20} />} 
+              label="SYST"
+            />
+          </div>
 
-          <NavIcon 
-            active={activePage === 'COMM'} 
-            onClick={() => navigateTo('COMM')} 
-            icon={<MessageCircle size={20} />} 
-            label="COMM"
-          />
-
-          <NavIcon 
-            active={activePage === 'MISC'} 
-            onClick={() => navigateTo('MISC')} 
-            icon={<Settings size={20} />} 
-            label="SYST"
-          />
-        </div>
-
-        <button 
-          onClick={() => { handleAuthChange(null); audioService.playError(); }} 
-          className="p-3 border border-slate-800 text-slate-600 hover:text-red-500 hover:border-red-500 transition-all group shrink-0"
-        >
-          <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
-        </button>
-      </nav>
+          <button 
+            onClick={() => { handleAuthChange(null); audioService.playError(); }} 
+            className="p-3 border border-slate-800 text-slate-600 hover:text-red-500 hover:border-red-500 transition-all group shrink-0"
+          >
+            <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
+          </button>
+        </nav>
+      )}
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header */}
-        <header className="h-14 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-950/50 relative shrink-0">
-          <div className="flex items-center gap-4">
-             <div className="text-[10px] font-black tracking-widest text-slate-600 uppercase">System_Active // Protocol_{activePage}</div>
-             <div className="h-1 w-1 rounded-full bg-tactical-cyan animate-ping"></div>
-          </div>
-          
-          <div className="flex items-center gap-6">
-            <button 
-              onClick={toggleAudio}
-              className={`flex items-center gap-2 p-2 border transition-all ${!isMuted ? 'text-tactical-cyan border-tactical-cyan/40 bg-tactical-cyan/5' : 'text-slate-700 border-slate-800'}`}
-            >
-              {!isMuted ? <Volume2 size={16} /> : <VolumeX size={16} />}
-              <span className="text-[9px] font-black tracking-tighter uppercase">{!isMuted ? 'AUDIO_LIVE' : 'AUDIO_DARK'}</span>
-            </button>
-            <div className="text-right">
-              <div className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">{user.role} // LVL_{user.clearanceLevel}</div>
-              <div className="text-xs text-tactical-cyan font-black uppercase flex flex-col items-end">
-                {user.activeTitle && (
-                  <span className="text-[7px] text-tactical-cyan/60 mb-0.5 tracking-[0.3em]">« {user.activeTitle} »</span>
-                )}
-                <span>{user.displayName}</span>
+        {!isImmersive && (
+          <header className="h-14 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-950/50 relative shrink-0">
+            <div className="flex items-center gap-4">
+               <div className="text-[10px] font-black tracking-widest text-slate-600 uppercase">System_Active // Protocol_{activePage}</div>
+               <div className="h-1 w-1 rounded-full bg-tactical-cyan animate-ping"></div>
+            </div>
+            
+            <div className="flex items-center gap-6">
+              <button 
+                onClick={toggleAudio}
+                className={`flex items-center gap-2 p-2 border transition-all ${!isMuted ? 'text-tactical-cyan border-tactical-cyan/40 bg-tactical-cyan/5' : 'text-slate-700 border-slate-800'}`}
+              >
+                {!isMuted ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                <span className="text-[9px] font-black tracking-tighter uppercase">{!isMuted ? 'AUDIO_LIVE' : 'AUDIO_DARK'}</span>
+              </button>
+              <div className="text-right">
+                <div className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">{user.role} // LVL_{user.clearanceLevel + (user.promotionCount || 0)}</div>
+                <div className="text-xs font-black uppercase flex flex-col items-end transition-all" style={{ color: user.customization?.nameColor || '#22d3ee' }}>
+                  {user.activeTitle && (
+                    <span className="text-[7px] mb-0.5 tracking-[0.3em]" style={{ color: user.customization?.titleColor || 'rgba(34,211,238,0.6)' }}>« {user.activeTitle} »</span>
+                  )}
+                  <span>{user.displayName}</span>
+                </div>
               </div>
             </div>
-          </div>
-        </header>
+          </header>
+        )}
 
         {/* Content Area */}
         <main className="flex-1 overflow-auto custom-scrollbar relative">
@@ -378,7 +424,15 @@ export default function App() {
               {activePage === 'GATEWAY' && <NodeGateway currentUser={user} />}
               {activePage === 'MEETING' && <MeetingHub currentUser={user} />}
               {activePage === 'COMM' && <DirectMessageContainer currentUser={user} />}
-              {activePage === 'MISC' && <MiscSystems currentUser={user} onOpenTitles={() => setIsTitleMenuOpen(true)} />}
+              {activePage === 'MISC' && <MiscSystems currentUser={user} onOpenSecret={() => navigateTo('SECRET_SPACE')} />}
+              {activePage === 'SECRET_SPACE' && (
+                <SecretSpace 
+                  currentUser={user} 
+                  onUpdate={(u) => setUser(u)} 
+                  onClose={() => { navigateTo('MISC'); setIsImmersive(false); }} 
+                  onImmersiveChange={setIsImmersive}
+                />
+              )}
             </motion.div>
           </AnimatePresence>
         </main>
@@ -386,6 +440,49 @@ export default function App() {
 
         {/* TacticalProtocolHandler handles all alerts and media now */}
     </div>
+  );
+}
+
+function CustomMouse({ customization }: { customization: NonNullable<UserProfile['customization']> }) {
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  const size = customization.mouseSize || 16;
+  const color = customization.mouseColor || '#22d3ee';
+
+  return (
+    <motion.div
+      className="fixed pointer-events-none z-[9999] flex items-center justify-center"
+      animate={{ x: mousePos.x, y: mousePos.y }}
+      transition={{ type: 'spring', damping: 25, stiffness: 400, mass: 0.5 }}
+      style={{
+        width: size,
+        height: size,
+        left: -size / 2,
+        top: -size / 2,
+      }}
+    >
+      {/* Outer Ring */}
+      <div 
+        className="absolute inset-0 border-2 rounded-full opacity-50"
+        style={{ borderColor: color, boxShadow: customization.neonGlow ? `0 0 10px ${color}` : 'none' }}
+      />
+      {/* Inner Dot */}
+      <div 
+        className="w-1 h-1 rounded-full"
+        style={{ backgroundColor: color }}
+      />
+      {/* Crosshair lines */}
+      <div className="absolute w-[150%] h-[1px] opacity-20" style={{ backgroundColor: color }} />
+      <div className="absolute h-[150%] w-[1px] opacity-20" style={{ backgroundColor: color }} />
+    </motion.div>
   );
 }
 

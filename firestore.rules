@@ -68,6 +68,13 @@ service cloud.firestore {
              data.active is bool;
     }
 
+    function isValidChessGame(data) {
+      return data.fen is string && data.fen.size() <= 200 &&
+             data.white is string &&
+             data.status in ['WAITING', 'ACTIVE', 'FINISHED'] &&
+             data.turn in ['w', 'b'];
+    }
+
     // --- MATCH BLOCKS ---
 
     match /system_commands/{id} {
@@ -80,7 +87,10 @@ service cloud.firestore {
       allow get: if isSignedIn();
       allow list: if isSignedIn();
       allow create: if isAdmin() && isValidUser(incoming()) && incoming().uid == userId;
-      allow update: if isAdmin() || (isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['lastSeen', 'currentAuthUid', 'status']));
+      allow update: if isAdmin() || (isSignedIn() && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['lastSeen', 'currentAuthUid', 'status']) ||
+        (existing().uid == userId && incoming().diff(existing()).affectedKeys().hasOnly(['credits', 'titles', 'activeTitle', 'customization', 'promotionCount', 'lastSeen']))
+      ));
       allow delete: if isAdmin();
     }
 
@@ -173,6 +183,16 @@ service cloud.firestore {
     match /voice_activity/{userId} {
       allow read: if isSignedIn();
       allow write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /chess_games/{gameId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidChessGame(incoming());
+      allow update: if isSignedIn() && (
+        (existing().white == request.auth.uid || existing().black == request.auth.uid || existing().isBot == true) &&
+        isValidChessGame(incoming())
+      );
+      allow delete: if isAdmin();
     }
   }
 }

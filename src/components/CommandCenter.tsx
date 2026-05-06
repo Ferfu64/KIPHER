@@ -60,7 +60,7 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
     const q = query(collection(db, 'users'), orderBy('lastSeen', 'desc'), limit(100));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const list: UserProfile[] = [];
-      snapshot.forEach(doc => list.push(doc.data() as UserProfile));
+      snapshot.forEach(doc => list.push({ ...doc.data() as any, uid: doc.id } as UserProfile));
       setSystemUsers(list);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
     return unsubscribe;
@@ -500,8 +500,8 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
                         
                         {u.titles && u.titles.length > 0 && (
                           <div className="flex flex-wrap gap-1 p-2 bg-black/20 rounded border border-white/5">
-                            {u.titles.map(t => (
-                              <div key={t} className="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/10 group/tit">
+                            {u.titles.map((t, i) => (
+                              <div key={`${t}-${i}`} className="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-white/10 group/tit">
                                 <span className="text-[7px] text-white/60 uppercase font-bold">{t}</span>
                                 <button 
                                   onClick={() => revokeTitle(u.uid, t)}

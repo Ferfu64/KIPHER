@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { audioService } from '../services/audioService';
-import { ShieldAlert, Zap, Globe, Infinity as InfinityIcon, Scan, Cpu, Eye, Activity, HardDrive, Smartphone, Search, Share2, Repeat, Layers, Box, Camera, Database, Hash, Play, Wind, Sun, Satellite, Radar, Key, CircuitBoard, Atom, Clock, Rocket, Mountain, ArrowRight, AlertTriangle, User, Music, Music2, ExternalLink, Ghost, RotateCw, Unlink, Network, Terminal, Lock, Unlock, FileCode, Dice5, CloudRain, Radio, Signal } from 'lucide-react';
+import { ShieldAlert, Zap, Globe, Infinity as InfinityIcon, Scan, Cpu, Eye, Activity, HardDrive, Smartphone, Search, Share2, Repeat, Layers, Box, Camera, Database, Hash, Play, Wind, Sun, Satellite, Radar, Key, CircuitBoard, Atom, Clock, Rocket, Mountain, ArrowRight, AlertTriangle, User, Music, Music2, ExternalLink, Ghost, RotateCw, Unlink, Network, Terminal, Lock, Unlock, FileCode, Dice5, CloudRain, Radio, Signal, RefreshCw } from 'lucide-react';
 
 // --- VIDEO SOURCES CONFIGURATION ---
 // REPLACE THESE WITH CLOUDINARY OR FIREBASE STORAGE URLS TO BYPASS SCHOOL BLOCKS & NETLIFY LIMITS
@@ -34,6 +34,7 @@ type CutsceneType =
   | 'PIXEL_PULSE' | 'VOXEL_VOID' | 'MESH_MATRIX' | 'VERTEX_VECTOR' | 'SHADER_SHADOW' | 'RENDER_REIGN' | 'TEXTURE_TRACE' | 'LIGHT_LINK'
   | 'SIGNAL_SOFT' | 'WAVE_WARP' | 'PULSE_PART' | 'BIT_BEAT' | 'BYTE_BURST' | 'CHIP_CIRCUIT' | 'WIRE_WAVE' | 'FLOW_FIELD'
   | 'PULSE_PRIME' | 'VOID_VELOCITY' | 'NEURAL_NEXUS' | 'CYBER_CRUCIBLE' | 'SILICON_STORM' | 'DATA_DREDGE' | 'BINARY_BLAST' | 'VECTOR_VORTEX' | 'FLUX_FIELD' | 'LOGIC_LEAK' | 'CORE_CRASH' | 'SHELL_SHOCK' | 'BIT_BOUNCE' | 'LINK_LOSS' | 'NET_NODE'
+  | 'NEURAL_RESET' | 'VOID_GATE' | 'CYBER_SYMPHONY' | 'STORM_WATCH' | 'GHOST_PULSE' | 'DATA_DUMP' | 'TITAN_FALL' | 'HYPER_SPACE' | 'OMEGA_X' | 'QUARK_QUAKE' | 'NEON_NOIR' | 'PIXEL_PERFECT'
   | 'CHAMELEON_SHIFT' | 'GRAVITY_WELL' | 'NEBULA_DRIFT' | 'COSMIC_RAYS' | 'PHOTON_BURST' 
   | 'DARK_ENERGY' | 'STRING_VIBRATION' | 'WORMHOLE_ENTRY' | 'BLACK_HOLE_SINGULARITY' | 'PULSE_MODULATION' 
   | 'HEARTBEAT_MONITOR' | 'RADAR_PING' | 'SONAR_SWEEP' | 'THERMAL_VISION' | 'NIGHT_MODE'
@@ -94,7 +95,8 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
             'BLACK_HOLE_SINGULARITY', 'WORMHOLE_ENTRY', 'DARK_ENERGY', 'SUPERNOVA_REMNANT', 'EVENT_HORIZON', 'WHITE_HOLE_EMISSION',
             'JADE_JUNCTION', 'PEARL_PROTOCOL', 'OPAL_OSCILLATION', 'GARNET_GRID', 'ONYX_OUTBREAK', 'ZIRCON_ZERO', 'PYRITE_PATTERN', 'CORAL_COMMAND', 'METEOR_MIND', 'COMET_CRASH',
             'NEBULA_NOVA', 'SUPERNOVA_SOUL', 'QUASAR_QUAKE', 'BEYOND_BOUNDARY', 'INFINITY_INIT', 'ETERNITY_EDGE', 'COSMOS_CORE',
-            'PULSE_PRIME', 'VOID_VELOCITY', 'NEURAL_NEXUS'
+            'PULSE_PRIME', 'VOID_VELOCITY', 'NEURAL_NEXUS',
+            'OMEGA_X', 'QUARK_QUAKE', 'NEON_NOIR'
           ];
           selected = epicPool[Math.floor(Math.random() * epicPool.length)];
           text = `1 IN 500 (EPIC_${selected}_PROTOCOL)`;
@@ -105,7 +107,8 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
             'GRAVITY_WELL', 'NEBULA_DRIFT', 'COSMIC_RAYS', 'PHOTON_BURST', 'STRING_VIBRATION', 'QUANTUM_LEAP', 'DIMENSIONAL_SHIFT', 'DARK_MATTER_HUNT', 'ZENITH_POINT', 'NADIR_COLLAPSE',
             'PLATINUM_PULSE', 'STEEL_SURGE', 'IRON_INITIATIVE', 'COPPER_CIRCUIT', 'QUARTZ_QUAKE', 'RUBY_RESONANCE', 'SAPPHIRE_SCAN', 'TOPAZ_TRANSMISSION',
             'GLITCH_GHOST', 'MALWARE_MIST', 'VIRUS_VORTEX', 'TROJAN_TRACE', 'ROOTKIT_REIGN', 'EXPLOIT_EYE', 'ZERO_DAY_ZONE',
-            'CYBER_CRUCIBLE', 'SILICON_STORM', 'DATA_DREDGE', 'BINARY_BLAST'
+            'CYBER_CRUCIBLE', 'SILICON_STORM', 'DATA_DREDGE', 'BINARY_BLAST',
+            'NEURAL_RESET', 'VOID_GATE', 'CYBER_SYMPHONY', 'STORM_WATCH'
           ];
           selected = rarePool[Math.floor(Math.random() * rarePool.length)];
           text = `1 IN 100 (RARE_${selected}_EVENT)`;
@@ -117,7 +120,8 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
             'NEURAL_REWIRE', 'DEEP_CORE_SCAN', 'ATMOSPHERIC_ENTRY', 'ORBITAL_DESCENT', 'PLASMA_STORM', 'GHOST_PROTOCOL', 'CELESTIAL_SYNC',
             'CYAN_CORE', 'SILVER_SHADOW', 'GOLDEN_GATEWAY', 'BRONZE_BEAM', 'OBSIDIAN_OVERLAY', 'TITANIUM_TRACE',
             'PIXEL_PULSE', 'VOXEL_VOID', 'MESH_MATRIX', 'VERTEX_VECTOR', 'SHADER_SHADOW', 'RENDER_REIGN', 'TEXTURE_TRACE', 'LIGHT_LINK',
-            'VECTOR_VORTEX', 'FLUX_FIELD', 'LOGIC_LEAK', 'CORE_CRASH'
+            'VECTOR_VORTEX', 'FLUX_FIELD', 'LOGIC_LEAK', 'CORE_CRASH',
+            'GHOST_PULSE', 'DATA_DUMP', 'TITAN_FALL', 'HYPER_SPACE', 'PIXEL_PERFECT'
           ];
           selected = uncommonPool[Math.floor(Math.random() * uncommonPool.length)];
           text = `1 IN 20 (UNCOMMON_${selected}_LINK)`;
@@ -362,6 +366,20 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
              {type === 'BIT_BOUNCE' && <TacticalColorEffect color="#84cc16" label="BIT" icon={<Dice5 />} pulse />}
              {type === 'LINK_LOSS' && <TacticalColorEffect color="#64748b" label="LINK" icon={<Unlink />} scan />}
              {type === 'NET_NODE' && <TacticalColorEffect color="#06b6d4" label="NODE" icon={<Signal />} junction />}
+ 
+             {/* 12 New Cutscenes - Series 2 */}
+             {type === 'NEURAL_RESET' && <TacticalColorEffect color="#f43f5e" label="RESET" icon={<RefreshCw />} pulse junction rotate />}
+             {type === 'VOID_GATE' && <TacticalColorEffect color="#000000" label="GATE" icon={<Lock />} surge grid rotate />}
+             {type === 'CYBER_SYMPHONY' && <TacticalColorEffect color="#c026d3" label="SYMPHONY" icon={<Music2 />} pulse junction scan />}
+             {type === 'STORM_WATCH' && <TacticalColorEffect color="#3b82f6" label="STORM" icon={<Globe />} scan rotate quake />}
+             {type === 'GHOST_PULSE' && <TacticalColorEffect color="#94a3b8" label="GHOST" icon={<Ghost />} pulse grid scan />}
+             {type === 'DATA_DUMP' && <TacticalColorEffect color="#22c55e" label="DUMP" icon={<FileCode />} junction surge grid />}
+             {type === 'TITAN_FALL' && <TacticalColorEffect color="#f97316" label="TITAN" icon={<Mountain />} surge quake scan />}
+             {type === 'HYPER_SPACE' && <TacticalColorEffect color="#ffffff" label="HYPER" icon={<Rocket />} rotate grid />}
+             {type === 'OMEGA_X' && <TacticalColorEffect color="#ef4444" label="OMEGA_X" icon={<AlertTriangle />} pulse junction surge />}
+             {type === 'QUARK_QUAKE' && <TacticalColorEffect color="#facc15" label="QUARK" icon={<Atom />} quake rotate pulse />}
+             {type === 'NEON_NOIR' && <TacticalColorEffect color="#2dd4bf" label="NOIR" icon={<Eye />} scan rotate pulse />}
+             {type === 'PIXEL_PERFECT' && <TacticalColorEffect color="#6366f1" label="PIXEL" icon={<Box />} grid scan junction />}
 
              {type === 'ANONYMOUS_DEITY' && <VideoCutscene src={VIDEO_SOURCES.ANONYMOUS_DEITY} label="ANONYMOUS_DEITY" onEnded={() => setStatus('DISPLAY_RARITY')} />}
              {type === 'CHAMELEON_SHIFT' && <ChameleonShiftEffect />}
@@ -922,7 +940,7 @@ function TacticalColorEffect({ color, label, icon, pulse, scan, surge, quake, ju
                 className="relative z-20 flex flex-col items-center justify-center p-12 bg-black/40 border border-white/10 rounded-2xl backdrop-blur-xl"
             >
                 <div className="text-white relative" style={{ color: color }}>
-                    {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement, { size: 100 }) : icon}
+                    {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 100 }) : icon}
                     {pulse && (
                         <motion.div 
                             animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
@@ -1287,7 +1305,6 @@ function DroneSurveillanceEffect() {
                 animate={{ x: [-1, 1, -1], y: [1, -1, 1] }}
                 transition={{ duration: 0.05, repeat: Infinity }}
                 className="w-full h-full absolute inset-0 bg-[url('https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&q=80&w=1200')] opacity-30 grayscale"
-                referrerPolicy="no-referrer"
             />
             <div className="relative z-10 w-full h-full border-[40px] border-black flex flex-col justify-between p-8">
                 <div className="flex justify-between items-start">

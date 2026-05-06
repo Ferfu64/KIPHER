@@ -20,7 +20,7 @@ export default function TheGrid({ currentUser, compact, onSelect }: { currentUse
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const list: UserProfile[] = [];
-      snapshot.forEach(doc => list.push(doc.data() as UserProfile));
+      snapshot.forEach(doc => list.push({ ...doc.data() as any, uid: doc.id } as UserProfile));
       setAssets(list.filter(a => a.uid !== currentUser.uid));
       setLoading(false);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'users', true));

@@ -76,8 +76,8 @@ export default function ChatUserDisplay({ uid, defaultName, isMe }: Props) {
                     <Award size={8} /> SERVICE_RECORD:
                  </div>
                  <div className="flex flex-wrap gap-1">
-                    {profile.titles.map(t => (
-                      <span key={t} className={`text-[6px] px-1 py-0.5 border uppercase font-black italic ${t === activeTitle ? 'bg-tactical-cyan text-black border-tactical-cyan' : 'bg-slate-900 text-slate-400 border-white/10'}`}>
+                    {profile.titles.map((t, i) => (
+                      <span key={`${t}-${i}`} className={`text-[6px] px-1 py-0.5 border uppercase font-black italic ${t === activeTitle ? 'bg-tactical-cyan text-black border-tactical-cyan' : 'bg-slate-900 text-slate-400 border-white/10'}`}>
                         {t}
                       </span>
                     ))}

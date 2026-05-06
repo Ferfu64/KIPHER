@@ -138,6 +138,14 @@ export default function MeetingHub({ currentUser }: { currentUser: UserProfile }
     }
   }, [messages]);
 
+  useEffect(() => {
+    const handleRespawn = () => {
+      setIsFilterActive(false);
+    };
+    window.addEventListener('kipher:respawn', handleRespawn);
+    return () => window.removeEventListener('kipher:respawn', handleRespawn);
+  }, []);
+
   const sendMessage = async (text: string, type: ChatMessage['type'] = 'TEXT') => {
     if (!text.trim()) return;
 

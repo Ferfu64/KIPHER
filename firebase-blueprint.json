@@ -97,12 +97,35 @@
         "active": { "type": "boolean" }
       },
       "required": ["type", "timestamp", "active"]
+    },
+    "ChessGame": {
+      "title": "Tactical Chess Game",
+      "description": "A real-time multiplayer chess match",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fen": { "type": "string" },
+        "white": { "type": "string", "description": "UID of white player" },
+        "black": { "type": "string", "description": "UID of black player" },
+        "status": { "type": "string", "enum": ["WAITING", "ACTIVE", "FINISHED"] },
+        "turn": { "type": "string", "enum": ["w", "b"] },
+        "winner": { "type": "string" },
+        "lastMove": { "type": "object" },
+        "history": { "type": "array", "items": { "type": "string" } },
+        "isBot": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "fen", "white", "status", "turn"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": "User",
       "description": "User profile data"
+    },
+    "/chess_games/{gameId}": {
+      "schema": "ChessGame",
+      "description": "Multiplayer chess games"
     },
     "/safehouses/{safehouseId}": {
       "schema": "Safehouse",

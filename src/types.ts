@@ -12,6 +12,16 @@ export interface UserProfile {
   activeTitle?: string;
   lastSeen: any;
   currentAuthUid?: string;
+  credits?: number;
+  promotionCount?: number;
+  customization?: {
+    nameColor?: string;
+    titleColor?: string;
+    mouseSize?: number;
+    mouseColor?: string;
+    neonGlow?: boolean;
+    mouseTrail?: boolean;
+  };
 }
 
 export interface Safehouse {
@@ -61,6 +71,7 @@ export interface Connection {
   authIds?: string[];
   usernames?: string[];
   status: 'ESTABLISHED' | 'PENDING' | 'REDACTED' | 'LINKED';
+  lastMessage?: string;
   createdAt?: any;
 }
 
