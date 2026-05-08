@@ -5,6 +5,7 @@ import { audioService } from '../services/audioService';
 
 interface TankGameProps {
   onBack: () => void;
+  onCreditsEarned: (cr: number, wave: number) => void;
 }
 
 interface GameObject {
@@ -53,14 +54,15 @@ interface Particle {
   size: number;
 }
 
-export default function TankGame({ onBack }: TankGameProps) {
+export default function TankGame({ onBack, onCreditsEarned }: TankGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'GAMEOVER' | 'CUTSCENE'>('START');
+  const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'GAMEOVER' | 'CUTSCENE' | 'BOSS_DODGE'>('START');
   const [score, setScore] = useState(0);
   const [wave, setWave] = useState(1);
-  const [highScore, setHighScore] = useState(() => parseInt(localStorage.getItem('tank_highscore') || '0'));
+  const [highScore, setHighScore] = useState(0); 
   const [cutsceneText, setCutsceneText] = useState('');
   const [activePowerUp, setActivePowerUp] = useState<string | null>(null);
+  const [ultCharge, setUltCharge] = useState(0);
 
   // Keys state
   const keys = useRef<Record<string, boolean>>({});
@@ -84,6 +86,37 @@ export default function TankGame({ onBack }: TankGameProps) {
   const powerUps = useRef<PowerUp[]>([]);
   const frameId = useRef<number>(0);
   const bossActive = useRef<boolean>(false);
+
+  const hitEnemy = (e: Tank, eIdx: number, damage: number, x: number, y: number) => {
+    if (Math.hypot(x - e.x, y - e.y) < e.width / 2 + 10) {
+        e.hp -= damage;
+        createParticles(x, y, e.color, 10);
+        if (e.hp <= 0) {
+          enemiesKilledInLevel.current++;
+          if (e.isBoss) {
+            bossActive.current = false;
+            triggerCutscene("BOSS_UNIT_DECOMMISSIONED");
+          }
+          enemies.current.splice(eIdx, 1);
+          
+          if (enemies.current.length === 0 && enemiesToSpawn.current === 0) {
+            triggerCutscene("SECTOR_STABILIZED");
+          }
+
+          setScore(s => {
+            const newScore = s + (e.isBoss ? 5000 : 100);
+            if (newScore > highScore) {
+              setHighScore(newScore);
+            }
+            return newScore;
+          });
+          audioService.playSuccess();
+          createParticles(e.x, e.y, e.color, e.isBoss ? 100 : 30, 5);
+          return true;
+        }
+    }
+    return false;
+  };
 
   const triggerCutscene = (text: string, duration: number = 2000) => {
     setGameState('CUTSCENE');
@@ -119,14 +152,16 @@ export default function TankGame({ onBack }: TankGameProps) {
       // Boss level
       enemiesToSpawn.current = 1; 
       totalEnemiesInLevel.current = 1;
+      setUltCharge(0);
       spawnBoss();
     } else {
       // Normal level
       const count = 5 + (levelNumber * 2);
       enemiesToSpawn.current = count;
       totalEnemiesInLevel.current = count;
-      triggerCutscene(`LEVEL ${levelNumber}: ENGAGE`);
+      triggerCutscene(`WAVE ${levelNumber}: ENGAGE`);
     }
+    onCreditsEarned(levelNumber * 10, levelNumber);
   };
 
   const spawnBoss = () => {
@@ -156,10 +191,25 @@ export default function TankGame({ onBack }: TankGameProps) {
     else if (side === 2) { x = Math.random() * canvas.width; y = canvas.height + 50; }
     else { x = -50; y = Math.random() * canvas.height; }
 
+    const enemyType = Math.floor(wave / 5);
+    let hp = 15 + wave * 5;
+    let speed = 0.8 + Math.random() * 1;
+    let color = '#ef4444';
+    let name = 'ENEMY';
+    let fireRate = 2500 - (wave * 50);
+
+    if (enemyType === 1) { // Scout
+       hp *= 0.6; speed *= 2.5; color = '#facc15'; fireRate *= 1.5;
+    } else if (enemyType === 2) { // Armored
+       hp *= 3; speed *= 0.5; color = '#4b5563'; fireRate *= 0.8;
+    } else if (enemyType >= 3) { // Elite
+       hp *= 2; speed *= 1.5; color = '#7c3aed'; fireRate *= 0.5;
+    }
+
     enemies.current.push({
       x, y, width: 35, height: 35, rotation: 0,
-      hp: 15 + wave * 5, maxHp: 15 + wave * 5, speed: 0.8 + Math.random() * 1,
-      turnSpeed: 0.02, lastShot: 0, fireRate: 2500, color: '#ef4444', name: 'ENEMY'
+      hp, maxHp: hp, speed,
+      turnSpeed: 0.02 + (wave * 0.001), lastShot: 0, fireRate, color, name
     });
     enemiesToSpawn.current--;
   };
@@ -211,22 +261,35 @@ export default function TankGame({ onBack }: TankGameProps) {
 
   const gameLoop = () => {
     const canvas = canvasRef.current;
-    if (!canvas || (gameState !== 'PLAYING' && gameState !== 'CUTSCENE')) return;
+    if (!canvas || (gameState !== 'PLAYING' && gameState !== 'CUTSCENE' && gameState !== 'BOSS_DODGE')) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     // Clear canvas
-    ctx.fillStyle = '#020617';
+    ctx.fillStyle = gameState === 'BOSS_DODGE' ? '#0f172a' : '#020617';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Grid effect
-    ctx.strokeStyle = 'rgba(34, 211, 238, 0.03)';
+    ctx.strokeStyle = gameState === 'BOSS_DODGE' ? 'rgba(239, 68, 68, 0.05)' : 'rgba(34, 211, 238, 0.03)';
     ctx.lineWidth = 1;
     for (let x = 0; x < canvas.width; x += 50) {
       ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
     }
     for (let y = 0; y < canvas.height; y += 50) {
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+    }
+
+    if (gameState === 'BOSS_DODGE') {
+       // Draw the "Bar" the player is stuck behind
+       ctx.strokeStyle = '#334155';
+       ctx.lineWidth = 4;
+       ctx.beginPath();
+       ctx.moveTo(0, canvas.height - 100);
+       ctx.lineTo(canvas.width, canvas.height - 100);
+       ctx.stroke();
+       
+       ctx.fillStyle = 'rgba(239, 68, 68, 0.1)';
+       ctx.fillRect(0, 0, canvas.width, canvas.height - 100);
     }
 
     if (gameState === 'CUTSCENE') {
@@ -236,8 +299,8 @@ export default function TankGame({ onBack }: TankGameProps) {
     // Player Movement
     const p = player.current;
     
-    // Mode Switch
-    if (keys.current['ShiftLeft'] || keys.current['ShiftRight']) {
+    // Mode Switch (Disabled in dodge phase)
+    if (gameState !== 'BOSS_DODGE' && (keys.current['ShiftLeft'] || keys.current['ShiftRight'])) {
       const now = Date.now();
       if (!p.lastShot || now - p.lastShot > 500) {
         p.mode = p.mode === 'RANGED' ? 'MELEE' : 'RANGED';
@@ -264,35 +327,72 @@ export default function TankGame({ onBack }: TankGameProps) {
         p.rotation += p.turnSpeed;
       }
 
-      // Shooting
+      // Special Action / Shooting
       const now = Date.now();
-      if (keys.current['Space'] && now - p.lastShot > p.fireRate && p.mode === 'RANGED') {
-        if (p.weaponType === 'TRIPLE') {
-          for (let i = -1; i <= 1; i++) {
-            const angle = p.rotation + i * 0.2;
+      if (keys.current['Space'] && now - p.lastShot > p.fireRate) {
+        if (p.mode === 'RANGED') {
+          if (p.weaponType === 'TRIPLE') {
+            for (let i = -1; i <= 1; i++) {
+              const angle = p.rotation + i * 0.2;
+              bullets.current.push({
+                x: p.x + Math.cos(angle) * 25,
+                y: p.y + Math.sin(angle) * 25,
+                width: 6, height: 6, rotation: angle,
+                vx: Math.cos(angle) * 8,
+                vy: Math.sin(angle) * 8,
+                damage: 15 + (wave * 2), owner: 'PLAYER'
+              });
+            }
+          } else {
             bullets.current.push({
-              x: p.x + Math.cos(angle) * 25,
-              y: p.y + Math.sin(angle) * 25,
-              width: 6, height: 6, rotation: angle,
-              vx: Math.cos(angle) * 8,
-              vy: Math.sin(angle) * 8,
-              damage: 15, owner: 'PLAYER'
+              x: p.x + Math.cos(p.rotation) * 25,
+              y: p.y + Math.sin(p.rotation) * 25,
+              width: 6, height: 6, rotation: p.rotation,
+              vx: Math.cos(p.rotation) * 7,
+              vy: Math.sin(p.rotation) * 7,
+              damage: 20 + (wave * 3), owner: 'PLAYER'
             });
           }
-        } else {
-          bullets.current.push({
-            x: p.x + Math.cos(p.rotation) * 25,
-            y: p.y + Math.sin(p.rotation) * 25,
-            width: 6, height: 6, rotation: p.rotation,
-            vx: Math.cos(p.rotation) * 7,
-            vy: Math.sin(p.rotation) * 7,
-            damage: 20, owner: 'PLAYER'
+          p.lastShot = now;
+          audioService.playBlip();
+          createParticles(p.x + Math.cos(p.rotation) * 25, p.y + Math.sin(p.rotation) * 25, '#22d3ee', 5, 1);
+        } else if (p.mode === 'MELEE') {
+          // Shockwave Burst
+          triggerCutscene("SHOCKWAVE_DISCHARGED", 800);
+          audioService.playSuccess();
+          createParticles(p.x, p.y, '#ef4444', 40, 8);
+          enemies.current.forEach((e, eIdx) => {
+            const dist = Math.hypot(p.x - e.x, p.y - e.y);
+            if (dist < 150) {
+              hitEnemy(e, eIdx, 100 + (wave * 10), e.x, e.y);
+              // Blast back
+              const angle = Math.atan2(e.y - p.y, e.x - p.x);
+              e.x += Math.cos(angle) * 60;
+              e.y += Math.sin(angle) * 60;
+            }
           });
+          p.lastShot = now + 600; // Ability cooldown
         }
-        p.lastShot = now;
-        audioService.playBlip();
-        createParticles(p.x + Math.cos(p.rotation) * 25, p.y + Math.sin(p.rotation) * 25, '#22d3ee', 5, 1);
       }
+    } else if (gameState === 'BOSS_DODGE') {
+       // Restricted movement
+       p.y = canvas.height - 50;
+       p.rotation = -Math.PI / 2;
+       if (keys.current['KeyA'] || keys.current['ArrowLeft']) p.x -= p.speed * 2;
+       if (keys.current['KeyD'] || keys.current['ArrowRight']) p.x += p.speed * 2;
+       
+       // Passively fill Ult
+       setUltCharge(prev => {
+         const next = Math.min(100, prev + 0.1);
+         if (next >= 100 && prev < 100) {
+            triggerCutscene("ULTIMATE_CHARGE_MAXIMIZED", 1500);
+         }
+         return next;
+       });
+
+       if (ultCharge >= 100 && keys.current['Space']) {
+          performUltimate();
+       }
     }
 
     // Keep player in bounds
@@ -371,51 +471,77 @@ export default function TankGame({ onBack }: TankGameProps) {
     });
 
     enemies.current.forEach((e, index) => {
-      // AI behavior
-      const angle = Math.atan2(p.y - e.y, p.x - e.x);
-      let diff = angle - e.rotation;
-      while (diff < -Math.PI) diff += Math.PI * 2;
-      while (diff > Math.PI) diff -= Math.PI * 2;
-      e.rotation += diff * e.turnSpeed;
-
-      const dist = Math.hypot(p.x - e.x, p.y - e.y);
-      if (e.isBoss) {
-        if (dist > 300) {
-          e.x += Math.cos(e.rotation) * e.speed;
-          e.y += Math.sin(e.rotation) * e.speed;
-        }
-        // Boss specialized shooting
-        const now = Date.now();
-        if (now - e.lastShot > e.fireRate) {
-          for (let i = -2; i <= 2; i++) {
-            const spread = e.rotation + i * 0.3;
+      if (gameState === 'BOSS_DODGE' && e.isBoss) {
+         e.x = canvas.width / 2;
+         e.y = 100;
+         e.rotation = Math.PI / 2;
+         
+         const now = Date.now();
+         if (now - e.lastShot > 150) { // Hyper fire
+            const spread = Math.sin(now / 500) * Math.PI;
             bullets.current.push({
-              x: e.x + Math.cos(spread) * 60,
-              y: e.y + Math.sin(spread) * 60,
-              width: 10, height: 10, rotation: spread,
-              vx: Math.cos(spread) * 4,
-              vy: Math.sin(spread) * 4,
-              damage: 15, owner: 'ENEMY'
+              x: e.x + Math.cos(spread) * 100,
+              y: e.y + Math.sin(spread) * 100,
+              width: 12, height: 12, rotation: spread,
+              vx: Math.cos(spread) * 6,
+              vy: Math.sin(spread) * 6,
+              damage: 20, owner: 'ENEMY'
             });
-          }
-          e.lastShot = now;
-        }
+            e.lastShot = now;
+         }
       } else {
-        if (dist > 150) {
-          e.x += Math.cos(e.rotation) * e.speed;
-          e.y += Math.sin(e.rotation) * e.speed;
-        }
-        const now = Date.now();
-        if (dist < 400 && now - e.lastShot > e.fireRate) {
-          bullets.current.push({
-            x: e.x + Math.cos(e.rotation) * 20,
-            y: e.y + Math.sin(e.rotation) * 20,
-            width: 6, height: 6, rotation: e.rotation,
-            vx: Math.cos(e.rotation) * 5,
-            vy: Math.sin(e.rotation) * 5,
-            damage: 10, owner: 'ENEMY'
-          });
-          e.lastShot = now;
+        // AI behavior
+        const angle = Math.atan2(p.y - e.y, p.x - e.x);
+        let diff = angle - e.rotation;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        e.rotation += diff * e.turnSpeed;
+
+        const dist = Math.hypot(p.x - e.x, p.y - e.y);
+        if (e.isBoss) {
+          if (dist > 300) {
+            e.x += Math.cos(e.rotation) * e.speed;
+            e.y += Math.sin(e.rotation) * e.speed;
+          }
+          // Boss specialized shooting
+          const now = Date.now();
+          if (now - e.lastShot > e.fireRate) {
+            for (let i = -2; i <= 2; i++) {
+              const spread = e.rotation + i * 0.3;
+              bullets.current.push({
+                x: e.x + Math.cos(spread) * 60,
+                y: e.y + Math.sin(spread) * 60,
+                width: 10, height: 10, rotation: spread,
+                vx: Math.cos(spread) * 4,
+                vy: Math.sin(spread) * 4,
+                damage: 15 + wave * 5, owner: 'ENEMY'
+              });
+            }
+            e.lastShot = now;
+          }
+
+          // Trigger Dodge Phase
+          if (e.hp < e.maxHp / 2 && gameState !== 'BOSS_DODGE') {
+             setGameState('BOSS_DODGE');
+             triggerCutscene("BOSS_ENTERING_OVERDRIVE_PHASE", 2000);
+          }
+        } else {
+          if (dist > 150) {
+            e.x += Math.cos(e.rotation) * e.speed;
+            e.y += Math.sin(e.rotation) * e.speed;
+          }
+          const now = Date.now();
+          if (dist < 400 && now - e.lastShot > e.fireRate) {
+            bullets.current.push({
+              x: e.x + Math.cos(e.rotation) * 20,
+              y: e.y + Math.sin(e.rotation) * 20,
+              width: 6, height: 6, rotation: e.rotation,
+              vx: Math.cos(e.rotation) * 5,
+              vy: Math.sin(e.rotation) * 5,
+              damage: 10 + wave * 2, owner: 'ENEMY'
+            });
+            e.lastShot = now;
+          }
         }
       }
 
@@ -474,38 +600,6 @@ export default function TankGame({ onBack }: TankGameProps) {
       });
     }
 
-    function hitEnemy(e: Tank, eIdx: number, damage: number, x: number, y: number) {
-      if (Math.hypot(x - e.x, y - e.y) < e.width / 2 + 10) {
-          e.hp -= damage;
-          createParticles(x, y, e.color, 10);
-          if (e.hp <= 0) {
-            enemiesKilledInLevel.current++;
-            if (e.isBoss) {
-              bossActive.current = false;
-              triggerCutscene("BOSS_UNIT_DECOMMISSIONED");
-            }
-            enemies.current.splice(eIdx, 1);
-            
-            if (enemies.current.length === 0 && enemiesToSpawn.current === 0) {
-              triggerCutscene("SECTOR_STABILIZED");
-            }
-
-            setScore(s => {
-              const newScore = s + (e.isBoss ? 5000 : 100);
-              if (newScore > highScore) {
-                setHighScore(newScore);
-                localStorage.setItem('tank_highscore', newScore.toString());
-              }
-              return newScore;
-            });
-            audioService.playSuccess();
-            createParticles(e.x, e.y, e.color, e.isBoss ? 100 : 30, 5);
-            return true;
-          }
-      }
-      return false;
-    }
-
     // Draw Player
     ctx.save();
     ctx.translate(p.x, p.y);
@@ -543,8 +637,25 @@ export default function TankGame({ onBack }: TankGameProps) {
     frameId.current = requestAnimationFrame(gameLoop);
   };
 
+  const performUltimate = () => {
+    setGameState('CUTSCENE');
+    setCutsceneText("ULTIMATE_SMASH_INITIATED");
+    audioService.playSuccess();
+    
+    setTimeout(() => {
+      const b = enemies.current.find(e => e.isBoss);
+      if (b) {
+        createParticles(b.x, b.y, '#ffffff', 200, 15);
+        createParticles(b.x, b.y, '#facc15', 100, 10);
+        hitEnemy(b, enemies.current.indexOf(b), 9999, b.x, b.y);
+      }
+      setUltCharge(0);
+      setGameState('PLAYING');
+    }, 2000);
+  };
+
   useEffect(() => {
-    if (gameState === 'PLAYING') {
+    if (gameState === 'PLAYING' || gameState === 'BOSS_DODGE') {
       frameId.current = requestAnimationFrame(gameLoop);
     }
     return () => cancelAnimationFrame(frameId.current);
@@ -592,6 +703,16 @@ export default function TankGame({ onBack }: TankGameProps) {
         </div>
 
         <div className="flex items-center gap-4">
+          <div className="flex flex-col items-end">
+              <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">ULTIMATE_CHARGE</span>
+              <div className="w-48 h-2 bg-slate-800 border border-slate-700 p-0.5">
+                 <motion.div 
+                    initial={false}
+                    animate={{ width: `${ultCharge}%` }}
+                    className={`h-full ${ultCharge >= 100 ? 'bg-yellow-400 animate-pulse' : 'bg-tactical-cyan/40'}`}
+                 />
+              </div>
+           </div>
            <div className="flex flex-col items-end">
               <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">HULL_INTEGRITY</span>
               <div className="w-48 h-2 bg-slate-800 border border-slate-700 p-0.5">

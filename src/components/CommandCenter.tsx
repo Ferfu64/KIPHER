@@ -23,7 +23,8 @@ import {
   X,
   Trash2,
   Database,
-  ArrowRight
+  ArrowRight,
+  LogOut
 } from 'lucide-react';
 import CreateAgentForm from './CreateAgentForm';
 import { handleFirestoreError, OperationType, ensureDate } from '../lib/utils';
@@ -40,16 +41,14 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
   const [newTitle, setNewTitle] = useState('');
 
   const CUTSCENE_OPTIONS = [
-    { type: 'FLUSH', label: 'FLUSH (Common)' },
+    { type: 'STRUCTURAL_COLLAPSE', label: 'STRUCTURAL_COLLAPSE (1 in 911 | Legendary)' },
     { type: 'SINGULARITY', label: 'SINGULARITY (Legendary)' },
     { type: 'ANGELIC_SYMPHONY', label: 'ANGELIC_SYMPHONY (Mythic)' },
     { type: 'ETERNAL_OPPRESSION', label: 'ETERNAL_OPPRESSION (Hurt)' },
     { type: 'SUPREME_SOVEREIGN', label: 'SUPREME_SOVEREIGN (Absolute)' },
     { type: 'ANONYMOUS_DEITY', label: 'ANONYMOUS_DEITY (Divine)' },
+    { type: 'AEGIS_ARCHITECH', label: 'AEGIS_ARCHITECH (Architect)' },
     { type: 'OMEGA', label: 'OMEGA (Epic)' },
-    { type: 'GLITCH_FACE', label: 'GLITCH_FACE (Rare)' },
-    { type: 'CELESTIAL_SYNC', label: 'CELESTIAL_SYNC (Rare)' },
-    { type: 'STICK_FIGHT', label: 'STICK_FIGHT (Rare)' },
   ];
 
   useEffect(() => {
@@ -162,7 +161,7 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
     }
   };
 
-  const sendDirectCommand = async (uid: string, type: 'REDIRECT' | 'SAFETY' | 'RESTORE' | 'ALERT' | 'MEDIA', payload: string = '') => {
+  const sendDirectCommand = async (uid: string, type: 'REDIRECT' | 'SAFETY' | 'RESTORE' | 'ALERT' | 'MEDIA' | 'FORCE_LOGOUT', payload: string = '') => {
     try {
       if (!auth.currentUser) await signInAnonymously(auth);
       // Use 'GLOBAL' instead of null for better querying reliability
@@ -430,6 +429,17 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
                           >
                             <ShieldHalf size={10} />
                             <div className="absolute bottom-full right-0 mb-1 px-2 py-1 bg-red-500 text-black text-[7px] font-black rounded opacity-0 group-hover/cmd:opacity-100 pointer-events-none">PANIC</div>
+                          </button>
+                          <button 
+                            onClick={() => {
+                              if (confirm(`FORCE_LOGOUT_USER_${u.displayName}?`)) {
+                                sendDirectCommand(u.uid, 'FORCE_LOGOUT');
+                              }
+                            }}
+                            className="p-1 border border-white/5 hover:border-red-600 text-white/20 hover:text-red-600 transition-all relative group/cmd"
+                          >
+                            <LogOut size={10} />
+                            <div className="absolute bottom-full right-0 mb-1 px-2 py-1 bg-red-600 text-white text-[7px] font-black rounded opacity-0 group-hover/cmd:opacity-100 pointer-events-none">LOGOUT</div>
                           </button>
                         </div>
                         

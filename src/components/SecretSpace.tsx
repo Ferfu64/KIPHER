@@ -1,13 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, TrendingUp, ShoppingBag, Gamepad2, ArrowLeft, Star, Shield, Zap, Sparkles, User, Badge, Swords, Crosshair } from 'lucide-react';
+import { 
+  Trophy, 
+  TrendingUp, 
+  ShoppingBag, 
+  Gamepad2, 
+  ArrowLeft, 
+  Star, 
+  Shield, 
+  Zap, 
+  Sparkles, 
+  User, 
+  Badge, 
+  Swords, 
+  Crosshair, 
+  Brain, 
+  Cpu, 
+  Maximize2, 
+  Clock,
+  AlertTriangle,
+  HelpCircle,
+  Target as TargetIcon 
+} from 'lucide-react';
 import { titleService } from '../services/titleService';
 import { audioService } from '../services/audioService';
 import { db } from '../lib/firebase';
-import { doc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import TankGame from './TankGame';
-import CyberRunner from './CyberRunner';
+import MemoryMatch from './MemoryMatch';
+import TimeGame from './TimeGame';
+import TriviaGame from './TriviaGame';
 
 interface SecretSpaceProps {
   currentUser: UserProfile;
@@ -16,13 +39,19 @@ interface SecretSpaceProps {
   onImmersiveChange?: (active: boolean) => void;
 }
 
+type TabType = 'HONOR' | 'PROMOTIONS' | 'SHOP' | 'GAMES' | 'LEADERBOARD';
+
 export default function SecretSpace({ currentUser, onUpdate, onClose, onImmersiveChange }: SecretSpaceProps) {
-  const [activeTab, setActiveTab] = useState<'HONOR' | 'PROMOTIONS' | 'SHOP' | 'GAMES'>('HONOR');
+  const [activeTab, setActiveTab] = useState<TabType>('HONOR');
   const [isGameActive, setIsGameActive] = useState(false);
   const [titles, setTitles] = useState<string[]>([]);
   const [isPromoting, setIsPromoting] = useState(false);
   const [localUser, setLocalUser] = useState(currentUser);
-  const [selectedGame, setSelectedGame] = useState<'NONE' | 'TANK' | 'RUNNER'>('NONE');
+  const [selectedGame, setSelectedGame] = useState<'NONE' | 'TANK' | 'MEMORY' | 'CHRONOS' | 'TRIVIA'>('NONE');
+
+  useEffect(() => {
+    setLocalUser(currentUser);
+  }, [currentUser]);
 
   useEffect(() => {
     onImmersiveChange?.(isGameActive || selectedGame !== 'NONE');
@@ -65,26 +94,148 @@ export default function SecretSpace({ currentUser, onUpdate, onClose, onImmersiv
   };
 
   const purchaseCustomization = async (id: string, cost: number, customizationObj: any) => {
-     if ((localUser.credits || 0) < cost) return;
+     const isOwned = localUser.purchasedItems?.includes(id);
      
-     const newCredits = (localUser.credits || 0) - cost;
-     const newCustomization = { ...(localUser.customization || {}), ...customizationObj };
+     if (!isOwned && (localUser.credits || 0) < cost) {
+       audioService.playError();
+       return;
+     }
      
-     const updated = { ...localUser, credits: newCredits, customization: newCustomization };
+     let newCredits = localUser.credits || 0;
+     let newPurchasedItems = [...(localUser.purchasedItems || [])];
+     
+     if (!isOwned) {
+       newCredits -= cost;
+       newPurchasedItems.push(id);
+     }
+     
+     // Toggle off if currently active with the same values (simplified check)
+     const isActive = localUser.customization && customizationObj ? JSON.stringify(localUser.customization).includes(JSON.stringify(customizationObj).slice(1, -1)) : false;
+     const newCustomization = isActive ? {} : { ...(localUser.customization || {}), ...customizationObj };
+     
+     const updated = { 
+       ...localUser, 
+       credits: newCredits, 
+       purchasedItems: newPurchasedItems,
+       customization: newCustomization 
+     };
+     
      setLocalUser(updated);
      onUpdate(updated);
      
      await updateDoc(doc(db, 'users', localUser.uid), {
        credits: newCredits,
+       purchasedItems: newPurchasedItems,
        customization: newCustomization
      });
+     
      audioService.playSuccess();
   };
+
+  const SHOP_ITEMS = [
+    {
+      id: 'neon_glow',
+      title: "Cyber_Neon_Glow",
+      desc: "Emanate a tactical radiance from your locator nodes.",
+      cost: 300,
+      icon: Sparkles,
+      config: { neonGlow: true }
+    },
+    {
+      id: 'mouse_trail',
+      title: "Liquid_Interface",
+      desc: "Fluid cursor movement protocol implementation.",
+      cost: 100,
+      icon: Zap,
+      config: { mouseTrail: true }
+    },
+    {
+      id: 'name_cyan',
+      title: "Cyan_Mastery",
+      desc: "Custom tactical cyan user visualization.",
+      cost: 50,
+      icon: TargetIcon,
+      config: { nameColor: '#22d3ee', titleColor: 'rgba(34,211,238,0.6)', mouseColor: '#22d3ee' }
+    },
+    {
+      id: 'name_gold',
+      title: "Gold_Sovereign",
+      desc: "High-status golden interface aesthetics with ultra-heavy heavy locator.",
+      cost: 1000,
+      icon: Star,
+      config: { nameColor: '#fbbf24', titleColor: 'rgba(251,191,36,0.6)', mouseColor: '#fbbf24', mouseSize: 48, neonGlow: true }
+    },
+    {
+      id: 'cursor_size',
+      title: "Heavy_Cursor",
+      desc: "Increase locator dimensions for better focus.",
+      cost: 200,
+      icon: Maximize2,
+      config: { mouseSize: 32 }
+    },
+    {
+      id: 'rainbow_shift',
+      title: "Prism_Shift",
+      desc: "Unstable color spectrum synchronization. (Rainbow Name)",
+      cost: 5000,
+      icon: Sparkles,
+      config: { nameColor: 'rainbow', neonGlow: true }
+    },
+    {
+      id: 'luck_chip',
+      title: "Neural_Luck_Buffer",
+      desc: "Experimental chip that boosts critical gacha probability by 15%.",
+      cost: 5000,
+      icon: Zap,
+      config: { luckBonus: 0.15 }
+    },
+    {
+      id: 'high_roller_id',
+      title: "High_Sovereign_ID",
+      desc: "Unlock secret VIP dialogues and higher betting limits in all sectors.",
+      cost: 15000,
+      icon: Shield,
+      config: { vipStatus: true }
+    },
+    {
+      id: 'glitch_name',
+      title: "Corrupted_ID",
+      desc: "Partial database corruption in naming protocol.",
+      cost: 2500,
+      icon: AlertTriangle,
+      config: { glitchEffect: true }
+    },
+    {
+      id: 'name_red',
+      title: "Blood_Ops",
+      desc: "Aggressive red-spectrum visualization suite.",
+      cost: 1500,
+      icon: Shield,
+      config: { nameColor: '#ef4444', titleColor: 'rgba(239,68,68,0.6)', mouseColor: '#ef4444' }
+    },
+    {
+      id: 'ghost_protocol',
+      title: "Ghost_Protocol",
+      desc: "Pure white spectral visualization for stealth ops.",
+      cost: 800,
+      icon: User,
+      config: { nameColor: '#ffffff', titleColor: 'rgba(255,255,255,0.4)', mouseColor: '#ffffff' }
+    },
+    {
+      id: 'emerald_matrix',
+      title: "Emerald_Matrix",
+      desc: "System-level green matrix interface protocol.",
+      cost: 600,
+      icon: Cpu,
+      config: { nameColor: '#10b981', titleColor: 'rgba(16,185,129,0.4)', mouseColor: '#10b981' }
+    }
+  ];
 
   const tabs = [
     { id: 'HONOR', icon: Trophy, label: 'Honors_Vault' },
     { id: 'PROMOTIONS', icon: TrendingUp, label: 'Rank_Ascension' },
     { id: 'SHOP', icon: ShoppingBag, label: 'Upgrade_Shop' },
+    { id: 'LEADERBOARD', icon: Star, label: 'Leaderboard' },
     { id: 'GAMES', icon: Gamepad2, label: 'Tactical_Sims' },
   ] as const;
 
@@ -238,55 +389,35 @@ export default function SecretSpace({ currentUser, onUpdate, onClose, onImmersiv
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <ShopItem 
-                    title="Cyber_Neon_Glow"
-                    desc="Emanate a tactical radiance from your locator nodes."
-                    cost={300}
-                    icon={Sparkles}
-                    owned={!!localUser.customization?.neonGlow}
-                    onBuy={() => purchaseCustomization('neon_glow', 300, { neonGlow: true })}
-                  />
-                  <ShopItem 
-                    title="Liquid_Interface"
-                    desc="Fluid cursor movement protocol implementation."
-                    cost={100}
-                    icon={Zap}
-                    owned={!!localUser.customization?.mouseTrail}
-                    onBuy={() => purchaseCustomization('mouse_trail', 100, { mouseTrail: true })}
-                  />
-                  <ShopItem 
-                    title="Cyan_Mastery"
-                    desc="Custom tactical cyan user visualization."
-                    cost={50}
-                    icon={Target}
-                    owned={localUser.customization?.nameColor === '#22d3ee'}
-                    onBuy={() => purchaseCustomization('name_cyan', 50, { nameColor: '#22d3ee', titleColor: 'rgba(34,211,238,0.6)' })}
-                  />
-                  <ShopItem 
-                    title="Gold_Sovereign"
-                    desc="High-status golden interface aesthetics."
-                    cost={1000}
-                    icon={Star}
-                    owned={localUser.customization?.nameColor === '#fbbf24'}
-                    onBuy={() => purchaseCustomization('name_gold', 1000, { nameColor: '#fbbf24', titleColor: 'rgba(251,191,36,0.6)' })}
-                  />
-                  <ShopItem 
-                    title="Heavy_Cursor"
-                    desc="Increase locator dimensions for better focus."
-                    cost={200}
-                    icon={Maximize2}
-                    owned={localUser.customization?.mouseSize === 32}
-                    onBuy={() => purchaseCustomization('cursor_size', 200, { mouseSize: 32 })}
-                  />
-                  <ShopItem 
-                    title="Blood_Ops"
-                    desc="Aggressive red-spectrum visualization suite."
-                    cost={1500}
-                    icon={Shield}
-                    owned={localUser.customization?.nameColor === '#ef4444'}
-                    onBuy={() => purchaseCustomization('name_red', 1500, { nameColor: '#ef4444', titleColor: 'rgba(239,68,68,0.6)', mouseColor: '#ef4444' })}
-                  />
+                  {SHOP_ITEMS.map((item) => {
+                    const isOwned = localUser.purchasedItems?.includes(item.id);
+                    const isActive = localUser.customization && item.config ? JSON.stringify(localUser.customization).includes(JSON.stringify(item.config).slice(1, -1)) : false;
+
+                    return (
+                      <ShopItem 
+                        key={item.id}
+                        title={item.title}
+                        desc={item.desc}
+                        cost={item.cost}
+                        icon={item.icon}
+                        owned={!!isOwned}
+                        active={isActive}
+                        onBuy={() => purchaseCustomization(item.id, item.cost, item.config)}
+                      />
+                    );
+                  })}
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'LEADERBOARD' && (
+              <div className="max-w-2xl mx-auto w-full py-10">
+                 <div className="text-center mb-12">
+                   <h1 className="text-4xl font-black text-white tracking-[0.3em] uppercase mb-4">Command_Ranks</h1>
+                   <div className="h-1 w-20 bg-tactical-cyan mx-auto"></div>
+                 </div>
+                 
+                 <TankLeaderboard />
               </div>
             )}
 
@@ -302,23 +433,82 @@ export default function SecretSpace({ currentUser, onUpdate, onClose, onImmersiv
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
                          <GameCard 
                            title="Armored_Core"
-                           desc="Top-down tactical tank survival. Now with Berserker Melee Mode [Shift] and Boss Encounters."
+                           desc="Top-down tactical tank survival. Dodge Boss attacks and unleash your Ultimate Smash."
                            icon={Shield}
                            onPlay={() => setSelectedGame('TANK')}
                          />
                          <GameCard 
-                           title="Cyber_Runner"
-                           desc="Dynamic data stream navigation. Avoid firewalls. Collect signal optimizers."
-                           icon={Zap}
-                           onPlay={() => setSelectedGame('RUNNER')}
+                           title="Cortex_Match"
+                           desc="Neural pattern synchronization and data block decryption."
+                           icon={Brain}
+                           onPlay={() => setSelectedGame('MEMORY')}
+                         />
+                         <GameCard 
+                           title="Chronos_Drift"
+                           desc="Navigate the chronos-stream. Manipulate time to bypass corruption."
+                           icon={Clock}
+                           onPlay={() => setSelectedGame('CHRONOS')}
+                         />
+                         <GameCard 
+                           title="Trivia_Nexus"
+                           desc="Extract technical intelligence. Survive neural feedback loops."
+                           icon={HelpCircle}
+                           onPlay={() => setSelectedGame('TRIVIA')}
                          />
                       </div>
                    </div>
                  ) : selectedGame === 'TANK' ? (
-                    <TankGame onBack={() => setSelectedGame('NONE')} />
-                 ) : (
-                    <CyberRunner onBack={() => setSelectedGame('NONE')} />
-                 )}
+                    <TankGame 
+                      onBack={() => setSelectedGame('NONE')} 
+                      onCreditsEarned={async (cr, wave) => {
+                        const newCredits = (localUser.credits || 0) + cr;
+                        const currentHigh = localUser.tankHighscore || 0;
+                        const newHigh = Math.max(currentHigh, wave);
+                        
+                        const updated = { ...localUser, credits: newCredits, tankHighscore: newHigh };
+                        setLocalUser(updated);
+                        onUpdate(updated);
+                        
+                        await updateDoc(doc(db, 'users', localUser.uid), { 
+                           credits: newCredits,
+                           tankHighscore: newHigh 
+                        });
+                      }}
+                    />
+                 ) : selectedGame === 'MEMORY' ? (
+                    <MemoryMatch 
+                      onBack={() => setSelectedGame('NONE')} 
+                      onCreditsEarned={async (cr) => {
+                        const newCredits = (localUser.credits || 0) + cr;
+                        const updated = { ...localUser, credits: newCredits };
+                        setLocalUser(updated);
+                        onUpdate(updated);
+                        await updateDoc(doc(db, 'users', localUser.uid), { credits: newCredits });
+                      }}
+                    />
+                  ) : selectedGame === 'CHRONOS' ? (
+                     <TimeGame 
+                       onBack={() => setSelectedGame('NONE')}
+                       onCreditsEarned={async (cr) => {
+                         const newCredits = (localUser.credits || 0) + cr;
+                         const updated = { ...localUser, credits: newCredits };
+                         setLocalUser(updated);
+                         onUpdate(updated);
+                         await updateDoc(doc(db, 'users', localUser.uid), { credits: newCredits });
+                       }}
+                     />
+                  ) : (
+                    <TriviaGame 
+                      onBack={() => setSelectedGame('NONE')}
+                      onCreditsEarned={async (cr) => {
+                         const newCredits = (localUser.credits || 0) + cr;
+                         const updated = { ...localUser, credits: newCredits };
+                         setLocalUser(updated);
+                         onUpdate(updated);
+                         await updateDoc(doc(db, 'users', localUser.uid), { credits: newCredits });
+                       }}
+                    />
+                  )}
               </div>
             )}
           </motion.div>
@@ -349,32 +539,65 @@ function GameCard({ title, desc, icon: Icon, onPlay }: { title: string, desc: st
   );
 }
 
-function ShopItem({ title, desc, cost, icon: Icon, onBuy, owned }: { title: string, desc: string, cost: number, icon: any, onBuy: () => void, owned: boolean }) {
+function ShopItem({ title, desc, cost, icon: Icon, onBuy, owned, active }: { title: string, desc: string, cost: number, icon: any, onBuy: () => void, owned: boolean, active?: boolean }) {
   return (
     <div className={`p-6 bg-slate-900 border transition-all flex flex-col ${owned ? 'border-green-500/30' : 'border-slate-800 hover:border-tactical-cyan'}`}>
        <div className="flex justify-between items-start mb-6">
           <div className={`p-3 border rounded ${owned ? 'border-green-500/20 bg-green-500/5 text-green-500' : 'border-slate-800 bg-slate-950 text-slate-500'}`}>
              <Icon size={24} />
           </div>
-          {owned && <Shield className="text-green-500" size={16} />}
+          {owned && <Shield className={active ? "text-tactical-cyan" : "text-green-500"} size={16} />}
        </div>
        <h3 className="text-sm font-black text-white uppercase tracking-widest mb-1">{title}</h3>
        <p className="text-[10px] text-slate-500 mb-6 flex-1 line-clamp-2 uppercase italic">{desc}</p>
        <button 
          onClick={onBuy}
-         disabled={owned}
-         className={`w-full py-3 text-[10px] font-black uppercase tracking-widest transition-all ${owned ? 'bg-green-500/10 text-green-500 cursor-not-allowed border border-green-500/20' : 'bg-slate-950 border border-slate-800 text-slate-400 hover:border-tactical-cyan hover:text-tactical-cyan'}`}
+         className={`w-full py-3 text-[10px] font-black uppercase tracking-widest transition-all ${owned ? (active ? 'bg-tactical-cyan text-black border-tactical-cyan' : 'bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500 hover:text-black') : 'bg-slate-950 border border-slate-800 text-slate-400 hover:border-tactical-cyan hover:text-tactical-cyan'}`}
        >
-         {owned ? 'PROTOCOL_ACTIVE' : `ACQUIRE // ${cost} CR`}
+         {active ? 'SYSTEM_ACTIVE' : owned ? 'TOGGLE_BOOT' : `ACQUIRE // ${cost} CR`}
        </button>
     </div>
   );
 }
 
-function Maximize2(props: any) {
-  return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>;
-}
+function TankLeaderboard() {
+  const [scores, setScores] = useState<{name: string, wave: number}[]>([]);
+  const [loading, setLoading] = useState(true);
 
-function Target(props: any) {
-  return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>;
+  useEffect(() => {
+    const fetchScores = async () => {
+      try {
+        const q = query(collection(db, 'users'), orderBy('tankHighscore', 'desc'), limit(10));
+        const snap = await getDocs(q);
+        const list = snap.docs
+          .map(d => ({ name: d.data().displayName, wave: d.data().tankHighscore || 0 }))
+          .filter(s => s.wave > 0);
+        setScores(list);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchScores();
+  }, []);
+
+  if (loading) return <div className="text-center py-10 text-tactical-cyan animate-pulse font-black">FETCHING_COMMAND_DATA...</div>;
+
+  return (
+    <div className="space-y-4">
+      {scores.map((s, i) => (
+        <div key={i} className="flex justify-between items-center p-4 bg-slate-900 border-l-4 border-tactical-cyan">
+           <div className="flex items-center gap-4">
+              <span className="text-slate-500 font-black">#{i+1}</span>
+              <span className="text-white font-black uppercase tracking-widest">{s.name}</span>
+           </div>
+           <div className="text-tactical-cyan font-black">WAVE_{s.wave}</div>
+        </div>
+      ))}
+      {scores.length === 0 && (
+         <div className="text-center py-10 text-slate-700 italic border border-dashed border-slate-900">No active combat records found.</div>
+      )}
+    </div>
+  );
 }

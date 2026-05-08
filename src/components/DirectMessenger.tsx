@@ -9,6 +9,7 @@ import { handleFirestoreError, OperationType } from '../lib/utils';
 import { audioService } from '../services/audioService';
 
 import ChatUserDisplay from './ChatUserDisplay';
+import UnifiedChat from './UnifiedChat';
 
 export default function DirectMessenger({ currentUser, targetUser, onBack }: { currentUser: UserProfile, targetUser: UserProfile | null, onBack?: () => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -33,7 +34,7 @@ export default function DirectMessenger({ currentUser, targetUser, onBack }: { c
         let found: Connection | null = null;
         snap.forEach(doc => {
           const data = doc.data();
-          if (data.users.includes(targetUser.uid)) {
+          if (data.users?.includes(targetUser.uid)) {
             found = { id: doc.id, ...data } as Connection;
           }
         });
@@ -81,50 +82,30 @@ export default function DirectMessenger({ currentUser, targetUser, onBack }: { c
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  const sendMessage = async (e?: React.FormEvent, textOverride?: string, typeOverride?: ChatMessage['type']) => {
-    if (e) e.preventDefault();
-    const textToSend = textOverride || newMessage;
-    if (!textToSend.trim() || !connection) return;
+  const sendMessage = async (text: string, type: ChatMessage['type'] = 'TEXT', replyToId?: string) => {
+    if (!text.trim() || !connection) return;
 
     try {
       await addDoc(collection(db, 'connections', connection.id, 'messages'), {
         senderId: currentUser.uid,
         senderAuthId: auth.currentUser?.uid,
         senderName: currentUser.displayName,
-        text: textToSend,
+        text: text,
         timestamp: serverTimestamp(),
-        type: typeOverride || 'TEXT'
+        type: type,
+        replyToId: replyToId || null
       });
 
-      // Update parent connection to trigger global listeners
       await setDoc(doc(db, 'connections', connection.id), {
-        lastMessage: textToSend.startsWith('data:image') ? '[MEDIA]' : textToSend,
+        lastMessage: text.startsWith('data:image') || text.startsWith('http') ? '[MEDIA]' : text,
         lastSenderName: currentUser.displayName,
         lastSenderAuthId: auth.currentUser?.uid,
         updatedAt: serverTimestamp()
       }, { merge: true });
 
-      if (!textOverride) setNewMessage('');
       audioService.playSuccess();
     } catch (e) {
       handleFirestoreError(e, OperationType.WRITE, `connections/${connection.id}/messages`);
-    }
-  };
-
-  const handlePaste = async (e: React.ClipboardEvent) => {
-    const items = e.clipboardData.items;
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        const file = items[i].getAsFile();
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            const base64 = event.target?.result as string;
-            sendMessage(undefined, base64, 'MEDIA');
-          };
-          reader.readAsDataURL(file);
-        }
-      }
     }
   };
 
@@ -156,42 +137,12 @@ export default function DirectMessenger({ currentUser, targetUser, onBack }: { c
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
-        {messages.map((msg, i) => {
-          const isMe = msg.senderId === currentUser.uid;
-          return (
-            <div key={msg.id || i} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-              <div className="mb-1 px-1">
-                 <ChatUserDisplay uid={msg.senderId} defaultName={msg.senderName} isMe={isMe} />
-              </div>
-              <div className={`max-w-[80%] px-3 py-2 text-xs border ${
-                isMe 
-                  ? 'border-tactical-cyan bg-tactical-cyan/5 text-tactical-cyan' 
-                  : 'border-slate-800 bg-slate-900/40 text-slate-300'
-              }`}>
-                {msg.type === 'MEDIA' ? (
-                  <img src={msg.text} alt="ENCRYPTED_MEDIA" className="max-w-full rounded border border-white/10" referrerPolicy="no-referrer" />
-                ) : (
-                  msg.text
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <form onSubmit={sendMessage} className="p-4 border-t border-slate-900 bg-black/40 flex gap-2">
-        <input 
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onPaste={handlePaste}
-          placeholder="SECURE_TRANSMISSION..."
-          className="flex-1 kipher-input bg-slate-950 border-slate-800 py-3"
-        />
-        <button type="submit" className="px-6 bg-tactical-cyan text-black font-black uppercase tracking-widest hover:bg-white transition-all">
-          <Send size={16} />
-        </button>
-      </form>
+      <UnifiedChat 
+        messages={messages}
+        currentUser={currentUser}
+        onSendMessage={sendMessage}
+        placeholder="SECURE_TRANSMISSION..."
+      />
     </div>
   );
 }

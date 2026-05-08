@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { audioService } from '../services/audioService';
-import { ShieldAlert, Zap, Globe, Infinity as InfinityIcon, Scan, Cpu, Eye, Activity, HardDrive, Smartphone, Search, Share2, Repeat, Layers, Box, Camera, Database, Hash, Play, Wind, Sun, Satellite, Radar, Key, CircuitBoard, Atom, Clock, Rocket, Mountain, ArrowRight, AlertTriangle, User, Music, Music2, ExternalLink, Ghost, RotateCw, Unlink, Network, Terminal, Lock, Unlock, FileCode, Dice5, CloudRain, Radio, Signal, RefreshCw } from 'lucide-react';
+import { ShieldAlert, Zap, Globe, Infinity as InfinityIcon, Scan, Cpu, Eye, Activity, HardDrive, Smartphone, Search, Share2, Repeat, Layers, Box, Camera, Database, Hash, Play, Wind, Sun, Satellite, Radar, Key, CircuitBoard, Atom, Clock, Rocket, Mountain, ArrowRight, AlertTriangle, User, Music, Music2, ExternalLink, Ghost, RotateCw, Unlink, Network, Terminal, Lock, Unlock, FileCode, Dice5, CloudRain, Radio, Signal, RefreshCw, RotateCcw, Trophy, Coins, Plane, XCircle, Maximize, Grid, PlusSquare, CircleSlash, HelpCircle, Dna, Fingerprint, Cat, ArrowLeft, AlertCircle, Skull } from 'lucide-react';
 
 // --- VIDEO SOURCES CONFIGURATION ---
 // REPLACE THESE WITH CLOUDINARY OR FIREBASE STORAGE URLS TO BYPASS SCHOOL BLOCKS & NETLIFY LIMITS
@@ -10,21 +10,24 @@ const VIDEO_SOURCES = {
   ANONYMOUS_DEITY: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_6_gideou.mp4",
   ANGELIC_SYMPHONY: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_2_hkdudn.mp4",
   ETERNAL_OPPRESSION: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_5_online-video-cutter.com_vjopio.mp4",
-  SUPREME_SOVEREIGN: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_5_online-video-cutter.com_1_wrfhem.mp4"
+  SUPREME_SOVEREIGN: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_5_online-video-cutter.com_1_wrfhem.mp4",
+  AEGIS_ARCHITECH: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_online-video-cutter.com_kmxlyf.mp4"
 };
 // -----------------------------------
 
 interface CutsceneProps {
   onComplete: (rarity: string) => void;
   forcedType?: string;
+  luckMultiplier?: number;
 }
 
 type CutsceneType = 
-  | 'FLUSH' | 'SPIKE' | 'BREACH' | 'GHOST' | 'DATA_FALL' | 'BINARY_WAVE' | 'SYSTEM_SCAN' | 'NOISE' | 'PIXEL_DRIFT' | 'GLITCH_STORM' | 'TICKER_TAPE' | 'HEX_DUMP'
+  | 'SPIKE' | 'BREACH' | 'GHOST' | 'DATA_FALL' | 'BINARY_WAVE' | 'SYSTEM_SCAN' | 'NOISE' | 'PIXEL_DRIFT' | 'GLITCH_STORM' | 'TICKER_TAPE' | 'HEX_DUMP'
   | 'VISAGE' | 'LIFEFORM' | 'SATELLITE_LINK' | 'RADAR_SWEEP' | 'ENCRYPTION_KEY' | 'HYPER_LOOP' | 'NEURAL_SYNC' | 'DATA_ERASURE' | 'FIREWALL_BREACH' | 'GRID_LOCK' | 'VECTOR_FIELD' | 'STATIC_RAIN' | 'PULSE_WIDTH' | 'MIRROR_EDGE'
   | 'VOID_EYE' | 'SILICON_CITY' | 'FRACTAL_GROWTH' | 'DRONE_SURVEILLANCE' | 'CODE_VORTEX' | 'GLITCH_FACE' | 'BIO_HAZARD' | 'NEON_GHOST' | 'ORBITAL_STRIKE' | 'SYNTH_WAVE' | 'CHRONO_TRIGGER' | 'CELESTIAL_SYNC'
   | 'OMEGA' | 'QUANTUM_BIT' | 'CORE_PULSE' | 'TIME_FLUX' | 'STARS_ZOOM' | 'VOLCANIC_DEBUG' | 'SINGULARITY' | 'PRISM_SHIFT' | 'GALAXY_COLLISION' | 'SOLAR_FLARE' | 'VOID_TRESPASS'
-  | 'ANGELIC_SYMPHONY' | 'ETERNAL_OPPRESSION' | 'SUPREME_SOVEREIGN' | 'ANONYMOUS_DEITY'
+  | 'ANGELIC_SYMPHONY' | 'ETERNAL_OPPRESSION' | 'SUPREME_SOVEREIGN' | 'ANONYMOUS_DEITY' | 'AEGIS_ARCHITECH'
+  | 'STRUCTURAL_COLLAPSE' | 'JACKPOT_DREAM' | 'ROULETTE_REVOLUTION' | 'SLOT_SYNCHRONY'
   | 'COBALT_REIGN' | 'EMERALD_MIST' | 'SCARLET_STORM' | 'VIOLET_VORTEX' | 'AMBER_AWAKENING' | 'MAGENTA_MATRIX'
   | 'CYAN_CORE' | 'SILVER_SHADOW' | 'GOLDEN_GATEWAY' | 'BRONZE_BEAM' | 'OBSIDIAN_OVERLAY' | 'TITANIUM_TRACE'
   | 'PLATINUM_PULSE' | 'STEEL_SURGE' | 'IRON_INITIATIVE' | 'COPPER_CIRCUIT' | 'QUARTZ_QUAKE' | 'RUBY_RESONANCE' | 'SAPPHIRE_SCAN' | 'TOPAZ_TRANSMISSION'
@@ -39,12 +42,24 @@ type CutsceneType =
   | 'DARK_ENERGY' | 'STRING_VIBRATION' | 'WORMHOLE_ENTRY' | 'BLACK_HOLE_SINGULARITY' | 'PULSE_MODULATION' 
   | 'HEARTBEAT_MONITOR' | 'RADAR_PING' | 'SONAR_SWEEP' | 'THERMAL_VISION' | 'NIGHT_MODE'
   | 'NEON_GRID' | 'CIRCUIT_FLOW' | 'DNA_SEQUENCE' | 'PULSAR' | 'NEURAL_MAP' | 'FROST_STATIC' | 'DEEP_SEA_LINK'
-  | 'STICK_FIGHT' | 'CYBER_PULSE' | 'SIGNAL_INTERFERENCE' | 'PLASMA_STORM' | 'GHOST_PROTOCOL' | 'ZENITH_POINT' 
+  | 'CYBER_PULSE' | 'SIGNAL_INTERFERENCE' | 'PLASMA_STORM' | 'GHOST_PROTOCOL' | 'ZENITH_POINT' 
   | 'NADIR_COLLAPSE' | 'ORBITAL_DESCENT' | 'ATMOSPHERIC_ENTRY' | 'DEEP_CORE_SCAN' | 'NEURAL_REWIRE' 
   | 'QUANTUM_LEAP' | 'BINARY_FISSION' | 'SUPERNOVA_REMNANT' | 'DARK_MATTER_HUNT' | 'DIMENSIONAL_SHIFT' 
-  | 'EVENT_HORIZON' | 'WHITE_HOLE_EMISSION';
+  | 'EVENT_HORIZON' | 'WHITE_HOLE_EMISSION'
+  | 'VOID_PULSE' | 'BINARY_STORM' | 'CHIP_OVERLOAD' | 'RAID_ARRAY' | 'KERNEL_PANIC' 
+  | 'BIOS_UPGRADE' | 'MOTHERBOARD_MELT' | 'CPU_THROTTLE' | 'RAM_CLEANSE' | 'SSD_WIPE' 
+  | 'GPU_RENDER_LOCK' | 'DIRECT_X_FAILURE' | 'OPEN_GL_ERROR' | 'VULKAN_ERUPTION' | 'SHADERC_CRASH' 
+  | 'PIXEL_BURST' | 'VOXEL_FALL' | 'VECTOR_VOID' | 'RASTER_REIGN' | 'BIT_BUCKET' 
+  | 'FLOAT_POINT_BUG' | 'INTEGER_OVERFLOW' | 'STACK_SMASH' | 'HEAP_EXHAUSTION' | 'POINTER_GHOST' 
+  | 'NULL_REFERENCE' | 'UNDEFINED_BEHAVIOR' | 'SEGMENTATION_FAULT' | 'DATA_RACE' | 'DEADLOCK_SHIELD' 
+  | 'RACE_CONDITION' | 'HEISENBUG' | 'MANDELBUG' | 'SCHRODINBUG' | 'BOHR_BUG' 
+  | 'LITTLE_ENDIAN' | 'BIG_ENDIAN' | 'ASCII_ART' | 'UNICODE_UPRISING' | 'UTF8_STORM' 
+  | 'COSMIC_CHURN' | 'DIGITAL_DEATH' | 'ELECTRON_END' | 'FIREWALL_FALL' | 'GHOST_GEAR' | 'HEX_HEX' | 'ION_IMPULSE'
+  | 'JETTISON_JET' | 'KINETIC_KILL' | 'LOGIC_LOCK' | 'MAC_MELT' | 'NANO_NOISE' | 'OPTIC_OVERLOAD' | 'PROTON_PULSE' | 'QUARK_QUENCH'
+  | 'PLASMA_PULSE' | 'NEBULOUS_NIGHT' | 'VOID_VAGRANT' | 'STELLAR_STORM' | 'GALAXY_GHOST' | 'ORBITAL_ODYSSEY' | 'CELESTIAL_CRASH' | 'ASTRAL_ARRAY' | 'QUANTUM_QUAKE' | 'DIMENSIONAL_DIVE' | 'TIME_TANGLE' | 'SPACE_SPIKE' | 'LUNAR_LEAK' | 'SOLAR_SURGE' | 'GRAVITY_GRIP' | 'METEOR_MELT' | 'COMET_CLASH' | 'TITAN_TICK' | 'EUROPA_END' | 'MARS_MIST' | 'VENUS_VOID' | 'SATURN_SHOCK' | 'JUPITER_JOLT' | 'NEPTUNE_NODE' | 'URANUS_UPRISING' | 'PLUTO_PULSE' | 'MERCURY_MELT' | 'SUN_STORM' | 'STAR_SURGE'
+  | 'BAUD_RATE_BURST' | 'LATENCY_LAG' | 'PING_OF_DEATH' | 'PACKET_LOSS_PURGE' | 'CORTEX_OVERRIDE';
 
-export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps) {
+export default function CortexCutscene({ onComplete, forcedType, luckMultiplier = 1 }: CutsceneProps) {
   const [type, setType] = useState<CutsceneType | null>(forcedType as CutsceneType || null);
   const [status, setStatus] = useState<'ACTIVE' | 'DISPLAY_RARITY'>('ACTIVE');
   const [rarityText, setRarityText] = useState(forcedType ? 'ADMIN_OVERRIDE (FORCED_RESTORE)' : '');
@@ -64,8 +79,9 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
     audioInitialized.current = true;
 
     // Total pool of 1,000,000
-    const rand = Math.random() * 1000000;
-    let selected: CutsceneType = type || 'FLUSH';
+    // Bias the random roll downwards (lower is better) using the luckMultiplier
+    const rand = (Math.random() * 1000000) / luckMultiplier;
+    let selected: CutsceneType = type || 'SPIKE';
     let text = rarityText || '';
 
     if (forcedType) {
@@ -73,9 +89,15 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
         text = 'ADMIN_OVERRIDE (FORCED_RESTORE)';
     } else if (!type) {
     // Tiers (Odds adjusted for more accessibility while remaining rare)
-        if (rand < 500) {
+        if (rand < 0.015) { // 1 in 67,000,000ish (rand is out of 1M)
+          selected = 'AEGIS_ARCHITECH';
+          text = '1 in 67,000,000 (THE_MASTER_BUILDER) [AEGIS_ARCHITECH]';
+        } else if (rand < 500) {
           selected = 'ANONYMOUS_DEITY';
           text = '1 in 1,000,000,000 (GHOST_IN_THE_SHELL) [ANONYMOUS_DEITY]';
+        } else if (rand < 1100) { // 1 in 911 approx
+          selected = 'STRUCTURAL_COLLAPSE';
+          text = '1 in 911 (LEGENDARY_SYSTEM_FAILURE) [STRUCTURAL_COLLAPSE]';
         } else if (rand < 1500) { 
           selected = 'ANGELIC_SYMPHONY';
           text = '1 in 10,000 (CELESTIAL_INTERVENTION) [ANGELIC_SYMPHONY]';
@@ -85,6 +107,18 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
         } else if (rand < 4500) {
           selected = 'ETERNAL_OPPRESSION';
           text = '1 in 5,000 (THE_UNAVOIDABLE_TRUTH) [ETERNAL_OPPRESSION]';
+        } else if (rand < 6000) {
+          const jackpotRand = Math.random();
+          if (jackpotRand < 0.1) {
+            selected = 'JACKPOT_DREAM';
+            text = '1 in 777 (FORTUNE_FAVORS_THE_BOLD) [JACKPOT_DREAM]';
+          } else if (jackpotRand < 0.4) {
+            selected = 'ROULETTE_REVOLUTION';
+            text = '1 in 36 (FATE_SPINS_THE_WHEEL) [ROULETTE_REVOLUTION]';
+          } else {
+            selected = 'SLOT_SYNCHRONY';
+            text = '1 in 77 (SYNCHRONIZED_CHANCE) [SLOT_SYNCHRONY]';
+          }
         } else if (rand < 10000) { 
           selected = 'SINGULARITY';
           text = '1 in 1,000 (THE_SINGULARITY_REACHED) [SINGULARITY]';
@@ -108,7 +142,11 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
             'PLATINUM_PULSE', 'STEEL_SURGE', 'IRON_INITIATIVE', 'COPPER_CIRCUIT', 'QUARTZ_QUAKE', 'RUBY_RESONANCE', 'SAPPHIRE_SCAN', 'TOPAZ_TRANSMISSION',
             'GLITCH_GHOST', 'MALWARE_MIST', 'VIRUS_VORTEX', 'TROJAN_TRACE', 'ROOTKIT_REIGN', 'EXPLOIT_EYE', 'ZERO_DAY_ZONE',
             'CYBER_CRUCIBLE', 'SILICON_STORM', 'DATA_DREDGE', 'BINARY_BLAST',
-            'NEURAL_RESET', 'VOID_GATE', 'CYBER_SYMPHONY', 'STORM_WATCH'
+            'NEURAL_RESET', 'VOID_GATE', 'CYBER_SYMPHONY', 'STORM_WATCH',
+            'VOID_PULSE', 'BINARY_STORM', 'KERNEL_PANIC', 'SEGMENTATION_FAULT', 'DEADLOCK_SHIELD', 'CORTEX_OVERRIDE',
+            'COSMIC_CHURN', 'DIGITAL_DEATH', 'ELECTRON_END', 'FIREWALL_FALL', 'GHOST_GEAR', 'HEX_HEX', 'ION_IMPULSE',
+            'JETTISON_JET', 'KINETIC_KILL', 'LOGIC_LOCK', 'MAC_MELT', 'NANO_NOISE', 'OPTIC_OVERLOAD', 'PROTON_PULSE', 'QUARK_QUENCH',
+            'PLASMA_PULSE', 'NEBULOUS_NIGHT', 'VOID_VAGRANT', 'STELLAR_STORM', 'GALAXY_GHOST', 'ORBITAL_ODYSSEY', 'CELESTIAL_CRASH', 'ASTRAL_ARRAY', 'QUANTUM_QUAKE', 'DIMENSIONAL_DIVE', 'TIME_TANGLE', 'SPACE_SPIKE', 'LUNAR_LEAK', 'SOLAR_SURGE', 'GRAVITY_GRIP', 'METEOR_MELT', 'COMET_CLASH', 'TITAN_TICK', 'EUROPA_END', 'MARS_MIST', 'VENUS_VOID', 'SATURN_SHOCK', 'JUPITER_JOLT', 'NEPTUNE_NODE', 'URANUS_UPRISING', 'PLUTO_PULSE', 'MERCURY_MELT', 'SUN_STORM', 'STAR_SURGE'
           ];
           selected = rarePool[Math.floor(Math.random() * rarePool.length)];
           text = `1 IN 100 (RARE_${selected}_EVENT)`;
@@ -121,21 +159,23 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
             'CYAN_CORE', 'SILVER_SHADOW', 'GOLDEN_GATEWAY', 'BRONZE_BEAM', 'OBSIDIAN_OVERLAY', 'TITANIUM_TRACE',
             'PIXEL_PULSE', 'VOXEL_VOID', 'MESH_MATRIX', 'VERTEX_VECTOR', 'SHADER_SHADOW', 'RENDER_REIGN', 'TEXTURE_TRACE', 'LIGHT_LINK',
             'VECTOR_VORTEX', 'FLUX_FIELD', 'LOGIC_LEAK', 'CORE_CRASH',
-            'GHOST_PULSE', 'DATA_DUMP', 'TITAN_FALL', 'HYPER_SPACE', 'PIXEL_PERFECT'
+            'GHOST_PULSE', 'DATA_DUMP', 'TITAN_FALL', 'HYPER_SPACE', 'PIXEL_PERFECT',
+            'CHIP_OVERLOAD', 'RAID_ARRAY', 'BIOS_UPGRADE', 'MOTHERBOARD_MELT', 'CPU_THROTTLE', 'RAM_CLEANSE', 'SSD_WIPE',
+            'GPU_RENDER_LOCK', 'DIRECT_X_FAILURE', 'OPEN_GL_ERROR', 'VULKAN_ERUPTION', 'SHADERC_CRASH', 'PIXEL_BURST', 'VOXEL_FALL', 'VECTOR_VOID', 'RASTER_REIGN',
+            'BIT_BUCKET', 'FLOAT_POINT_BUG', 'INTEGER_OVERFLOW', 'STACK_SMASH', 'HEAP_EXHAUSTION', 'POINTER_GHOST', 'NULL_REFERENCE', 'UNDEFINED_BEHAVIOR',
+            'DATA_RACE', 'RACE_CONDITION', 'HEISENBUG', 'MANDELBUG', 'SCHRODINBUG', 'BOHR_BUG', 'LITTLE_ENDIAN', 'BIG_ENDIAN',
+            'ASCII_ART', 'UNICODE_UPRISING', 'UTF8_STORM', 'BAUD_RATE_BURST', 'LATENCY_LAG', 'PING_OF_DEATH', 'PACKET_LOSS_PURGE'
           ];
           selected = uncommonPool[Math.floor(Math.random() * uncommonPool.length)];
           text = `1 IN 20 (UNCOMMON_${selected}_LINK)`;
         } else { 
           const commonPool: CutsceneType[] = [
-            'FLUSH', 'SPIKE', 'BREACH', 'GHOST', 'DATA_FALL', 'BINARY_WAVE', 
-            'SYSTEM_SCAN', 'NOISE', 'PIXEL_DRIFT', 'GLITCH_STORM', 'TICKER_TAPE', 'HEX_DUMP', 'CHAMELEON_SHIFT',
-            'NEON_GRID', 'CIRCUIT_FLOW', 'DNA_SEQUENCE', 'PULSAR', 'NEURAL_MAP', 'FROST_STATIC', 'DEEP_SEA_LINK', 'STICK_FIGHT', 'CYBER_PULSE', 'SIGNAL_INTERFERENCE', 'BINARY_FISSION',
             'COBALT_REIGN', 'EMERALD_MIST', 'SCARLET_STORM', 'VIOLET_VORTEX', 'AMBER_AWAKENING', 'MAGENTA_MATRIX',
             'SIGNAL_SOFT', 'WAVE_WARP', 'PULSE_PART', 'BIT_BEAT', 'BYTE_BURST', 'CHIP_CIRCUIT', 'WIRE_WAVE', 'FLOW_FIELD',
             'SHELL_SHOCK', 'BIT_BOUNCE', 'LINK_LOSS', 'NET_NODE'
           ];
           selected = commonPool[Math.floor(Math.random() * commonPool.length)];
-          text = `1 IN 5 (COMMON_${selected}_MAINTENANCE)`;
+          text = `1 IN 2 (COMMON_${selected}_MAINTENANCE)`;
         }
     }
 
@@ -143,12 +183,14 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
     setRarityText(text);
 
     // Sound logic
-    if (selected === 'SINGULARITY' || selected === 'ANGELIC_SYMPHONY' || selected === 'ETERNAL_OPPRESSION' || selected === 'SUPREME_SOVEREIGN' || selected === 'ANONYMOUS_DEITY') {
-        if (selected === 'ANGELIC_SYMPHONY' || selected === 'ETERNAL_OPPRESSION' || selected === 'SUPREME_SOVEREIGN' || selected === 'ANONYMOUS_DEITY') {
+    if (selected === 'SINGULARITY' || selected === 'ANGELIC_SYMPHONY' || selected === 'ETERNAL_OPPRESSION' || selected === 'SUPREME_SOVEREIGN' || selected === 'ANONYMOUS_DEITY' || selected === 'AEGIS_ARCHITECH') {
+        if (selected === 'ANGELIC_SYMPHONY' || selected === 'ETERNAL_OPPRESSION' || selected === 'SUPREME_SOVEREIGN' || selected === 'ANONYMOUS_DEITY' || selected === 'AEGIS_ARCHITECH') {
             audioService.ensureMinVolume(0.3);
         }
         audioService.playCelestialSymphony();
     } 
+    else if (selected === 'STRUCTURAL_COLLAPSE') audioService.playError();
+    else if (selected === 'JACKPOT_DREAM') audioService.playSuccess();
     else if (selected === 'OMEGA' || selected === 'VOLCANIC_DEBUG') audioService.playError();
     else audioService.playBlip();
   }, [type, forcedType]);
@@ -157,10 +199,11 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
     if (!type) return;
     
     // Only set timer for non-video cutscenes
-    const isVideo = type === 'ANGELIC_SYMPHONY' || type === 'ETERNAL_OPPRESSION' || type === 'SUPREME_SOVEREIGN' || type === 'ANONYMOUS_DEITY';
+    const isVideo = type === 'ANGELIC_SYMPHONY' || type === 'ETERNAL_OPPRESSION' || type === 'SUPREME_SOVEREIGN' || type === 'ANONYMOUS_DEITY' || type === 'AEGIS_ARCHITECH';
     
     // Safety timer for EVERY cutscene (fallback)
-    const timeoutDuration = isVideo ? 30000 : ((type === 'SINGULARITY' || type === 'STARS_ZOOM') ? 6000 : 3500);
+    const timeoutDuration = isVideo ? 30000 : 
+      ((type === 'SINGULARITY' || type === 'STARS_ZOOM' || type === 'STRUCTURAL_COLLAPSE' || type === 'OMEGA') ? 10000 : 3500);
     
     const timer = setTimeout(() => {
       setStatus('DISPLAY_RARITY');
@@ -194,7 +237,6 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
             className="w-full h-full"
           >
            <AnimatePresence>
-             {type === 'FLUSH' && <FlushEffect />}
              {type === 'SPIKE' && <SpikeEffect />}
              {type === 'BREACH' && <BreachEffect />}
              {type === 'OMEGA' && <OmegaEffect />}
@@ -224,7 +266,6 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
              {type === 'VOLCANIC_DEBUG' && <VolcanicDebugEffect />}
              {type === 'CELESTIAL_SYNC' && <CelestialSyncEffect />}
              {type === 'DEEP_SEA_LINK' && <DeepSeaLinkEffect />}
-             {type === 'STICK_FIGHT' && <StickFightEffect />}
              {type === 'CYBER_PULSE' && <CyberPulseEffect />}
              {type === 'HYPER_LOOP' && <HyperLoopEffect />}
              {type === 'NEURAL_SYNC' && <NeuralSyncEffect />}
@@ -381,7 +422,80 @@ export default function CortexCutscene({ onComplete, forcedType }: CutsceneProps
              {type === 'NEON_NOIR' && <TacticalColorEffect color="#2dd4bf" label="NOIR" icon={<Eye />} scan rotate pulse />}
              {type === 'PIXEL_PERFECT' && <TacticalColorEffect color="#6366f1" label="PIXEL" icon={<Box />} grid scan junction />}
 
+             {/* 45 New Technical Cutscenes */}
+             {type === 'VOID_PULSE' && <TacticalColorEffect color="#1e1b4b" label="VOID_PULSE" icon={<Zap />} pulse grid />}
+             {type === 'BINARY_STORM' && <TacticalColorEffect color="#00ff00" label="BINARY_STORM" icon={<FileCode />} scan rotate />}
+             {type === 'CHIP_OVERLOAD' && <TacticalColorEffect color="#f97316" label="CHIP_OVERLOAD" icon={<Cpu />} surge quake />}
+             {type === 'RAID_ARRAY' && <TacticalColorEffect color="#3b82f6" label="RAID_ARRAY" icon={<Database />} grid junction />}
+             {type === 'KERNEL_PANIC' && <TacticalColorEffect color="#ef4444" label="KERNEL_PANIC" icon={<ShieldAlert />} quake pulse scan />}
+             {type === 'BIOS_UPGRADE' && <TacticalColorEffect color="#eab308" label="BIOS_UPGRADE" icon={<RefreshCw />} rotate junction />}
+             {type === 'MOTHERBOARD_MELT' && <TacticalColorEffect color="#dc2626" label="MOTHERBOARD_MELT" icon={<Zap />} surge quake pulse />}
+             {type === 'CPU_THROTTLE' && <TacticalColorEffect color="#f59e0b" label="CPU_THROTTLE" icon={<Activity />} pulse scan />}
+             {type === 'RAM_CLEANSE' && <TacticalColorEffect color="#06b6d4" label="RAM_CLEANSE" icon={<Database />} scan rotate />}
+             {type === 'SSD_WIPE' && <TacticalColorEffect color="#94a3b8" label="SSD_WIPE" icon={<HardDrive />} pulse scan surge />}
+             {type === 'GPU_RENDER_LOCK' && <TacticalColorEffect color="#c026d3" label="GPU_RENDER_LOCK" icon={<Box />} grid junction quake />}
+             {type === 'DIRECT_X_FAILURE' && <TacticalColorEffect color="#4338ca" label="DIRECT_X_FAILURE" icon={<XCircle />} quake scan />}
+             {type === 'OPEN_GL_ERROR' && <TacticalColorEffect color="#fb923c" label="OPEN_GL_ERROR" icon={<AlertTriangle />} rotate junction />}
+             {type === 'VULKAN_ERUPTION' && <TacticalColorEffect color="#b91c1c" label="VULKAN_ERUPTION" icon={<Wind />} pulse surge quake />}
+             {type === 'SHADERC_CRASH' && <TacticalColorEffect color="#8b5cf6" label="SHADERC_CRASH" icon={<Layers />} junction rotate grid />}
+             {type === 'PIXEL_BURST' && <TacticalColorEffect color="#f43f5e" label="PIXEL_BURST" icon={<Box />} surge pulse scan />}
+             {type === 'VOXEL_FALL' && <TacticalColorEffect color="#2dd4bf" label="VOXEL_FALL" icon={<Wind />} scan quake rotate />}
+             {type === 'VECTOR_VOID' && <TacticalColorEffect color="#000000" label="VECTOR_VOID" icon={<Maximize />} grid rotate surge />}
+             {type === 'RASTER_REIGN' && <TacticalColorEffect color="#22c55e" label="RASTER_REIGN" icon={<Grid />} scan junction />}
+             {type === 'BIT_BUCKET' && <TacticalColorEffect color="#64748b" label="BIT_BUCKET" icon={<Database />} scan grid pulse />}
+             {type === 'FLOAT_POINT_BUG' && <TacticalColorEffect color="#fbbf24" label="FLOAT_POINT_BUG" icon={<Hash />} quake rotate junction />}
+             {type === 'INTEGER_OVERFLOW' && <TacticalColorEffect color="#ef4444" label="INTEGER_OVERFLOW" icon={<PlusSquare />} surge scan pulse />}
+             {type === 'STACK_SMASH' && <TacticalColorEffect color="#7f1d1d" label="STACK_SMASH" icon={<Layers />} quake grid surge />}
+             {type === 'HEAP_EXHAUSTION' && <TacticalColorEffect color="#1e40af" label="HEAP_EXHAUSTION" icon={<Database />} scan pulse junction />}
+             {type === 'POINTER_GHOST' && <TacticalColorEffect color="#94a3b8" label="POINTER_GHOST" icon={<Ghost />} pulse grid scan rotate />}
+             {type === 'NULL_REFERENCE' && <TacticalColorEffect color="#000000" label="NULL_REFERENCE" icon={<CircleSlash />} grid junction scan />}
+             {type === 'UNDEFINED_BEHAVIOR' && <TacticalColorEffect color="#a855f7" label="UNDEFINED_BEHAVIOR" icon={<HelpCircle />} rotate scan quake />}
+             {type === 'SEGMENTATION_FAULT' && <TacticalColorEffect color="#dc2626" label="SEGMENTATION_FAULT" icon={<XCircle />} quake junction rotate pulse />}
+             {type === 'DATA_RACE' && <TacticalColorEffect color="#3b82f6" label="DATA_RACE" icon={<Repeat />} rotate grid surge />}
+             {type === 'DEADLOCK_SHIELD' && <TacticalColorEffect color="#1e1b4b" label="DEADLOCK_SHIELD" icon={<Lock />} grid junction scan rotate />}
+             {type === 'RACE_CONDITION' && <TacticalColorEffect color="#f59e0b" label="RACE_CONDITION" icon={<Zap />} rotate surge pulse />}
+             {type === 'HEISENBUG' && <TacticalColorEffect color="#06b6d4" label="HEISENBUG" icon={<Dna />} pulse scan grid junction />}
+             {type === 'MANDELBUG' && <TacticalColorEffect color="#ec4899" label="MANDELBUG" icon={<Fingerprint />} pulse scan grid junction rotate />}
+             {type === 'SCHRODINBUG' && <TacticalColorEffect color="#6b7280" label="SCHRODINBUG" icon={<Cat />} scan grid rotate junction />}
+             {type === 'BOHR_BUG' && <TacticalColorEffect color="#fbbf24" label="BOHR_BUG" icon={<Atom />} junction rotate scan quake />}
+             {type === 'LITTLE_ENDIAN' && <TacticalColorEffect color="#14b8a6" label="LITTLE_ENDIAN" icon={<ArrowLeft />} rotate scan pulse />}
+             {type === 'BIG_ENDIAN' && <TacticalColorEffect color="#f43f5e" label="BIG_ENDIAN" icon={<ArrowRight />} rotate scan pulse />}
+             {type === 'ASCII_ART' && <TacticalColorEffect color="#22c55e" label="ASCII_ART" icon={<Terminal />} scan rotate grid junction />}
+             {type === 'UNICODE_UPRISING' && <TacticalColorEffect color="#fb923c" label="UNICODE_UPRISING" icon={<Globe />} rotate scan quake surge />}
+             {type === 'UTF8_STORM' && <TacticalColorEffect color="#3b82f6" label="UTF8_STORM" icon={<CloudRain />} scan rotate surge junction />}
+             {type === 'BAUD_RATE_BURST' && <TacticalColorEffect color="#eab308" label="BAUD_RATE_BURST" icon={<Zap />} rotate surge junction quake />}
+             {type === 'LATENCY_LAG' && <TacticalColorEffect color="#94a3b8" label="LATENCY_LAG" icon={<Clock />} pulse scan grid rotate junction quake />}
+             {type === 'PING_OF_DEATH' && <TacticalColorEffect color="#ef4444" label="PING_OF_DEATH" icon={<AlertCircle />} quake scan rotate junction surge grid />}
+             {type === 'PACKET_LOSS_PURGE' && <TacticalColorEffect color="#4b5563" label="PACKET_LOSS_PURGE" icon={<XCircle />} grid scan rotate junction quake surge />}
+             {type === 'CORTEX_OVERRIDE' && <TacticalColorEffect color="#06b6d4" label="CORTEX_OVERRIDE" icon={<Cpu />} junction rotate scan quake surge grid pulse />}
+
+             {/* 15 New Rare Elite Cutscenes */}
+             {type === 'COSMIC_CHURN' && <TacticalColorEffect color="#4c1d95" label="COSMIC_CHURN" icon={<Globe />} rotate pulse scan surge />}
+             {type === 'DIGITAL_DEATH' && <TacticalColorEffect color="#450a0a" label="DIGITAL_DEATH" icon={<Skull />} quake grid scan pulse />}
+             {type === 'ELECTRON_END' && <TacticalColorEffect color="#1e3a8a" label="ELECTRON_END" icon={<Zap />} surge rotate junction grid />}
+             {type === 'FIREWALL_FALL' && <TacticalColorEffect color="#7c2d12" label="FIREWALL_FALL" icon={<ShieldAlert />} grid quake junction scan />}
+             {type === 'GHOST_GEAR' && <TacticalColorEffect color="#334155" label="GHOST_GEAR" icon={<Ghost />} rotate grid scan pulse />}
+             {type === 'HEX_HEX' && <TacticalColorEffect color="#1e1b4b" label="HEX_HEX" icon={<Hash />} grid rotate scan surge />}
+             {type === 'ION_IMPULSE' && <TacticalColorEffect color="#0891b2" label="ION_IMPULSE" icon={<Activity />} pulse surge rotate scan />}
+             {type === 'JETTISON_JET' && <TacticalColorEffect color="#0f172a" label="JETTISON_JET" icon={<Plane />} surge rotate grid scan />}
+             {type === 'KINETIC_KILL' && <TacticalColorEffect color="#991b1b" label="KINETIC_KILL" icon={<Zap />} surge rotate junction quake />}
+             {type === 'LOGIC_LOCK' && <TacticalColorEffect color="#1e1b4b" label="LOGIC_LOCK" icon={<Lock />} grid junction rotate pulse />}
+             {type === 'MAC_MELT' && <TacticalColorEffect color="#ea580c" label="MAC_MELT" icon={<Cpu />} surge quake pulse rotate />}
+             {type === 'NANO_NOISE' && <TacticalColorEffect color="#065f46" label="NANO_NOISE" icon={<Radio />} scan grid rotate pulse />}
+             {type === 'OPTIC_OVERLOAD' && <TacticalColorEffect color="#ffffff" label="OPTIC_OVERLOAD" icon={<Eye />} surge grid scan rotate />}
+             {type === 'PROTON_PULSE' && <TacticalColorEffect color="#4338ca" label="PROTON_PULSE" icon={<Atom />} pulse surge rotate scan />}
+             {type === 'QUARK_QUENCH' && <TacticalColorEffect color="#164e63" label="QUARK_QUENCH" icon={<Activity />} grid rotate pulse surge />}
+
+
              {type === 'ANONYMOUS_DEITY' && <VideoCutscene src={VIDEO_SOURCES.ANONYMOUS_DEITY} label="ANONYMOUS_DEITY" onEnded={() => setStatus('DISPLAY_RARITY')} />}
+             {type === 'AEGIS_ARCHITECH' && <VideoCutscene src={VIDEO_SOURCES.AEGIS_ARCHITECH} label="AEGIS_ARCHITECH" onEnded={() => setStatus('DISPLAY_RARITY')} />}
+             {type === 'STRUCTURAL_COLLAPSE' && <TowerCollapseEffect onComplete={() => setStatus('DISPLAY_RARITY')} />}
+              {['PLASMA_PULSE', 'NEBULOUS_NIGHT', 'VOID_VAGRANT', 'STELLAR_STORM', 'GALAXY_GHOST', 'ORBITAL_ODYSSEY', 'CELESTIAL_CRASH', 'ASTRAL_ARRAY', 'QUANTUM_QUAKE', 'DIMENSIONAL_DIVE', 'TIME_TANGLE', 'SPACE_SPIKE', 'LUNAR_LEAK', 'SOLAR_SURGE', 'GRAVITY_GRIP', 'METEOR_MELT', 'COMET_CLASH', 'TITAN_TICK', 'EUROPA_END', 'MARS_MIST', 'VENUS_VOID', 'SATURN_SHOCK', 'JUPITER_JOLT', 'NEPTUNE_NODE', 'URANUS_UPRISING', 'PLUTO_PULSE', 'MERCURY_MELT', 'SUN_STORM', 'STAR_SURGE'].includes(type) && (
+                <TacticalColorEffect color="#1e293b" label={type} icon={<Zap />} pulse surge rotate grid scan />
+              )}
+             {type === 'JACKPOT_DREAM' && <TacticalColorEffect color="#FFD700" label="FORTUNE_FAVORS_THE_BOLD" icon={<Trophy className="w-16 h-16" />} pulse surge />}
+             {type === 'ROULETTE_REVOLUTION' && <TacticalColorEffect color="#C41E3A" label="FATE_SPINS_THE_WHEEL" icon={<RotateCcw className="w-16 h-16" />} pulse grid />}
+             {type === 'SLOT_SYNCHRONY' && <TacticalColorEffect color="#00FF7F" label="SYNCHRONIZED_CHANCE" icon={<Coins className="w-16 h-16" />} surge grid />}
              {type === 'CHAMELEON_SHIFT' && <ChameleonShiftEffect />}
              {type === 'GRAVITY_WELL' && <GravityWellEffect />}
              {type === 'NEBULA_DRIFT' && <NebulaDriftEffect />}
@@ -686,6 +800,74 @@ function BioHazardEffect() {
              >
                 BIO_ASYNC_ERROR
              </motion.div>
+        </div>
+    );
+}
+
+function TowerCollapseEffect({ onComplete }: { onComplete: () => void }) {
+    useEffect(() => {
+        const timer = setTimeout(onComplete, 8000);
+        return () => clearTimeout(timer);
+    }, [onComplete]);
+
+    return (
+        <div className="w-full h-full bg-slate-950 flex items-center justify-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-b from-red-950 to-slate-950 opacity-50" />
+            <div className="relative flex items-end gap-12 z-10 bottom-[-100px]">
+                <motion.div 
+                    initial={{ height: 400 }}
+                    className="w-24 bg-slate-800 border-x-4 border-t-4 border-slate-700 relative"
+                >
+                    <motion.div
+                        initial={{ x: -1000, y: 100, opacity: 1, scale: 2 }}
+                        animate={{ x: 0, y: 120 }}
+                        transition={{ duration: 2, ease: "linear" }}
+                        className="absolute z-20"
+                    >
+                        <Plane size={48} className="text-white fill-white rotate-45" />
+                    </motion.div>
+                    <motion.div
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: [0, 4, 3], opacity: [0, 1, 0] }}
+                        transition={{ delay: 2, duration: 1.5 }}
+                        className="absolute top-1/4 left-1/2 -translate-x-1/2 w-20 h-20 bg-orange-500 rounded-full blur-xl"
+                    />
+                    <motion.div
+                        initial={{ y: 0 }}
+                        animate={{ y: 500, rotate: -5 }}
+                        transition={{ delay: 4, duration: 3, ease: "easeIn" }}
+                        className="w-full h-full bg-inherit border-inherit flex flex-col gap-1 p-2"
+                    >
+                        {Array.from({ length: 20 }).map((_, i) => (
+                            <div key={i} className="w-full h-2 bg-slate-900/50" />
+                        ))}
+                    </motion.div>
+                </motion.div>
+                <motion.div 
+                    initial={{ height: 450, rotate: 0 }}
+                    animate={{ rotate: 90, x: 200, y: 200, opacity: [1, 1, 0.5] }}
+                    transition={{ delay: 5.5, duration: 2.5, ease: "easeIn" }}
+                    className="w-24 bg-slate-800 border-x-4 border-t-4 border-slate-700 origin-bottom flex flex-col gap-1 p-2"
+                >
+                     {Array.from({ length: 22 }).map((_, i) => (
+                        <div key={i} className="w-full h-2 bg-slate-900/30" />
+                    ))}
+                </motion.div>
+            </div>
+            <motion.div 
+                animate={{ x: [0, -5, 5, -5, 0], y: [0, 5, -5, 5, 0] }}
+                transition={{ delay: 2, duration: 0.2, repeat: 10 }}
+                className="absolute inset-0 pointer-events-none"
+            />
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 1, 0] }}
+                transition={{ delay: 7.5, duration: 0.5 }}
+                className="absolute inset-0 bg-white z-50 shadow-[0_0_100px_white]"
+            />
+            <div className="absolute bottom-10 left-10 text-slate-500 font-mono text-[8px] tracking-[0.5em] animate-pulse">
+                CRITICAL_FAILURE // STRUCTURAL_INTEGRITY_COMPROMISED
+            </div>
         </div>
     );
 }

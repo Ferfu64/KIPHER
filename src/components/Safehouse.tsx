@@ -9,6 +9,7 @@ import { handleFirestoreError, OperationType, ensureDate } from '../lib/utils';
 import { audioService } from '../services/audioService';
 
 import ChatUserDisplay from './ChatUserDisplay';
+import UnifiedChat from './UnifiedChat';
 
 function SafehouseVoiceManager({ roomId, currentUser }: { roomId: string, currentUser: UserProfile }) {
   const [remoteStreams, setRemoteStreams] = useState<Record<string, { stream: MediaStream, name: string }>>({});
@@ -519,6 +520,8 @@ function SafehouseChat({ room, user, onExit }: { room: SafehouseType, user: User
   const [newMessage, setNewMessage] = useState('');
   const [spamWarning, setSpamWarning] = useState<string | null>(null);
   const [voiceActive, setVoiceActive] = useState(false);
+  const [showVaultPicker, setShowVaultPicker] = useState(false);
+  const [userVaults, setUserVaults] = useState<VaultItem[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastMessageTimes = useRef<number[]>([]);
 
@@ -552,28 +555,26 @@ function SafehouseChat({ room, user, onExit }: { room: SafehouseType, user: User
     }
   }, [messages]);
 
-  const sendMessage = async (e?: React.FormEvent, textOverride?: string, typeOverride?: ChatMessage['type']) => {
-    if (e) e.preventDefault();
-    const textToSend = textOverride || newMessage;
-    if (!textToSend.trim()) return;
+  const sendMessage = async (text: string, type: ChatMessage['type'] = 'TEXT', replyToId?: string) => {
+    if (!text.trim()) return;
 
-    // Spam detection: max 3 messages in 3 seconds
+    // Spam detection
     const now = Date.now();
     lastMessageTimes.current = lastMessageTimes.current.filter(t => now - t < 3000);
-    if (lastMessageTimes.current.length >= 3 && !textOverride) {
+    if (lastMessageTimes.current.length >= 3) {
       setSpamWarning('SPAM_DETECTED: COOLING_DOWN');
       audioService.playError();
       setTimeout(() => setSpamWarning(null), 3000);
       return;
     }
-    if (!textOverride) lastMessageTimes.current.push(now);
+    lastMessageTimes.current.push(now);
 
     try {
       if (!auth.currentUser) await signInAnonymously(auth);
       const authUid = auth.currentUser?.uid;
       
-      // Auto-prune if too many messages
-      if (messages.length >= 30 && !textOverride) {
+      // Auto-prune
+      if (messages.length >= 30) {
         const oldest = messages[0];
         if (oldest.id) {
           deleteDoc(doc(db, 'safehouses', room.id, 'messages', oldest.id)).catch(console.error);
@@ -582,47 +583,32 @@ function SafehouseChat({ room, user, onExit }: { room: SafehouseType, user: User
 
       await addDoc(collection(db, 'safehouses', room.id, 'messages'), {
         senderId: user.uid,
-        senderAuthId: authUid, // For Rules
+        senderAuthId: authUid,
         senderName: user.displayName,
-        text: textToSend,
+        text: text,
         timestamp: serverTimestamp(),
-        type: typeOverride || 'TEXT'
+        type: type,
+        replyToId: replyToId || null
       });
 
-      // Update parent safehouse to trigger global listeners
       await setDoc(doc(db, 'safehouses', room.id), {
-        lastMessage: textToSend.startsWith('data:image') ? '[MEDIA]' : textToSend,
+        lastMessage: text.startsWith('data:image') || text.startsWith('http') ? '[MEDIA]' : text,
         lastSenderName: user.displayName,
         lastSenderAuthId: authUid,
         lastMessageAt: serverTimestamp()
       }, { merge: true });
 
-      if (!textOverride) setNewMessage('');
       audioService.playBlip();
     } catch (error) {
        handleFirestoreError(error, OperationType.WRITE, `safehouses/${room.id}/messages`);
     }
   };
 
-  const handlePaste = async (e: React.ClipboardEvent) => {
-    const items = e.clipboardData.items;
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        const file = items[i].getAsFile();
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            const base64 = event.target?.result as string;
-            sendMessage(undefined, base64, 'MEDIA');
-          };
-          reader.readAsDataURL(file);
-        }
-      }
-    }
+  const shareVaultFile = (file: VaultFile) => {
+    const intelStr = `[VAULT_INTEL_EXTRACTED] FILE: ${file.name} // TYPE: ${file.type} // LINK: ${file.url}`;
+    sendMessage(intelStr, 'SYSTEM');
+    setShowVaultPicker(false);
   };
-
-  const [showVaultPicker, setShowVaultPicker] = useState(false);
-  const [userVaults, setUserVaults] = useState<VaultItem[]>([]);
 
   useEffect(() => {
     if (showVaultPicker) {
@@ -634,12 +620,6 @@ function SafehouseChat({ room, user, onExit }: { room: SafehouseType, user: User
       });
     }
   }, [showVaultPicker, user.uid]);
-
-  const shareVaultFile = (file: VaultFile) => {
-    const intelStr = `[VAULT_INTEL_EXTRACTED] FILE: ${file.name} // TYPE: ${file.type} // LINK: ${file.url}`;
-    sendMessage(undefined, intelStr, 'SYSTEM');
-    setShowVaultPicker(false);
-  };
 
   const deleteMessage = async (msgId: string) => {
     try {
@@ -690,42 +670,22 @@ function SafehouseChat({ room, user, onExit }: { room: SafehouseType, user: User
         />
       )}
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 font-mono scrollbar-hide">
-        {messages.map((msg, i) => {
-          const isMe = msg.senderId === user.uid;
-          const canDelete = isMe || user.uid === room.hostId || user.role === 'OWNER';
-          
-          return (
-            <div key={msg.id || `safe-msg-${i}`} className={`flex flex-col group ${isMe ? 'items-end' : 'items-start'}`}>
-              <div className="flex items-center gap-2 mb-1 px-1">
-                <ChatUserDisplay uid={msg.senderId} defaultName={msg.senderName} isMe={isMe} />
-                <span className="text-[8px] text-slate-700">
-                  {ensureDate(msg.timestamp).toLocaleTimeString()}
-                </span>
-                {canDelete && msg.id && (
-                  <button 
-                    onClick={() => deleteMessage(msg.id!)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-700 hover:text-red-500"
-                    title="DESTRUCT_MESSAGE"
-                  >
-                    <Trash2 size={10} />
-                  </button>
-                )}
-              </div>
-              <div className={`max-w-[80%] px-3 py-2 text-xs border ${
-                isMe 
-                  ? 'border-tactical-cyan bg-tactical-cyan/5 text-tactical-cyan' 
-                  : 'border-slate-800 bg-slate-900/50 text-slate-300'
-              }`}>
-                {msg.type === 'MEDIA' ? (
-                   <img src={msg.text} alt="ENCRYPTED_MEDIA" className="max-w-full rounded border border-white/10" referrerPolicy="no-referrer" />
-                ) : (
-                  msg.text
-                )}
-              </div>
-            </div>
-          );
-        })}
+      <UnifiedChat 
+        messages={messages}
+        currentUser={user}
+        onSendMessage={sendMessage}
+        onDeleteMessage={deleteMessage}
+        placeholder="DECRYPT_LINK_ESTABLISHED..."
+        canDeleteAll={user.uid === room.hostId || user.role === 'OWNER'}
+      />
+
+      <div className="absolute bottom-4 left-4 z-50">
+        <button 
+          onClick={() => setShowVaultPicker(true)}
+          className="w-12 h-12 bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 hover:text-tactical-cyan transition-colors"
+        >
+          <Archive size={18} />
+        </button>
       </div>
 
       {spamWarning && (
@@ -733,31 +693,6 @@ function SafehouseChat({ room, user, onExit }: { room: SafehouseType, user: User
           {spamWarning}
         </div>
       )}
-
-      <form onSubmit={sendMessage} className="p-4 bg-absolute-black border-t border-slate-800 flex gap-2">
-        <button 
-          type="button" 
-          onClick={() => setShowVaultPicker(true)}
-          className="w-12 h-12 bg-slate-950 border border-slate-800 flex items-center justify-center text-slate-500 hover:text-tactical-cyan transition-colors"
-        >
-          <Archive size={18} />
-        </button>
-        <input 
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onPaste={handlePaste}
-          placeholder={spamWarning ? 'TERMINAL_LOCKED...' : 'SEND_ENCRYPTED_MESSAGE...'}
-          disabled={!!spamWarning}
-          className="flex-1 kipher-input border-slate-800 bg-slate-950/50 px-4 h-12 text-sm"
-        />
-        <button 
-          type="submit" 
-          disabled={!!spamWarning}
-          className="px-8 bg-tactical-cyan text-absolute-black h-12 font-black tracking-widest hover:bg-white transition-colors disabled:opacity-30"
-        >
-          <Send size={18} />
-        </button>
-      </form>
 
       {/* Vault Picker Modal */}
       <AnimatePresence>

@@ -70,6 +70,14 @@ export default function TacticalProtocolHandler({ currentUser }: { currentUser: 
       case 'SPAWN_CUTSCENE':
         window.dispatchEvent(new CustomEvent('kipher:spawnCutscene', { detail: cmd.payload }));
         break;
+      case 'FORCE_LOGOUT':
+        // Sign out the user
+        window.dispatchEvent(new CustomEvent('kipher:userUpdate', { detail: null }));
+        // Also clear local storage
+        localStorage.removeItem('kipher_session');
+        // Force reload or redirect to gateway
+        window.location.reload();
+        break;
     }
   };
 

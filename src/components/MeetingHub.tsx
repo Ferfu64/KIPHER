@@ -8,6 +8,7 @@ import { handleFirestoreError, OperationType, ensureDate } from '../lib/utils';
 import { signInAnonymously } from 'firebase/auth';
 import { audioService } from '../services/audioService';
 import ChatUserDisplay from './ChatUserDisplay';
+import UnifiedChat from './UnifiedChat';
 
 export default function MeetingHub({ currentUser }: { currentUser: UserProfile }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -146,10 +147,10 @@ export default function MeetingHub({ currentUser }: { currentUser: UserProfile }
     return () => window.removeEventListener('kipher:respawn', handleRespawn);
   }, []);
 
-  const sendMessage = async (text: string, type: ChatMessage['type'] = 'TEXT') => {
+  const sendMessage = async (text: string, type: ChatMessage['type'] = 'TEXT', replyToId?: string) => {
     if (!text.trim()) return;
 
-    // Spam detection: max 5 messages in 5 seconds for Meeting Hub
+    // Spam detection
     const now = Date.now();
     lastMessageTimes.current = lastMessageTimes.current.filter(t => now - t < 5000);
     if (lastMessageTimes.current.length >= 5 && type === 'TEXT') {
@@ -178,7 +179,8 @@ export default function MeetingHub({ currentUser }: { currentUser: UserProfile }
         senderName: currentUser.displayName,
         text,
         timestamp: serverTimestamp(),
-        type
+        type,
+        replyToId: replyToId || null
       });
       setNewMessage('');
     } catch (e) {
@@ -320,63 +322,16 @@ export default function MeetingHub({ currentUser }: { currentUser: UserProfile }
           </div>
         </div>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar min-h-0">
-          {messages.map((msg, i) => {
-            const isMe = msg.senderId === currentUser.uid;
-            const canDelete = isMe || currentUser.role === 'OWNER' || currentUser.role === 'SUPERUSER';
-            
-            return (
-              <div key={msg.id || `msg-${i}`} className={`group ${msg.type === 'SYSTEM' ? 'text-center' : ''}`}>
-                {msg.type === 'SYSTEM' ? (
-                  <div className="text-[9px] text-slate-600 font-bold uppercase tracking-[0.3em] bg-slate-900/40 py-1 rounded inline-block px-4">
-                    {msg.text}
-                  </div>
-                ) : msg.type === 'ALERT' ? (
-                  <div className="text-[10px] text-yellow-500 font-black border border-yellow-500/20 bg-yellow-500/5 p-3 flex items-center gap-3 uppercase">
-                     <AlertTriangle size={14} /> {msg.text}
-                  </div>
-                ) : (
-                  <div className={isMe ? 'text-right' : 'text-left'}>
-                    <div className={`flex items-center gap-2 mb-1 uppercase tracking-widest ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      {canDelete && msg.id && isMe && (
-                        <button 
-                          onClick={() => deleteMessage(msg.id!)}
-                          className="opacity-0 group-hover:opacity-100 text-slate-700 hover:text-red-500 transition-opacity"
-                        >
-                          <Trash2 size={10} />
-                        </button>
-                      )}
-                      <ChatUserDisplay uid={msg.senderId} defaultName={msg.senderName} isMe={isMe} />
-                      {canDelete && msg.id && !isMe && (
-                        <button 
-                          onClick={() => deleteMessage(msg.id!)}
-                          className="opacity-0 group-hover:opacity-100 text-slate-700 hover:text-red-500 transition-opacity"
-                        >
-                          <Trash2 size={10} />
-                        </button>
-                      )}
-                    </div>
-             <div className={`inline-block max-w-[80%] p-3 text-xs border ${isMe ? 'border-tactical-cyan bg-tactical-cyan/5 text-tactical-cyan' : 'border-slate-800 bg-slate-900/40 text-slate-300'}`}>
-                {msg.type === 'MEDIA' ? (
-                   <img src={msg.text} alt="SHARED_MEDIA" className="max-w-full rounded border border-white/10" referrerPolicy="no-referrer" />
-                ) : (
-                  msg.text
-                )}
-             </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <UnifiedChat 
+          messages={messages}
+          currentUser={currentUser}
+          onSendMessage={sendMessage}
+          onDeleteMessage={deleteMessage}
+          placeholder="Relay communications..."
+          canDeleteAll={currentUser.role === 'OWNER' || currentUser.role === 'SUPERUSER'}
+        />
 
-        {spamWarning && (
-          <div className="bg-red-600/20 border-y border-red-600/40 px-4 py-1 text-[10px] font-black text-red-500 uppercase tracking-widest text-center animate-pulse shrink-0">
-            {spamWarning}
-          </div>
-        )}
-
-        <form onSubmit={(e) => { e.preventDefault(); sendMessage(newMessage); }} className="p-4 bg-black/60 border-t border-slate-900 flex gap-2 shrink-0">
+        <div className="absolute bottom-4 left-4 z-50 flex gap-2">
            <div className="relative group">
               <button 
                 type="button"
@@ -399,24 +354,13 @@ export default function MeetingHub({ currentUser }: { currentUser: UserProfile }
                 </div>
               )}
            </div>
-           
-           <input 
-             value={newMessage}
-             onChange={(e) => setNewMessage(e.target.value)}
-             onPaste={handlePaste}
-             className="flex-1 kipher-input bg-slate-950 border-slate-800"
-             placeholder={spamWarning ? 'SIGNAL_JAMMED...' : 'Relay communications...'}
-             disabled={!!spamWarning}
-           />
-           
-           <button 
-             type="submit" 
-             disabled={!!spamWarning}
-             className="px-8 bg-tactical-cyan text-black font-black uppercase tracking-widest hover:bg-white transition-all shadow-[0_0_20px_rgba(34,211,238,0.2)] disabled:opacity-30"
-           >
-             Relay
-           </button>
-        </form>
+        </div>
+
+        {spamWarning && (
+          <div className="bg-red-600/20 border-y border-red-600/40 px-4 py-1 text-[10px] font-black text-red-500 uppercase tracking-widest text-center animate-pulse shrink-0">
+            {spamWarning}
+          </div>
+        )}
       </div>
 
       {/* Right Column: Shared Assets & Files */}

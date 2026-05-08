@@ -14,6 +14,9 @@ export interface UserProfile {
   currentAuthUid?: string;
   credits?: number;
   promotionCount?: number;
+  purchasedItems?: string[];
+  tankHighscore?: number;
+  unlockedCasinos?: string[];
   customization?: {
     nameColor?: string;
     titleColor?: string;
@@ -21,6 +24,7 @@ export interface UserProfile {
     mouseColor?: string;
     neonGlow?: boolean;
     mouseTrail?: boolean;
+    glitchEffect?: boolean;
   };
 }
 
@@ -61,8 +65,9 @@ export interface ChatMessage {
   senderAuthId?: string;
   senderName: string;
   text: string;
-  timestamp: string;
+  timestamp: any;
   type: 'TEXT' | 'SYSTEM' | 'ALERT' | 'MEDIA' | 'VAULT' | 'NODE';
+  replyToId?: string;
 }
 
 export interface Connection {
@@ -76,7 +81,7 @@ export interface Connection {
 }
 
 export interface SystemCommand {
-  type: 'ALERT' | 'MEDIA' | 'BLACKOUT' | 'REDIRECT' | 'SAFETY' | 'RESTORE' | 'SPAWN_CUTSCENE';
+  type: 'ALERT' | 'MEDIA' | 'BLACKOUT' | 'REDIRECT' | 'SAFETY' | 'RESTORE' | 'SPAWN_CUTSCENE' | 'FORCE_LOGOUT';
   payload: string;
   targetUserId?: string;
   timestamp: any;

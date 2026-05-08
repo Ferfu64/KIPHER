@@ -21,6 +21,7 @@ import DirectMessageContainer from './components/DirectMessageContainer';
 import KipherLogo from './components/KipherLogo';
 import NotificationOverlay from './components/NotificationOverlay';
 import CortexCutscene from './components/CortexCutscene';
+import CasinoHub from './components/CasinoHub';
 import { titleService } from './services/titleService';
 
 type NavigationPage = 'GHOST' | 'OWNER' | 'GATEWAY' | 'MEETING' | 'COMM' | 'MISC' | 'SECRET_SPACE';
@@ -33,13 +34,16 @@ export default function App() {
   const [systemAlert, setSystemAlert] = useState<string | null>(null);
   const [mediaInject, setMediaInject] = useState<string | null>(null);
   const [activePage, setActivePage] = useState<NavigationPage>('GATEWAY');
+  const [isCasinoOpen, setIsCasinoOpen] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [audioInitialized, setAudioInitialized] = useState(false);
   const [isCutsceneActive, setIsCutsceneActive] = useState(false);
+  const [rollId, setRollId] = useState(0);
   const [forcedCutscene, setForcedCutscene] = useState<string | null>(null);
   const [isTitleMenuOpen, setIsTitleMenuOpen] = useState(false);
   const [isImmersive, setIsImmersive] = useState(false);
   const [clickCount, setClickCount] = useState(0);
+  const [luckMultiplier, setLuckMultiplier] = useState(1);
 
   useEffect(() => {
     // Stop ambient drone on unmount
@@ -130,23 +134,36 @@ export default function App() {
     } else if (rarity.includes('SINGULARITY')) {
        await titleService.awardTitle(user.uid, 'THE_OMEGA_POINT');
        creditsEarned = 500;
+    } else if (rarity.includes('LEGENDARY')) {
+       await titleService.awardTitle(user.uid, 'SYSTEM_LEAK');
+       creditsEarned = 250;
     } else if (rarity.includes('EPIC')) {
        await titleService.awardTitle(user.uid, 'NETWORK_ANOMALY');
        creditsEarned = 100;
     } else if (rarity.includes('RARE')) {
        await titleService.awardTitle(user.uid, 'ELITE_ASSET');
        creditsEarned = 25;
+    } else if (rarity.includes('1 IN 2')) {
+       creditsEarned = -5;
+    } else if (rarity.includes('1 IN 20')) {
+       creditsEarned = -1;
     }
 
-    if (creditsEarned > 0) {
-      const newCredits = (user.credits || 0) + creditsEarned;
+    if (creditsEarned !== 0) {
+      const newCredits = Math.max(0, (user.credits || 0) + creditsEarned);
       const updatedUser = { ...user, credits: newCredits };
       setUser(updatedUser);
       localStorage.setItem('kipher_session', JSON.stringify(updatedUser));
       await setDoc(doc(db, 'users', user.uid), { credits: newCredits }, { merge: true });
-      audioService.playSuccess();
-      // Dispatch event for UI feedback
-      window.dispatchEvent(new CustomEvent('kipher:creditsAwarded', { detail: creditsEarned }));
+      
+      if (creditsEarned > 0) {
+        audioService.playSuccess();
+        // Dispatch event for UI feedback
+        window.dispatchEvent(new CustomEvent('kipher:creditsAwarded', { detail: creditsEarned }));
+      } else {
+        // Optional: play a minor error sound for losing credits
+        audioService.playError();
+      }
     }
   };
   
@@ -284,12 +301,53 @@ export default function App() {
       {user.customization && (
         <CustomMouse customization={user.customization} />
       )}
+      
+      <AnimatePresence>
+        {isCasinoOpen && (
+          <CasinoHub 
+            user={user}
+            onClose={() => setIsCasinoOpen(false)}
+            onPull={async (luck) => {
+               const playerLuckBonus = user.purchasedItems?.includes('luck_chip') ? 1.15 : 1;
+               setLuckMultiplier(luck * playerLuckBonus);
+               setRollId(prev => prev + 1);
+               setIsCutsceneActive(true);
+            }}
+            onUpdateCredits={async (cr) => {
+               const newCredits = (user.credits || 0) + cr;
+               const updated = { ...user, credits: newCredits };
+               setUser(updated);
+               localStorage.setItem('kipher_session', JSON.stringify(updated));
+               await setDoc(doc(db, 'users', user.uid), { credits: newCredits }, { merge: true });
+            }}
+            onUnlockCasino={async (id, cost) => {
+               if ((user.credits || 0) < cost) return;
+               const newCredits = (user.credits || 0) - cost;
+               const newUnlocked = [...(user.unlockedCasinos || ['base_station']), id];
+               const updated = { ...user, credits: newCredits, unlockedCasinos: newUnlocked };
+               setUser(updated);
+               localStorage.setItem('kipher_session', JSON.stringify(updated));
+               await setDoc(doc(db, 'users', user.uid), { 
+                  credits: newCredits, 
+                  unlockedCasinos: newUnlocked 
+               }, { merge: true });
+               audioService.playSuccess();
+            }}
+          />
+        )}
+      </AnimatePresence>
+
       <TacticalProtocolHandler currentUser={user} />
       <NotificationOverlay currentUser={user} onNavigate={(page) => navigateTo(page as NavigationPage)} />
       
       <AnimatePresence>
         {isCutsceneActive && (
-          <CortexCutscene onComplete={handleCutsceneComplete} forcedType={forcedCutscene || undefined} />
+          <CortexCutscene 
+            key={`roll-${rollId}`}
+            onComplete={handleCutsceneComplete} 
+            forcedType={forcedCutscene || undefined} 
+            luckMultiplier={luckMultiplier}
+          />
         )}
       </AnimatePresence>
 
@@ -314,7 +372,8 @@ export default function App() {
                if (e.detail >= 5 || clickCount >= 4) {
                  handleTitleMenuGesture();
                } else if (!isCutsceneActive) {
-                 setIsCutsceneActive(true);
+                 setIsCasinoOpen(true);
+                 audioService.playSuccess();
                }
             }}
           />
@@ -397,9 +456,13 @@ export default function App() {
               </button>
               <div className="text-right">
                 <div className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">{user.role} // LVL_{user.clearanceLevel + (user.promotionCount || 0)}</div>
-                <div className="text-xs font-black uppercase flex flex-col items-end transition-all" style={{ color: user.customization?.nameColor || '#22d3ee' }}>
+                <div 
+                  data-text={user.displayName}
+                  className={`text-xs font-black uppercase flex flex-col items-end transition-all ${user.customization?.nameColor === 'rainbow' ? 'rainbow-text' : ''} ${user.customization?.glitchEffect ? 'kipher-glitch' : ''}`} 
+                  style={{ color: user.customization?.nameColor === 'rainbow' ? undefined : (user.customization?.nameColor || '#22d3ee') }}
+                >
                   {user.activeTitle && (
-                    <span className="text-[7px] mb-0.5 tracking-[0.3em]" style={{ color: user.customization?.titleColor || 'rgba(34,211,238,0.6)' }}>« {user.activeTitle} »</span>
+                    <span className="text-[7px] mb-0.5 tracking-[0.3em] font-black" style={{ color: user.customization?.titleColor || 'rgba(34,211,238,0.6)' }}>« {user.activeTitle} »</span>
                   )}
                   <span>{user.displayName}</span>
                 </div>

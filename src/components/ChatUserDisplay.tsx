@@ -38,14 +38,30 @@ export default function ChatUserDisplay({ uid, defaultName, isMe }: Props) {
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
       >
-        <span className={`text-[9px] font-bold uppercase tracking-widest transition-colors ${isMe ? 'text-tactical-cyan' : 'text-slate-500 group-hover:text-white'}`}>
+        <span 
+          style={{ 
+            color: profile?.customization?.nameColor === 'rainbow' ? undefined : (profile?.customization?.nameColor || (isMe ? '#22d3ee' : '#64748b')),
+            textShadow: profile?.customization?.neonGlow && profile?.customization?.nameColor !== 'rainbow' ? `0 0 10px ${profile?.customization?.nameColor || '#22d3ee'}` : 'none'
+          }}
+          data-text={profile?.displayName || defaultName}
+          className={`text-[9px] font-bold uppercase tracking-widest transition-colors group-hover:brightness-125 ${profile?.customization?.nameColor === 'rainbow' ? 'rainbow-text' : ''} ${profile?.customization?.glitchEffect ? 'kipher-glitch' : ''}`}
+        >
           {profile?.displayName || defaultName}
         </span>
         
         {activeTitle && (
-          <span className="flex items-center gap-1 px-1 py-0.5 bg-tactical-cyan/10 border border-tactical-cyan/30 rounded-sm">
-            <Zap size={8} className="text-tactical-cyan animate-pulse" />
-            <span className="text-[7px] font-black text-tactical-cyan uppercase italic tracking-tighter">
+          <span 
+            style={{ 
+              backgroundColor: profile?.customization?.titleColor || 'rgba(34,211,238,0.1)',
+              borderColor: profile?.customization?.titleColor ? 'transparent' : 'rgba(34,211,238,0.3)'
+            }}
+            className="flex items-center gap-1 px-1 py-0.5 border rounded-sm"
+          >
+            <Zap size={8} style={{ color: profile?.customization?.nameColor || '#22d3ee' }} className="animate-pulse" />
+            <span 
+              style={{ color: profile?.customization?.nameColor || '#22d3ee' }}
+              className="text-[7px] font-black uppercase italic tracking-tighter"
+            >
               {activeTitle}
             </span>
           </span>
