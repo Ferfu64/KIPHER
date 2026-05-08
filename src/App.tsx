@@ -14,7 +14,7 @@ import MiscSystems from './components/MiscSystems';
 import SecretSpace from './components/SecretSpace';
 import TacticalProtocolHandler from './components/TacticalProtocolHandler';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, Users, Home, Archive, ShieldAlert, LogOut, Radio, Activity, Zap, User, ShieldCheck, Lock, Info, Box, Settings, Volume2, VolumeX, MessageCircle, X, Gift, Camera } from 'lucide-react';
+import { Terminal, Users, Home, Archive, ShieldAlert, LogOut, Radio, Activity, Zap, User, ShieldCheck, Lock, Info, Box, Settings, Volume2, VolumeX, MessageCircle, X } from 'lucide-react';
 import { audioService } from './services/audioService';
 
 import DirectMessageContainer from './components/DirectMessageContainer';
@@ -23,13 +23,8 @@ import NotificationOverlay from './components/NotificationOverlay';
 import CortexCutscene from './components/CortexCutscene';
 import CasinoHub from './components/CasinoHub';
 import { titleService } from './services/titleService';
-import { requestNotificationPermission, sendNetworkNotification } from './lib/notifications';
-import DailyReward from './components/DailyReward';
-import BiometricScan from './components/BiometricScan';
-import NeuralCipher from './components/NeuralCipher';
-import NetworkBreach from './components/NetworkBreach';
 
-type NavigationPage = 'GHOST' | 'OWNER' | 'GATEWAY' | 'MEETING' | 'COMM' | 'MISC' | 'SECRET_SPACE' | 'BIO_SCAN' | 'CIPHER_GAME' | 'BREACH_GAME';
+type NavigationPage = 'GHOST' | 'OWNER' | 'GATEWAY' | 'MEETING' | 'COMM' | 'MISC' | 'SECRET_SPACE';
 
 export default function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -52,10 +47,6 @@ export default function App() {
   const [isImmersive, setIsImmersive] = useState(false);
   const [clickCount, setClickCount] = useState(0);
   const [luckMultiplier, setLuckMultiplier] = useState(1);
-  const [creditMultiplier, setCreditMultiplier] = useState(1);
-  const [isRainbowMode, setIsRainbowMode] = useState(false);
-  const [isBlackoutMode, setIsBlackoutMode] = useState(false);
-  const [showDailyReward, setShowDailyReward] = useState(false);
 
   useEffect(() => {
     // Stop ambient drone on unmount
@@ -197,8 +188,7 @@ export default function App() {
     const nextPity911 = reset911 ? 0 : pity911;
     const nextPity500 = reset500 ? 0 : (reset911 ? 0 : pity500); // 911 roll also resets 500 pity for balance
 
-    const finalCreditsEarned = creditsEarned > 0 ? Math.floor(creditsEarned * creditMultiplier) : creditsEarned;
-    const newCredits = Math.max(0, (user.credits || 0) + finalCreditsEarned);
+    const newCredits = Math.max(0, (user.credits || 0) + creditsEarned);
     const updatedUser = { 
       ...user, 
       credits: newCredits,
@@ -212,10 +202,10 @@ export default function App() {
     setPity500(nextPity500);
     localStorage.setItem('kipher_session', JSON.stringify(updatedUser));
 
-    if (finalCreditsEarned > 0) {
+    if (creditsEarned > 0) {
       audioService.playSuccess();
-      window.dispatchEvent(new CustomEvent('kipher:creditsAwarded', { detail: finalCreditsEarned }));
-    } else if (finalCreditsEarned < 0) {
+      window.dispatchEvent(new CustomEvent('kipher:creditsAwarded', { detail: creditsEarned }));
+    } else if (creditsEarned < 0) {
       audioService.playError();
     }
 
@@ -251,7 +241,6 @@ export default function App() {
       if (!auth.currentUser) {
         try {
           await signInAnonymously(auth);
-          requestNotificationPermission();
         } catch (authErr: any) {
           console.warn('Initial anonymous auth failed', authErr);
         }
@@ -266,17 +255,6 @@ export default function App() {
           setPity911(profile.pityCount911 || 0);
           setPity500(profile.pityCount500 || 0);
 
-          // Check reward interval
-          if (profile.lastRewardTime) {
-            const lastReward = new Date(profile.lastRewardTime).getTime();
-            const now = Date.now();
-            if (now - lastReward > 10 * 60 * 60 * 1000) {
-              setShowDailyReward(true);
-            }
-          } else {
-            setShowDailyReward(true);
-          }
-
           // If we have an auth user, re-sync from Firestore to get latest credits/inventory
           if (auth.currentUser) {
             const docRef = doc(db, 'users', profile.uid);
@@ -289,13 +267,6 @@ export default function App() {
               setPity911(latestData.pityCount911 || 0);
               setPity500(latestData.pityCount500 || 0);
               localStorage.setItem('kipher_session', JSON.stringify(merged));
-              
-              if (latestData.lastRewardTime) {
-                const lr = latestData.lastRewardTime.toDate ? latestData.lastRewardTime.toDate().getTime() : new Date(latestData.lastRewardTime).getTime();
-                if (Date.now() - lr > 10 * 60 * 60 * 1000) {
-                  setShowDailyReward(true);
-                }
-              }
             }
           }
 
@@ -341,45 +312,17 @@ export default function App() {
     // Listen for auth state changes to trigger listeners
     let alertUnsub: (() => void) | null = null;
     let mediaUnsub: (() => void) | null = null;
-    let eventUnsub: (() => void) | null = null;
 
     const authUnsub = onAuthStateChanged(auth, (firebaseUser) => {
       setIsAuthReady(true);
       
-      if (firebaseUser) {
-        // Listen for global system events
-        const eventQuery = query(collection(db, 'system_events'), where('active', '==', true));
-        eventUnsub = onSnapshot(eventQuery, (snap) => {
-          let rainbow = false;
-          let blackout = false;
-          let luck = 1;
-          let credits = 1;
-          
-          snap.forEach(d => {
-            const ev = d.data();
-            if (ev.type === 'RAINBOW_MODE') rainbow = true;
-            if (ev.type === 'BLACKOUT') blackout = true;
-            if (ev.type === 'LUCK_BOOST') luck = ev.multiplier || 2;
-            if (ev.type === 'CREDIT_BOOST') credits = ev.multiplier || 2;
-            if (ev.type === 'SYSTEM_MSG' && !localStorage.getItem(`read_event_${d.id}`)) {
-               sendNetworkNotification('BROADCAST', ev.message);
-               localStorage.setItem(`read_event_${d.id}`, 'true');
-            }
-          });
-          
-          setIsRainbowMode(rainbow);
-          setIsBlackoutMode(blackout);
-          setLuckMultiplier(luck);
-          setCreditMultiplier(credits);
-        });
-      }
+      // Removed redundant tactical listeners - moved to TacticalProtocolHandler
     });
 
     return () => {
       authUnsub();
       if (alertUnsub) alertUnsub();
       if (mediaUnsub) mediaUnsub();
-      if (eventUnsub) eventUnsub();
     };
   }, []);
 
@@ -428,19 +371,11 @@ export default function App() {
 
   return (
     <div 
-      className={`h-screen bg-absolute-black text-slate-300 font-mono text-sm flex border-4 border-slate-900 overflow-hidden select-none relative ${isRainbowMode ? 'rainbow-bg' : ''} ${isBlackoutMode ? 'blackout-view' : ''}`}
+      className="h-screen bg-absolute-black text-slate-300 font-mono text-sm flex border-4 border-slate-900 overflow-hidden select-none relative"
       style={mouseStyle}
     >
       {user.customization && (
         <CustomMouse customization={user.customization} />
-      )}
-
-      {showDailyReward && user && (
-        <DailyReward 
-          user={user} 
-          onClaim={() => { setShowDailyReward(false); audioService.playSuccess(); }} 
-          onClose={() => setShowDailyReward(false)} 
-        />
       )}
       
       <AnimatePresence>
@@ -592,41 +527,7 @@ export default function App() {
               icon={<Settings size={20} />} 
               label="SYST"
             />
-
-            <NavIcon 
-              active={activePage === 'BIO_SCAN'} 
-              onClick={() => navigateTo('BIO_SCAN')} 
-              icon={<Camera size={20} />} 
-              label="BIO"
-              color="text-emerald-500"
-            />
-
-            <NavIcon 
-              active={activePage === 'CIPHER_GAME'} 
-              onClick={() => navigateTo('CIPHER_GAME')} 
-              icon={<Terminal size={20} />} 
-              label="CODE"
-              color="text-amber-500"
-            />
-
-            <NavIcon 
-              active={activePage === 'BREACH_GAME'} 
-              onClick={() => navigateTo('BREACH_GAME')} 
-              icon={<Zap size={20} />} 
-              label="SYNC"
-              color="text-yellow-500"
-            />
           </div>
-
-          {!showDailyReward && (
-            <button 
-              onClick={() => setShowDailyReward(true)}
-              className="p-3 mb-2 text-amber-500 hover:scale-110 transition-transform animate-pulse"
-              title="DAILY_REWARD"
-            >
-              <Gift size={20} />
-            </button>
-          )}
 
           <button 
             onClick={() => { handleAuthChange(null); audioService.playError(); }} 
@@ -688,33 +589,6 @@ export default function App() {
               {activePage === 'MEETING' && <MeetingHub currentUser={user} />}
               {activePage === 'COMM' && <DirectMessageContainer currentUser={user} />}
               {activePage === 'MISC' && <MiscSystems currentUser={user} onOpenSecret={() => navigateTo('SECRET_SPACE')} />}
-              {activePage === 'BIO_SCAN' && <BiometricScan onComplete={() => navigateTo('GATEWAY')} />}
-              {activePage === 'BREACH_GAME' && (
-                <NetworkBreach 
-                  onComplete={async (score) => {
-                    const finalScore = Math.floor(score * creditMultiplier);
-                    const newCredits = (user.credits || 0) + finalScore;
-                    setUser({ ...user, credits: newCredits });
-                    await setDoc(doc(db, 'users', user.uid), { credits: newCredits }, { merge: true });
-                    sendNetworkNotification('STABILITY_LINK_SYNCED', `Extracted ${finalScore} intelligence units.`);
-                    navigateTo('GATEWAY');
-                  }} 
-                  onFail={() => navigateTo('GATEWAY')} 
-                />
-              )}
-              {activePage === 'CIPHER_GAME' && (
-                <NeuralCipher 
-                  onComplete={async (score) => {
-                    const finalScore = score * creditMultiplier;
-                    const newCredits = (user.credits || 0) + finalScore;
-                    setUser({ ...user, credits: newCredits });
-                    await setDoc(doc(db, 'users', user.uid), { credits: newCredits }, { merge: true });
-                    sendNetworkNotification('CODE_BREACHED', `Extracted ${finalScore} intelligence units.`);
-                    navigateTo('GATEWAY');
-                  }} 
-                  onFail={() => navigateTo('GATEWAY')} 
-                />
-              )}
               {activePage === 'SECRET_SPACE' && (
                 <SecretSpace 
                   currentUser={user} 

@@ -4,15 +4,14 @@ import { collection, query, onSnapshot, orderBy, limit } from 'firebase/firestor
 import { UserProfile, ChatMessage, Connection } from '../types';
 import CommandCenter from './CommandCenter';
 import AdminUserForm from './AdminUserForm';
-import AdminAbusePanel from './AdminAbusePanel';
-import { ShieldAlert, Users, Radio, Activity, MessageSquare, Eye, Zap } from 'lucide-react';
+import { ShieldAlert, Users, Radio, Activity, MessageSquare, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { handleFirestoreError, OperationType, ensureDate } from '../lib/utils';
 
 import ChatUserDisplay from './ChatUserDisplay';
 
 export default function GhostTerminal({ currentUser }: { currentUser: UserProfile }) {
-  const [activeTab, setActiveTab] = useState<'COMMAND' | 'USERS' | 'COMM' | 'ABUSE'>('COMMAND');
+  const [activeTab, setActiveTab] = useState<'COMMAND' | 'USERS' | 'COMM'>('COMMAND');
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-slate-950/20 p-6 space-y-6">
@@ -45,12 +44,6 @@ export default function GhostTerminal({ currentUser }: { currentUser: UserProfil
             className={`px-4 py-2 text-[10px] font-black tracking-widest border transition-all ${activeTab === 'USERS' ? 'bg-red-500 text-black border-red-500' : 'border-slate-800 text-slate-500 hover:border-red-500/50'}`}
           >
             <Users size={12} className="inline mr-2" /> ASSET_FABRICATION
-          </button>
-          <button 
-            onClick={() => setActiveTab('ABUSE')}
-            className={`px-4 py-2 text-[10px] font-black tracking-widest border transition-all ${activeTab === 'ABUSE' ? 'bg-red-600 text-white border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]' : 'border-slate-800 text-slate-500 hover:border-red-500/50'}`}
-          >
-            <Zap size={12} className="inline mr-2" /> ABUSE_PANEL
           </button>
         </div>
       </div>
@@ -102,12 +95,6 @@ export default function GhostTerminal({ currentUser }: { currentUser: UserProfil
             {activeTab === 'USERS' && (
               <div className="max-w-4xl mx-auto h-full overflow-y-auto custom-scrollbar">
                 <AdminUserForm onComplete={() => setActiveTab('COMMAND')} />
-              </div>
-            )}
-
-            {activeTab === 'ABUSE' && (
-              <div className="max-w-4xl mx-auto h-full overflow-y-auto custom-scrollbar">
-                <AdminAbusePanel />
               </div>
             )}
           </motion.div>

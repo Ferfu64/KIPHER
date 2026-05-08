@@ -16,26 +16,9 @@
         "titles": { "type": "array", "items": { "type": "string" } },
         "activeTitle": { "type": "string" },
         "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE", "REDACTED"] },
-        "lastSeen": { "type": "string", "format": "date-time" },
-        "lastRewardTime": { "type": "string", "format": "date-time" },
-        "credits": { "type": "integer", "default": 0 }
+        "lastSeen": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "displayName", "password", "role", "isOwner", "clearanceLevel", "isBanned"]
-    },
-    "SystemEvent": {
-      "title": "Network Event",
-      "description": "Global event triggered by network owner",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "type": { "type": "string", "enum": ["LUCK_BOOST", "CREDIT_BOOST", "RAINBOW_MODE", "BLACKOUT", "SYSTEM_MSG"] },
-        "multiplier": { "type": "number" },
-        "duration": { "type": "integer", "description": "Minutes" },
-        "active": { "type": "boolean" },
-        "message": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["type", "active", "createdAt"]
     },
     "Safehouse": {
       "title": "Safehouse Room",
@@ -171,10 +154,6 @@
     "/system/commands/active/{commandId}": {
       "schema": "SystemCommand",
       "description": "Real-time system commands from KIPHER"
-    },
-    "/system_events/{eventId}": {
-      "schema": "SystemEvent",
-      "description": "Global events hosted by the owner"
     }
   }
 }
