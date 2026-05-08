@@ -14,6 +14,8 @@ interface SyncRollTerminalProps {
 export default function SyncRollTerminal({ luck, credits, onClose, onExecute, locationName }: SyncRollTerminalProps) {
   const [syncStatus, setSyncStatus] = useState(0);
   const [glitch, setGlitch] = useState(false);
+  const [isRolling, setIsRolling] = useState(false);
+  const rollingRef = React.useRef(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -31,11 +33,18 @@ export default function SyncRollTerminal({ luck, credits, onClose, onExecute, lo
   }, []);
 
   const handleExecute = () => {
+    if (isRolling || rollingRef.current) return;
+    rollingRef.current = true;
+    setIsRolling(true);
     setSyncStatus(50);
     audioService.playSuccess();
     onExecute();
     // Reset status after a brief delay to allow next roll
-    setTimeout(() => setSyncStatus(0), 1000);
+    setTimeout(() => {
+      setSyncStatus(0);
+      setIsRolling(false);
+      rollingRef.current = false;
+    }, 1000);
   };
 
   return (
@@ -141,13 +150,14 @@ export default function SyncRollTerminal({ luck, credits, onClose, onExecute, lo
 
               <div className="w-full max-w-sm flex flex-col gap-4">
                  <motion.button 
-                   whileHover={{ scale: 1.02 }}
-                   whileTap={{ scale: 0.98 }}
+                   whileHover={!isRolling ? { scale: 1.02 } : {}}
+                   whileTap={!isRolling ? { scale: 0.98 } : {}}
                    onClick={handleExecute}
-                   className="w-full py-6 bg-tactical-cyan text-black font-black uppercase tracking-[0.4em] hover:bg-white transition-all shadow-2xl relative group overflow-hidden"
+                   disabled={isRolling}
+                   className={`w-full py-6 font-black uppercase tracking-[0.4em] transition-all shadow-2xl relative group overflow-hidden ${isRolling ? 'bg-slate-800 text-slate-500 cursor-wait' : 'bg-tactical-cyan text-black hover:bg-white'}`}
                  >
                     <div className="absolute inset-0 bg-white/40 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out" />
-                    <span className="relative z-10">EXECUTE_SYNC</span>
+                    <span className="relative z-10">{isRolling ? 'UPLINK_IN_PROGRESS' : 'EXECUTE_SYNC'}</span>
                  </motion.button>
                  
                  <div className="flex justify-between items-center px-2">

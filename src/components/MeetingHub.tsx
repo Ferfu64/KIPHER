@@ -3,7 +3,7 @@ import { UserProfile, Safehouse as SafehouseType, VaultItem, ChatMessage, VaultF
 import { db, auth } from '../lib/firebase';
 import { collection, query, addDoc, onSnapshot, serverTimestamp, orderBy, limit, doc, getDocs, updateDoc, arrayUnion, deleteDoc, setDoc, where } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Mic, MicOff, Paperclip, Share2, Terminal, Users, Search, Download, Trash2, Plus, Zap, AlertTriangle } from 'lucide-react';
+import { MessageSquare, Mic, MicOff, Paperclip, Share2, Terminal, Users, Search, Download, Trash2, Plus, Zap, AlertTriangle, Image as ImageIcon, Camera } from 'lucide-react';
 import { handleFirestoreError, OperationType, ensureDate } from '../lib/utils';
 import { signInAnonymously } from 'firebase/auth';
 import { audioService } from '../services/audioService';
@@ -16,6 +16,8 @@ export default function MeetingHub({ currentUser }: { currentUser: UserProfile }
   const [spamWarning, setSpamWarning] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(true);
   const [isFilterActive, setIsFilterActive] = useState(false);
+  const [isPastingImage, setIsPastingImage] = useState(false);
+  const [pastingNode, setPastingNode] = useState<SafehouseType | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const filterNodeRef = useRef<BiquadFilterNode | null>(null);
   const streamSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
@@ -250,6 +252,45 @@ export default function MeetingHub({ currentUser }: { currentUser: UserProfile }
     setShowNodePicker(false);
   };
 
+  const startImageIntel = (node: SafehouseType) => {
+    setPastingNode(node);
+    setIsPastingImage(true);
+    setShowNodePicker(false);
+  };
+
+  const handleIntelPaste = async (e: any) => {
+    if (!isPastingImage) return;
+    const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const base64 = event.target?.result as string;
+            const nodeName = pastingNode ? pastingNode.name : 'UNKNOWN_NODE';
+            sendMessage(`[IMAGE_INTEL_EXTRACTED] SOURCE: ${nodeName}`, 'SYSTEM');
+            sendMessage(base64, 'MEDIA');
+            setIsPastingImage(false);
+            setPastingNode(null);
+            audioService.playCelestialSymphony();
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (isPastingImage) {
+      const globalPaste = (e: ClipboardEvent) => handleIntelPaste(e);
+      window.addEventListener('paste', globalPaste);
+      return () => window.removeEventListener('paste', globalPaste);
+    }
+  }, [isPastingImage, pastingNode]);
+
   const shareVault = (vault: VaultItem) => {
     if (!vault.files || vault.files.length === 0) {
       return alert('VAULT_EMPTY: NO_DATA_TO_EXTRACT');
@@ -331,6 +372,37 @@ export default function MeetingHub({ currentUser }: { currentUser: UserProfile }
           canDeleteAll={currentUser.role === 'OWNER' || currentUser.role === 'SUPERUSER'}
         />
 
+        <AnimatePresence>
+          {isPastingImage && (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              className="absolute inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center p-8 backdrop-blur-md"
+              onPaste={handleIntelPaste}
+              tabIndex={0}
+              autoFocus
+            >
+              <div className="text-center">
+                <Camera size={48} className="text-tactical-cyan mx-auto mb-6 animate-pulse" />
+                <h3 className="text-2xl font-black text-white italic uppercase tracking-widest mb-2">Sync_Image_Intel</h3>
+                <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] mb-12">Target Node: <span className="text-tactical-cyan">{pastingNode?.name}</span> // Paste (Ctrl+V) to establish link</p>
+                
+                <div className="w-64 h-40 border-2 border-dashed border-slate-800 flex items-center justify-center text-[9px] text-slate-600 font-bold uppercase trekking-widest">
+                  Awaiting_Signal...
+                </div>
+
+                <button 
+                  onClick={() => setIsPastingImage(false)}
+                  className="mt-12 px-6 py-2 border border-white/10 text-slate-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all"
+                >
+                  ABORT_EXTRACTION
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="absolute bottom-4 left-4 z-50 flex gap-2">
            <div className="relative group">
               <button 
@@ -346,9 +418,18 @@ export default function MeetingHub({ currentUser }: { currentUser: UserProfile }
                    <div className="text-[9px] font-black text-slate-500 mb-2 p-1 border-b border-white/5 uppercase">Pull_Node_Intel</div>
                    <div className="max-h-48 overflow-y-auto custom-scrollbar space-y-1">
                      {nodes.map(n => (
-                       <button onClick={() => pullNodeIntel(n)} key={n.id} className="w-full text-left p-2 text-[10px] hover:bg-tactical-cyan hover:text-black transition-colors uppercase font-bold truncate">
-                         {n.name} // {n.id.slice(0,6)}
-                       </button>
+                       <div key={n.id} className="flex items-center gap-1">
+                         <button onClick={() => pullNodeIntel(n)} className="flex-1 text-left p-2 text-[10px] hover:bg-tactical-cyan hover:text-black transition-colors uppercase font-bold truncate">
+                           {n.name} // {n.id.slice(0,6)}
+                         </button>
+                         <button 
+                           onClick={() => startImageIntel(n)}
+                           className="p-2 text-slate-500 hover:text-tactical-cyan hover:bg-tactical-cyan/10 transition-colors"
+                           title="CREATE_IMAGE_INTEL"
+                         >
+                           <Camera size={14} />
+                         </button>
+                       </div>
                      ))}
                    </div>
                 </div>

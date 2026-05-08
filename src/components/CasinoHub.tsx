@@ -223,15 +223,15 @@ export default function CasinoHub({
              {selectedLoc && (
                 <motion.div 
                   initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
-                  className="mt-12 max-w-4xl mx-auto p-12 bg-slate-900 border-2 border-tactical-cyan/30 relative overflow-hidden"
+                  className="mt-12 max-w-4xl mx-auto p-12 bg-slate-900 border-2 border-tactical-cyan/30 relative"
                 >
                    <div className="absolute top-0 right-0 p-4">
                       <Sparkles className="text-tactical-cyan animate-pulse" />
                    </div>
                    
                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
-                      <div className="md:col-span-1 space-y-4">
-                         <h2 className="text-4xl font-black italic tracking-tighter uppercase">{selectedLoc.name}</h2>
+                      <div className="md:col-span-1 space-y-4 pl-4">
+                         <h2 className="text-4xl font-black uppercase tracking-tight">{selectedLoc.name}</h2>
                          <p className="text-xs text-slate-400 font-bold uppercase leading-relaxed">{selectedLoc.desc}</p>
                       </div>
                       

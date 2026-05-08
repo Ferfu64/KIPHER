@@ -11,21 +11,31 @@ export interface UserProfile {
   titles?: string[];
   activeTitle?: string;
   lastSeen: any;
+  lastRewardTime?: any;
   currentAuthUid?: string;
   credits?: number;
   promotionCount?: number;
+  level?: number;
+  totalRolls?: number;
+  pityCount911?: number;
+  pityCount500?: number;
   purchasedItems?: string[];
   tankHighscore?: number;
   unlockedCasinos?: string[];
-  customization?: {
-    nameColor?: string;
-    titleColor?: string;
-    mouseSize?: number;
-    mouseColor?: string;
-    neonGlow?: boolean;
-    mouseTrail?: boolean;
-    glitchEffect?: boolean;
-  };
+    customization?: {
+      nameColor?: string;
+      titleColor?: string;
+      mouseSize?: number;
+      mouseColor?: string;
+      neonGlow?: boolean;
+      mouseTrail?: boolean;
+      glitchEffect?: boolean;
+      luckBonus?: number;
+      vipStatus?: boolean;
+      creditBonus?: number;
+      overclocked?: boolean;
+      hasSentry?: boolean;
+    };
 }
 
 export interface Safehouse {

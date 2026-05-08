@@ -184,6 +184,12 @@ class TacticalAudioService {
     return this.masterGain ? this.masterGain.gain.value : 0;
   }
 
+  resume() {
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  }
+
   ensureMinVolume(min: number) {
     if (this.masterGain && this.ctx && !this.isMuted) {
       const current = this.masterGain.gain.value;

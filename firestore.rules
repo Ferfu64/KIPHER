@@ -20,14 +20,12 @@ service cloud.firestore {
     // --- ENTITY VALIDATIONS ---
 
     function isValidUser(data) {
-      return data.displayName is string && data.displayName.size() <= 50 &&
-             data.password is string && data.password.size() <= 100 &&
+      return data.displayName is string && data.displayName.size() <= 60 &&
              data.role in ['AGENT', 'SUPERUSER', 'OWNER', 'ASSET'] &&
              data.isOwner is bool &&
-             data.clearanceLevel is int && data.clearanceLevel >= 0 && data.clearanceLevel <= 5 &&
+             data.clearanceLevel is int &&
              data.isBanned is bool &&
-             data.keys().hasAll(['uid', 'displayName', 'password', 'role', 'isOwner', 'clearanceLevel', 'isBanned']) &&
-             data.keys().size() >= 7;
+             data.keys().hasAll(['uid', 'displayName', 'role', 'isOwner', 'clearanceLevel', 'isBanned']);
     }
 
     function isValidSafehouse(data) {
@@ -83,13 +81,22 @@ service cloud.firestore {
       allow update: if isAdmin();
     }
 
+    match /system_events/{eventId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
     match /users/{userId} {
       allow get: if isSignedIn();
       allow list: if isSignedIn();
-      allow create: if isAdmin() && isValidUser(incoming()) && incoming().uid == userId;
+      allow create: if (isAdmin() || isSignedIn()) && isValidUser(incoming()) && incoming().uid == userId;
       allow update: if isAdmin() || (isSignedIn() && (
-        incoming().diff(existing()).affectedKeys().hasOnly(['lastSeen', 'currentAuthUid', 'status']) ||
-        (existing().uid == userId && incoming().diff(existing()).affectedKeys().hasOnly(['credits', 'titles', 'activeTitle', 'customization', 'promotionCount', 'lastSeen']))
+        // Allow anyone to "claim" their record or update status
+        incoming().diff(existing()).affectedKeys().hasOnly(['lastSeen', 'currentAuthUid', 'status', 'isOnline']) ||
+        // Allow user to update their own data if they own the record
+        ((existing().uid == userId || existing().currentAuthUid == request.auth.uid) && 
+         isValidUser(incoming()) && 
+         incoming().diff(existing()).affectedKeys().hasOnly(['credits', 'titles', 'activeTitle', 'customization', 'promotionCount', 'lastSeen', 'lastRewardTime', 'totalRolls', 'pityCount911', 'pityCount500', 'unlockedCasinos', 'level', 'tankHighscore', 'isOnline', 'status', 'currentAuthUid']))
       ));
       allow delete: if isAdmin();
     }

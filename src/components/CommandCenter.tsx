@@ -41,14 +41,25 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
   const [newTitle, setNewTitle] = useState('');
 
   const CUTSCENE_OPTIONS = [
-    { type: 'STRUCTURAL_COLLAPSE', label: 'STRUCTURAL_COLLAPSE (1 in 911 | Legendary)' },
-    { type: 'SINGULARITY', label: 'SINGULARITY (Legendary)' },
-    { type: 'ANGELIC_SYMPHONY', label: 'ANGELIC_SYMPHONY (Mythic)' },
-    { type: 'ETERNAL_OPPRESSION', label: 'ETERNAL_OPPRESSION (Hurt)' },
-    { type: 'SUPREME_SOVEREIGN', label: 'SUPREME_SOVEREIGN (Absolute)' },
-    { type: 'ANONYMOUS_DEITY', label: 'ANONYMOUS_DEITY (Divine)' },
-    { type: 'AEGIS_ARCHITECH', label: 'AEGIS_ARCHITECH (Architect)' },
-    { type: 'OMEGA', label: 'OMEGA (Epic)' },
+    { type: 'STRUCTURAL_COLLAPSE', label: 'STRUCTURAL_COLLAPSE (1 in 2,111)' },
+    { type: 'PHANTOM_RECKONING', label: 'PHANTOM_RECKONING (1 in 1,000)' },
+    { type: 'ANGELIC_SYMPHONY', label: 'ANGELIC_SYMPHONY (1 in 1,000)' },
+    { type: 'SOLAR_ECLIPSE', label: 'SOLAR_ECLIPSE (1 in 1,111)' },
+    { type: 'DEATH_BYTE', label: 'DEATH_BYTE (1 in 1,200)' },
+    { type: 'MAC_MELT', label: 'MAC_MELT (1 in 1,200)' },
+    { type: 'QUANTUM_ENTANGLEMENT', label: 'QUANTUM_ENTANGLEMENT (1 in 1,500)' },
+    { type: 'SINGULARITY', label: 'SINGULARITY (1 in 1M)' },
+    { type: 'ETERNAL_OPPRESSION', label: 'ETERNAL_OPPRESSION (1 in 10M)' },
+    { type: 'SUPREME_SOVEREIGN', label: 'SUPREME_SOVEREIGN (1 in 5.5M)' },
+    { type: 'VOID_MATRIARCH', label: 'VOID_MATRIARCH (1 in 100,000)' },
+    { type: 'CHRONOS_REVERSION', label: 'CHRONOS_REVERSION (1 in 150,000)' },
+    { type: 'CELESTIAL_OVERSEER', label: 'CELESTIAL_OVERSEER (1 in 250,000)' },
+    { type: 'ANONYMOUS_DEITY', label: 'ANONYMOUS_DEITY (1 in 350,000)' },
+    { type: 'AEGIS_ARCHITECH', label: 'AEGIS_ARCHITECH (1 in 10,000)' },
+    { type: 'RUNIA', label: 'RUNIA (1 in 50,000)' },
+    { type: 'PIXELIZATION', label: 'PIXELIZATION (1 in 45,000)' },
+    { type: 'ABYSSAL_HUNTER', label: 'ABYSSAL_HUNTER (1 in 40,400)' },
+    { type: 'ARCHANGEL', label: 'ARCHANGEL (1 in 1M True)' },
   ];
 
   useEffect(() => {

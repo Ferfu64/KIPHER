@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Brain, HelpCircle, Zap, Shield, AlertTriangle, Timer, CheckCircle, XCircle, Utensils, MousePointer2, Calculator, Globe, Laptop, ChevronRight, Trophy } from 'lucide-react';
 import { audioService } from '../services/audioService';
@@ -25,6 +25,11 @@ const TRIVIA_DATABASE: Record<string, Record<string, Question[]>> = {
       { q: "Which animal has the highest blood pressure?", options: ["Blue Whale", "Giraffe", "Elephant", "Ant"], correct: 1 },
       { q: "What is the scientific name for the Western Gorilla?", options: ["Gorilla gorilla", "Pan troglodytes", "Pongo", "Lemur"], correct: 0 },
       { q: "How many hearts does an octopus have?", options: ["1", "2", "3", "8"], correct: 2 }
+    ],
+    NIGHTMARE: [
+      { q: "What is the gestational period of an African Elephant?", options: ["12 months", "18 months", "22 months", "24 months"], correct: 2 },
+      { q: "What is the only bird that can fly backwards?", options: ["Hummingbird", "Swift", "Swallow", "Martin"], correct: 0 },
+      { q: "Which animal has the most powerful bite force in PSI?", options: ["Nile Crocodile", "Great White Shark", "Hippopotamus", "Saltwater Crocodile"], correct: 3 }
     ]
   },
   FOOD: {
@@ -42,6 +47,11 @@ const TRIVIA_DATABASE: Record<string, Record<string, Question[]>> = {
       { q: "Which vitamin is only found in animal products?", options: ["Vitamin C", "Vitamin B12", "Vitamin A", "Vitamin D"], correct: 1 },
       { q: "What is the world's most expensive spice by weight?", options: ["Vanilla", "Saffron", "Cardamom", "Cinnamon"], correct: 1 },
       { q: "Scoville units measure what?", options: ["Sweetness", "Heat (Spiciness)", "Saltiness", "Acidity"], correct: 1 }
+    ],
+    NIGHTMARE: [
+      { q: "What is 'Ceviche' marinated in?", options: ["Olive Oil", "Vinegar", "Citrus Juice", "Wine"], correct: 2 },
+      { q: "Where does the 'Durian' fruit originate from?", options: ["South America", "South East Asia", "Africa", "Australia"], correct: 1 },
+      { q: "What is the lethal toxin found in Fugu (Pufferfish)?", options: ["Cyanide", "Tetrodotoxin", "Arsenic", "Ricin"], correct: 1 }
     ]
   },
   MATH: {
@@ -59,6 +69,11 @@ const TRIVIA_DATABASE: Record<string, Record<string, Question[]>> = {
       { q: "What is the value of Pi to 2 decimal places?", options: ["3.12", "3.14", "3.16", "3.18"], correct: 1 },
       { q: "What is a prime number?", options: ["Number divisible by 2", "Number with only 2 factors", "Odd number", "Large number"], correct: 1 },
       { q: "What is the derivative of x^2?", options: ["x", "2", "2x", "x^3"], correct: 2 }
+    ],
+    NIGHTMARE: [
+      { q: "What is the sum of angles in a heptagon?", options: ["720", "900", "1080", "1260"], correct: 1 },
+      { q: "What is 7 cubed?", options: ["243", "343", "443", "543"], correct: 1 },
+      { q: "Which of these is NOT a Platonic solid?", options: ["Tetrahedron", "Icosahedron", "Dodecahedron", "Rhombus"], correct: 3 }
     ]
   },
   GEOGRAPHY: {
@@ -76,17 +91,51 @@ const TRIVIA_DATABASE: Record<string, Record<string, Question[]>> = {
       { q: "Which country has the most natural lakes?", options: ["USA", "Russia", "Canada", "China"], correct: 2 },
       { q: "What is the capital of Kazakhstan?", options: ["Almaty", "Astana", "Bishkek", "Tashkent"], correct: 1 },
       { q: "Which African country was formerly known as Abyssinia?", options: ["Nigeria", "Kenya", "Ethiopia", "Sudan"], correct: 2 }
+    ],
+    NIGHTMARE: [
+      { q: "Which desert is the largest in the world?", options: ["Sahara", "Gobi", "Antarctic Desert", "Arabian"], correct: 2 },
+      { q: "Which city is located on two continents?", options: ["Istanbul", "Cairo", "Moscow", "Jakarta"], correct: 0 },
+      { q: "What is the deepest point in the world's oceans?", options: ["Java Trench", "Mariana Trench", "Tonga Trench", "Puerto Rico Trench"], correct: 1 }
+    ]
+  },
+  TECH: {
+    EASY: [
+      { q: "What does HTML stand for?", options: ["Hypertext Markup Language", "High Tech Machine Language", "Hyperlink Text Mgmt Lib", "None"], correct: 0 },
+      { q: "Which company created the iPhone?", options: ["Google", "Microsoft", "Apple", "Samsung"], correct: 2 }
+    ],
+    MEDIUM: [
+      { q: "What protocol is used for secure web browsing?", options: ["HTTP", "SSH", "HTTPS", "FTP"], correct: 2 },
+      { q: "What is the name of the main circuit board in a computer?", options: ["Sound card", "Motherboard", "Graphics unit", "RAM"], correct: 1 }
+    ],
+    HARD: [
+      { q: "Who is known as the father of modern computer science?", options: ["Alan Turing", "Ada Lovelace", "Charles Babbage", "Steve Jobs"], correct: 0 },
+      { q: "What does SQL stand for?", options: ["Structured Query Language", "System Quick Link", "Simple Quant Logic", "Smart Query Lib"], correct: 0 }
+    ],
+    NIGHTMARE: [
+      { q: "What was the name of the first programmable computer?", options: ["ENIAC", "Z3", "Colossus", "Differential Analyzer"], correct: 1 },
+      { q: "In binary, what is 10110 in decimal?", options: ["20", "22", "18", "24"], correct: 1 }
     ]
   }
 };
 
+// Add NIGHTMARE to other categories
+Object.keys(TRIVIA_DATABASE).forEach(cat => {
+  if (cat !== 'TECH') {
+    TRIVIA_DATABASE[cat].NIGHTMARE = TRIVIA_DATABASE[cat].NIGHTMARE || [
+      { q: "What is the maximum packet size for IPV4 before fragmentation?", options: ["65535 bytes", "1500 bytes", "576 bytes", "9000 bytes"], correct: 0 },
+      { q: "Which algorithm is used for Git's content hashing?", options: ["MD5", "SHA-1", "SHA-256", "RIPEMD-160"], correct: 1 }
+    ];
+  }
+});
+
 type Category = 'ANIMALS' | 'FOOD' | 'MATH' | 'GEOGRAPHY' | 'TECH';
-type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
+type Difficulty = 'EASY' | 'MEDIUM' | 'HARD' | 'NIGHTMARE' | 'EXTREME';
 
 export default function TriviaGame({ onBack, onCreditsEarned }: { onBack: () => void, onCreditsEarned: (cr: number) => void }) {
   const [gameState, setGameState] = useState<'SELECT_CAT' | 'SELECT_DIFF' | 'STARTING' | 'QUESTION' | 'FEEDBACK' | 'RESULTS'>('SELECT_CAT');
   const [category, setCategory] = useState<Category | null>(null);
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
+  const [showExtreme, setShowExtreme] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(15);
@@ -96,32 +145,77 @@ export default function TriviaGame({ onBack, onCreditsEarned }: { onBack: () => 
   const selectCategory = (cat: Category) => {
     setCategory(cat);
     setGameState('SELECT_DIFF');
+    setShowExtreme(false);
     audioService.playBlip();
+  };
+
+  const handleAnyRarity = () => {
+    audioService.playSuccess();
+    // 1 in 5 chance to reveal EXTREME difficulty
+    if (Math.random() < 0.2) {
+      setShowExtreme(true);
+      audioService.playCelestialSymphony();
+    } else {
+      // Otherwise just pick a random standard difficulty
+      const diffs: Difficulty[] = ['EASY', 'MEDIUM', 'HARD', 'NIGHTMARE'];
+      selectDifficulty(diffs[Math.floor(Math.random() * diffs.length)]);
+    }
   };
 
   const selectDifficulty = (diff: Difficulty) => {
     setDifficulty(diff);
-    const qSet = TRIVIA_DATABASE[category!]?.[diff] || TRIVIA_DATABASE.ANIMALS.EASY;
+    let qSet = [...(TRIVIA_DATABASE[category!]?.[diff] || [])];
+    
+    if (qSet.length === 0) {
+      if (diff === 'EXTREME') {
+        qSet = [
+          { q: "What is the computational complexity of the 'Traveling Salesman' problem?", options: ["P", "NP", "NP-Hard", "Logarithmic"], correct: 2 },
+          { q: "What does the 'B' in Mandelbrot signify in set theory?", options: ["Boundless", "Bifurcation", "Benoit", "Binary"], correct: 2 },
+          { q: "Which particle is its own antiparticle?", options: ["Electron", "Neutrino", "Photon", "Quark"], correct: 2 },
+          { q: "Which theorem states that any Boolean function can be implemented with NAND gates?", options: ["De Morgan's", "Shannon's Expansion", "Functional Completeness", "Church-Turing"], correct: 2 },
+          { q: "What is the limit of (1 + 1/n)^n as n approaches infinity?", options: ["0", "1", "e", "Infinity"], correct: 2 }
+        ];
+      } else {
+        qSet = [...(TRIVIA_DATABASE.ANIMALS.EASY || [])];
+      }
+    }
+
+    // Random Shuffle
+    qSet = qSet.sort(() => Math.random() - 0.5);
+    
+    // Shuffle options for each question
+    qSet = qSet.map(q => {
+      const opts = [...q.options];
+      const correctText = opts[q.correct];
+      const shuffledOpts = opts.sort(() => Math.random() - 0.5);
+      const newCorrect = shuffledOpts.indexOf(correctText);
+      return { ...q, options: shuffledOpts, correct: newCorrect };
+    });
+
     setQuestions(qSet);
     setGameState('STARTING');
     audioService.playBlip();
     setTimeout(() => {
        setGameState('QUESTION');
-       setTimeLeft(15);
+       setTimeLeft(diff === 'EXTREME' ? 3 : (diff === 'NIGHTMARE' ? 5 : 15));
     }, 1500);
   };
 
-  useEffect(() => {
-    if (gameState === 'QUESTION' && timeLeft > 0) {
-      timerRef.current = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
-    } else if (timeLeft === 0 && gameState === 'QUESTION') {
-      handleAnswer(-1); // Timeout
+  const nextQuestion = useCallback(() => {
+    if (currentIdx + 1 >= questions.length) {
+       setGameState('RESULTS');
+       const multiplier = difficulty === 'EXTREME' ? 2500 : (difficulty === 'NIGHTMARE' ? 500 : (difficulty === 'HARD' ? 100 : (difficulty === 'MEDIUM' ? 25 : 10)));
+       onCreditsEarned(score * multiplier);
+       return;
     }
-    return () => clearInterval(timerRef.current);
-  }, [gameState, timeLeft]);
+    setCurrentIdx(i => i + 1);
+    setTimeLeft(difficulty === 'EXTREME' ? 3 : (difficulty === 'NIGHTMARE' ? 5 : 15));
+    setGameState('QUESTION');
+  }, [currentIdx, questions.length, difficulty, score, onCreditsEarned]);
 
-  const handleAnswer = (idx: number) => {
+  const handleAnswer = useCallback((idx: number) => {
     clearInterval(timerRef.current);
+    if (!questions[currentIdx]) return;
     const correct = questions[currentIdx].correct;
     
     if (idx === correct) {
@@ -132,19 +226,18 @@ export default function TriviaGame({ onBack, onCreditsEarned }: { onBack: () => 
       setGameState('FEEDBACK');
       audioService.playError();
     }
-  };
+  }, [currentIdx, questions, nextQuestion]);
 
-  const nextQuestion = () => {
-    if (currentIdx + 1 >= questions.length) {
-       setGameState('RESULTS');
-       const multiplier = difficulty === 'HARD' ? 100 : difficulty === 'MEDIUM' ? 25 : 10;
-       onCreditsEarned(score * multiplier);
-       return;
+  useEffect(() => {
+    if (gameState === 'QUESTION' && timeLeft > 0) {
+      timerRef.current = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+    } else if (timeLeft === 0 && gameState === 'QUESTION') {
+      handleAnswer(-1); // Timeout
     }
-    setCurrentIdx(i => i + 1);
-    setTimeLeft(15);
-    setGameState('QUESTION');
-  };
+    return () => clearInterval(timerRef.current);
+  }, [gameState, timeLeft, handleAnswer]);
+
+  const currentQuestion = useMemo(() => questions[currentIdx], [questions, currentIdx]);
 
   return (
     <div className="h-full w-full bg-slate-950 flex flex-col font-mono text-white overflow-hidden select-none relative">
@@ -178,9 +271,9 @@ export default function TriviaGame({ onBack, onCreditsEarned }: { onBack: () => 
                         { id: 'TECH', label: 'CYBER_PROTOCOL', icon: Laptop }
                       ].map(cat => (
                          <button 
-                           key={cat.id} 
-                           onClick={() => selectCategory(cat.id as Category)}
-                           className="flex flex-col items-center gap-4 p-8 bg-slate-900/50 border border-white/5 hover:border-tactical-cyan hover:bg-tactical-cyan/10 transition-all group"
+                            key={cat.id} 
+                            onClick={() => selectCategory(cat.id as Category)}
+                            className="flex flex-col items-center gap-4 p-8 bg-slate-900/50 border border-white/5 hover:border-tactical-cyan hover:bg-tactical-cyan/10 transition-all group"
                          >
                             <cat.icon size={32} className="text-slate-500 group-hover:text-tactical-cyan group-hover:scale-110 transition-all" />
                             <span className="text-xs font-black tracking-widest uppercase">{cat.label}</span>
@@ -197,21 +290,45 @@ export default function TriviaGame({ onBack, onCreditsEarned }: { onBack: () => 
                       {[
                         { id: 'EASY', label: 'SURFACE_LAYER', bonus: '10 CR', color: 'text-green-500' },
                         { id: 'MEDIUM', label: 'CORE_PENETRATION', bonus: '25 CR', color: 'text-yellow-500' },
-                        { id: 'HARD', label: 'DEEP_EXTRACTION', bonus: '100 CR', color: 'text-red-500' }
+                        { id: 'HARD', label: 'DEEP_EXTRACTION', bonus: '100 CR', color: 'text-red-500' },
+                        { id: 'NIGHTMARE', label: 'TERMINAL_COLLAPSE', bonus: '500 CR', color: 'text-purple-500' }
                       ].map(diff => (
                          <button 
-                           key={diff.id} 
-                           onClick={() => selectDifficulty(diff.id as Difficulty)}
-                           className="w-full p-6 bg-slate-900 border border-white/5 hover:border-white transition-all flex justify-between items-center group overflow-hidden relative"
+                            key={diff.id} 
+                            onClick={() => selectDifficulty(diff.id as Difficulty)}
+                            className="w-full p-6 bg-slate-900 border border-white/5 hover:border-white transition-all flex justify-between items-center group overflow-hidden relative"
                          >
                             <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition-colors" />
                             <div className="flex items-center gap-6 relative">
-                               <div className={`w-2 h-2 rounded-full ${diff.id === 'EASY' ? 'bg-green-500' : diff.id === 'MEDIUM' ? 'bg-yellow-500' : 'bg-red-500'}`} />
+                               <div className={`w-2 h-2 rounded-full ${diff.id === 'EASY' ? 'bg-green-500' : diff.id === 'MEDIUM' ? 'bg-yellow-500' : diff.id === 'HARD' ? 'bg-red-500' : 'bg-purple-500'}`} />
                                <span className="text-xl font-black uppercase tracking-tighter">{diff.label}</span>
                             </div>
                             <div className={`font-black italic text-sm ${diff.color} relative`}>{diff.bonus} / ANS</div>
                          </button>
                       ))}
+
+                      {showExtreme && (
+                         <button 
+                            onClick={() => selectDifficulty('EXTREME')}
+                            className="w-full p-8 bg-red-950 border-2 border-red-500 hover:bg-red-900 transition-all flex justify-between items-center group overflow-hidden relative animate-pulse"
+                         >
+                            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="flex items-center gap-6 relative">
+                               <div className="w-3 h-3 rounded-full bg-red-400 shadow-[0_0_10px_#f87171]" />
+                               <span className="text-2xl font-black uppercase tracking-widest text-red-100">EXTREME_THRESHOLD</span>
+                            </div>
+                            <div className="font-black italic text-sm text-red-400 relative">2500 CR / ANS</div>
+                         </button>
+                      )}
+
+                      {!showExtreme && (
+                         <button 
+                            onClick={handleAnyRarity}
+                            className="w-full p-4 border border-tactical-cyan/40 bg-tactical-cyan/5 text-tactical-cyan hover:bg-tactical-cyan hover:text-black transition-all text-xs font-black uppercase tracking-[0.5em] mt-4 flex items-center justify-center gap-2 group"
+                         >
+                            <Zap size={14} className="group-hover:animate-bounce" /> ANY_RARITY (ROLL)
+                          </button>
+                       )}
                    </div>
                 </motion.div>
              )}
@@ -224,12 +341,12 @@ export default function TriviaGame({ onBack, onCreditsEarned }: { onBack: () => 
                 </motion.div>
              )}
 
-             {gameState === 'QUESTION' && (
+             {gameState === 'QUESTION' && currentQuestion && (
                 <motion.div key="q" initial={{ opacity: 0, scale: 1.05 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-3xl">
                    <div className="flex justify-between items-end mb-12 border-b border-white/5 pb-6">
                       <div className="max-w-[80%]">
                          <div className="text-[10px] text-tactical-cyan mb-2 font-black uppercase tracking-[0.4em]">SYNC_NODE: {currentIdx + 1} / {questions.length}</div>
-                         <h3 className="text-3xl font-black italic uppercase leading-tight">{questions[currentIdx].q}</h3>
+                         <h3 className="text-3xl font-black italic uppercase leading-tight">{currentQuestion.q}</h3>
                       </div>
                       <div className="text-right">
                          <div className={`text-3xl font-black tabular-nums transition-colors ${timeLeft < 5 ? 'text-red-500 animate-pulse' : 'text-white'}`}>{timeLeft}s</div>
@@ -238,11 +355,11 @@ export default function TriviaGame({ onBack, onCreditsEarned }: { onBack: () => 
                    </div>
 
                    <div className="grid grid-cols-1 gap-3">
-                      {questions[currentIdx].options.map((opt, i) => (
+                      {currentQuestion.options.map((opt, i) => (
                          <button 
-                           key={i}
-                           onClick={() => handleAnswer(i)}
-                           className="p-6 bg-slate-900/50 border border-white/5 hover:border-tactical-cyan hover:bg-tactical-cyan/10 text-left group transition-all flex items-center gap-6"
+                            key={i}
+                            onClick={() => handleAnswer(i)}
+                            className="p-6 bg-slate-900/50 border border-white/5 hover:border-tactical-cyan hover:bg-tactical-cyan/10 text-left group transition-all flex items-center gap-6"
                          >
                             <span className="text-slate-600 font-black group-hover:text-tactical-cyan transition-colors text-lg">0{i+1}</span>
                             <span className="font-black uppercase tracking-widest text-sm flex-1">{opt}</span>
@@ -265,7 +382,7 @@ export default function TriviaGame({ onBack, onCreditsEarned }: { onBack: () => 
                    <div className="text-slate-500 text-xs font-bold uppercase tracking-[0.3em] mb-12">DATA_INTEGRITY: {Math.round((score/questions.length)*100)}%</div>
                    
                    <div className="text-4xl font-black text-tactical-cyan mb-12 uppercase italic bg-black/40 py-6 border-y border-white/5">
-                      {score * (difficulty === 'HARD' ? 100 : difficulty === 'MEDIUM' ? 25 : 10)} CR_EARNED
+                      {score * (difficulty === 'EXTREME' ? 2500 : (difficulty === 'NIGHTMARE' ? 500 : (difficulty === 'HARD' ? 100 : (difficulty === 'MEDIUM' ? 25 : 10))))} CR_EARNED
                    </div>
 
                    <button 
@@ -294,14 +411,17 @@ function FeedbackLoop({ onComplete }: { onComplete: () => void }) {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (hits >= targetHits) {
+      const timer = setTimeout(() => {
+        onComplete();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [hits, onComplete, targetHits]);
+
   const hit = () => {
-    setHits(h => {
-       if (h + 1 >= targetHits) {
-          onComplete();
-          return h + 1;
-       }
-       return h + 1;
-    });
+    setHits(h => h + 1);
     audioService.playBlip();
   };
 

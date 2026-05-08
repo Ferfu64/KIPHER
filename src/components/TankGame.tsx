@@ -28,6 +28,9 @@ interface Tank extends GameObject {
   isBoss?: boolean;
   weaponType?: 'NORMAL' | 'TRIPLE' | 'BEAM';
   mode?: 'RANGED' | 'MELEE';
+  isRushing?: boolean;
+  rushTimer?: number;
+  rushRotateFixed?: number;
 }
 
 interface Bullet extends GameObject {
@@ -312,67 +315,83 @@ export default function TankGame({ onBack, onCreditsEarned }: TankGameProps) {
     }
 
     if (gameState === 'PLAYING') {
-      if (keys.current['KeyW'] || keys.current['ArrowUp']) {
-        p.x += Math.cos(p.rotation) * p.speed;
-        p.y += Math.sin(p.rotation) * p.speed;
-      }
-      if (keys.current['KeyS'] || keys.current['ArrowDown']) {
-        p.x -= Math.cos(p.rotation) * p.speed;
-        p.y -= Math.sin(p.rotation) * p.speed;
-      }
-      if (keys.current['KeyA'] || keys.current['ArrowLeft']) {
-        p.rotation -= p.turnSpeed;
-      }
-      if (keys.current['KeyD'] || keys.current['ArrowRight']) {
-        p.rotation += p.turnSpeed;
+      if (p.isRushing) {
+        const rushSpeed = 15;
+        p.x += Math.cos(p.rushRotateFixed) * rushSpeed;
+        p.y += Math.sin(p.rushRotateFixed) * rushSpeed;
+        p.rushTimer--;
+        
+        // Trail effect
+        createParticles(p.x, p.y, '#22d3ee', 2, 0.4);
+
+        // Contact damage (X2 of normal bullet damage)
+        enemies.current.forEach((e, eIdx) => {
+          const dist = Math.hypot(p.x - e.x, p.y - e.y);
+          if (dist < 55) {
+            hitEnemy(e, eIdx, (20 + (wave * 3)) * 2, e.x, e.y);
+          }
+        });
+
+        if (p.rushTimer <= 0) {
+          p.isRushing = false;
+        }
+      } else {
+        if (keys.current['KeyW'] || keys.current['ArrowUp']) {
+          p.x += Math.cos(p.rotation) * p.speed;
+          p.y += Math.sin(p.rotation) * p.speed;
+        }
+        if (keys.current['KeyS'] || keys.current['ArrowDown']) {
+          p.x -= Math.cos(p.rotation) * p.speed;
+          p.y -= Math.sin(p.rotation) * p.speed;
+        }
+        if (keys.current['KeyA'] || keys.current['ArrowLeft']) {
+          p.rotation -= p.turnSpeed;
+        }
+        if (keys.current['KeyD'] || keys.current['ArrowRight']) {
+          p.rotation += p.turnSpeed;
+        }
       }
 
       // Special Action / Shooting
       const now = Date.now();
       if (keys.current['Space'] && now - p.lastShot > p.fireRate) {
         if (p.mode === 'RANGED') {
-          if (p.weaponType === 'TRIPLE') {
-            for (let i = -1; i <= 1; i++) {
-              const angle = p.rotation + i * 0.2;
-              bullets.current.push({
-                x: p.x + Math.cos(angle) * 25,
-                y: p.y + Math.sin(angle) * 25,
-                width: 6, height: 6, rotation: angle,
-                vx: Math.cos(angle) * 8,
-                vy: Math.sin(angle) * 8,
-                damage: 15 + (wave * 2), owner: 'PLAYER'
-              });
-            }
-          } else {
+        if (p.weaponType === 'TRIPLE') {
+          for (let i = -1; i <= 1; i++) {
+            const angle = p.rotation + i * 0.2;
             bullets.current.push({
-              x: p.x + Math.cos(p.rotation) * 25,
-              y: p.y + Math.sin(p.rotation) * 25,
-              width: 6, height: 6, rotation: p.rotation,
-              vx: Math.cos(p.rotation) * 7,
-              vy: Math.sin(p.rotation) * 7,
-              damage: 20 + (wave * 3), owner: 'PLAYER'
+              x: p.x + Math.cos(angle) * 25,
+              y: p.y + Math.sin(angle) * 25,
+              width: 6, height: 6, rotation: angle,
+              vx: Math.cos(angle) * 8,
+              vy: Math.sin(angle) * 8,
+              damage: 15 + (wave * 2), owner: 'PLAYER'
             });
           }
-          p.lastShot = now;
-          audioService.playBlip();
-          createParticles(p.x + Math.cos(p.rotation) * 25, p.y + Math.sin(p.rotation) * 25, '#22d3ee', 5, 1);
-        } else if (p.mode === 'MELEE') {
-          // Shockwave Burst
-          triggerCutscene("SHOCKWAVE_DISCHARGED", 800);
-          audioService.playSuccess();
-          createParticles(p.x, p.y, '#ef4444', 40, 8);
-          enemies.current.forEach((e, eIdx) => {
-            const dist = Math.hypot(p.x - e.x, p.y - e.y);
-            if (dist < 150) {
-              hitEnemy(e, eIdx, 100 + (wave * 10), e.x, e.y);
-              // Blast back
-              const angle = Math.atan2(e.y - p.y, e.x - p.x);
-              e.x += Math.cos(angle) * 60;
-              e.y += Math.sin(angle) * 60;
-            }
+        } else {
+          bullets.current.push({
+            x: p.x + Math.cos(p.rotation) * 25,
+            y: p.y + Math.sin(p.rotation) * 25,
+            width: 6, height: 6, rotation: p.rotation,
+            vx: Math.cos(p.rotation) * 7,
+            vy: Math.sin(p.rotation) * 7,
+            damage: 20 + (wave * 3), owner: 'PLAYER'
           });
-          p.lastShot = now + 600; // Ability cooldown
         }
+        p.lastShot = now;
+        audioService.playBlip();
+        createParticles(p.x + Math.cos(p.rotation) * 25, p.y + Math.sin(p.rotation) * 25, '#22d3ee', 5, 1);
+      } else if (p.mode === 'MELEE') {
+        // Rushing Burst: Straight line dash with x2 damage contact
+        p.isRushing = true;
+        p.rushTimer = 40;
+        p.rushRotateFixed = p.rotation;
+        p.lastShot = now + 1500;
+        
+        triggerCutscene("RUSHING_BURST_ACTIVATED", 800);
+        audioService.playSuccess();
+        createParticles(p.x, p.y, '#22d3ee', 10, 2);
+      }
       }
     } else if (gameState === 'BOSS_DODGE') {
        // Restricted movement

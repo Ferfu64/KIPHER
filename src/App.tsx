@@ -14,7 +14,7 @@ import MiscSystems from './components/MiscSystems';
 import SecretSpace from './components/SecretSpace';
 import TacticalProtocolHandler from './components/TacticalProtocolHandler';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, Users, Home, Archive, ShieldAlert, LogOut, Radio, Activity, Zap, User, ShieldCheck, Lock, Info, Box, Settings, Volume2, VolumeX, MessageCircle, X } from 'lucide-react';
+import { Terminal, Users, Home, Archive, ShieldAlert, LogOut, Radio, Activity, Zap, User, ShieldCheck, Lock, Info, Box, Settings, Volume2, VolumeX, MessageCircle, X, Gift, Camera } from 'lucide-react';
 import { audioService } from './services/audioService';
 
 import DirectMessageContainer from './components/DirectMessageContainer';
@@ -23,8 +23,13 @@ import NotificationOverlay from './components/NotificationOverlay';
 import CortexCutscene from './components/CortexCutscene';
 import CasinoHub from './components/CasinoHub';
 import { titleService } from './services/titleService';
+import { requestNotificationPermission, sendNetworkNotification } from './lib/notifications';
+import DailyReward from './components/DailyReward';
+import BiometricScan from './components/BiometricScan';
+import NeuralCipher from './components/NeuralCipher';
+import NetworkBreach from './components/NetworkBreach';
 
-type NavigationPage = 'GHOST' | 'OWNER' | 'GATEWAY' | 'MEETING' | 'COMM' | 'MISC' | 'SECRET_SPACE';
+type NavigationPage = 'GHOST' | 'OWNER' | 'GATEWAY' | 'MEETING' | 'COMM' | 'MISC' | 'SECRET_SPACE' | 'BIO_SCAN' | 'CIPHER_GAME' | 'BREACH_GAME';
 
 export default function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -39,11 +44,18 @@ export default function App() {
   const [audioInitialized, setAudioInitialized] = useState(false);
   const [isCutsceneActive, setIsCutsceneActive] = useState(false);
   const [rollId, setRollId] = useState(0);
+  const [totalRolls, setTotalRolls] = useState(0);
+  const [pity911, setPity911] = useState(0);
+  const [pity500, setPity500] = useState(0);
   const [forcedCutscene, setForcedCutscene] = useState<string | null>(null);
   const [isTitleMenuOpen, setIsTitleMenuOpen] = useState(false);
   const [isImmersive, setIsImmersive] = useState(false);
   const [clickCount, setClickCount] = useState(0);
   const [luckMultiplier, setLuckMultiplier] = useState(1);
+  const [creditMultiplier, setCreditMultiplier] = useState(1);
+  const [isRainbowMode, setIsRainbowMode] = useState(false);
+  const [isBlackoutMode, setIsBlackoutMode] = useState(false);
+  const [showDailyReward, setShowDailyReward] = useState(false);
 
   useEffect(() => {
     // Stop ambient drone on unmount
@@ -118,30 +130,57 @@ export default function App() {
     if (!user || wasForced) return;
 
     let creditsEarned = 0;
+    let reset911 = false;
+    let reset500 = false;
+
     // Award titles and credits based on rarity/type (Only for natural rolls)
-    if (rarity.includes('ANONYMOUS_DEITY')) {
+    if (rarity.includes('ARCHANGEL')) {
+       await titleService.awardTitle(user.uid, 'DIVINE_MESSENGER');
+       creditsEarned = 100000;
+       reset911 = true;
+    } else if (rarity.includes('ANONYMOUS_DEITY')) {
        await titleService.awardTitle(user.uid, 'ANONYMOUS_DEITY');
        creditsEarned = 10000;
+       reset911 = true;
+    } else if (rarity.includes('RUNIA') || rarity.includes('750,000,000,000')) {
+       await titleService.awardTitle(user.uid, 'THE_HEAVENLY_JUDGE');
+       creditsEarned = 25000;
+       reset911 = true;
+    } else if (rarity.includes('PIXELIZATION') || rarity.includes('450,000,000,000')) {
+       await titleService.awardTitle(user.uid, 'DIGITAL_OBLIVION');
+       creditsEarned = 20000;
+       reset911 = true;
+    } else if (rarity.includes('ABYSSAL_HUNTER') || rarity.includes('400,000,000,000')) {
+       await titleService.awardTitle(user.uid, 'THE_DEEP_STALKER');
+       creditsEarned = 15000;
+       reset911 = true;
     } else if (rarity.includes('SUPREME_SOVEREIGN')) {
        await titleService.awardTitle(user.uid, 'SUPREME_SOVEREIGN');
        creditsEarned = 5000;
+       reset911 = true;
     } else if (rarity.includes('ANGELIC_SYMPHONY')) {
        await titleService.awardTitle(user.uid, 'ANGELIC_SYMPHONY');
        creditsEarned = 2500;
+       reset911 = true;
     } else if (rarity.includes('ETERNAL_OPPRESSION')) {
        await titleService.awardTitle(user.uid, 'ETERNAL_OPPRESSION');
        creditsEarned = 1000;
+       reset911 = true;
     } else if (rarity.includes('SINGULARITY')) {
        await titleService.awardTitle(user.uid, 'THE_OMEGA_POINT');
        creditsEarned = 500;
-    } else if (rarity.includes('LEGENDARY')) {
+       reset911 = true;
+    } else if (rarity.includes('1 in 911') || rarity.includes('STRUCTURAL_COLLAPSE')) {
        await titleService.awardTitle(user.uid, 'SYSTEM_LEAK');
-       creditsEarned = 250;
+       creditsEarned = 500;
+       reset911 = true;
+    } else if (rarity.includes('LEGENDARY')) {
+       creditsEarned = 500;
+       reset911 = true;
     } else if (rarity.includes('EPIC')) {
-       await titleService.awardTitle(user.uid, 'NETWORK_ANOMALY');
        creditsEarned = 100;
+       reset500 = true;
     } else if (rarity.includes('RARE')) {
-       await titleService.awardTitle(user.uid, 'ELITE_ASSET');
        creditsEarned = 25;
     } else if (rarity.includes('1 IN 2')) {
        creditsEarned = -5;
@@ -149,21 +188,50 @@ export default function App() {
        creditsEarned = -1;
     }
 
-    if (creditsEarned !== 0) {
-      const newCredits = Math.max(0, (user.credits || 0) + creditsEarned);
-      const updatedUser = { ...user, credits: newCredits };
-      setUser(updatedUser);
-      localStorage.setItem('kipher_session', JSON.stringify(updatedUser));
-      await setDoc(doc(db, 'users', user.uid), { credits: newCredits }, { merge: true });
-      
-      if (creditsEarned > 0) {
-        audioService.playSuccess();
-        // Dispatch event for UI feedback
-        window.dispatchEvent(new CustomEvent('kipher:creditsAwarded', { detail: creditsEarned }));
-      } else {
-        // Optional: play a minor error sound for losing credits
-        audioService.playError();
-      }
+    // Pity Reset Checks
+    if (rarity.includes('PITY_REACHED')) {
+      if (rarity.includes('LEGENDARY')) reset911 = true;
+      if (rarity.includes('EPIC')) reset500 = true;
+    }
+
+    const nextPity911 = reset911 ? 0 : pity911;
+    const nextPity500 = reset500 ? 0 : (reset911 ? 0 : pity500); // 911 roll also resets 500 pity for balance
+
+    const finalCreditsEarned = creditsEarned > 0 ? Math.floor(creditsEarned * creditMultiplier) : creditsEarned;
+    const newCredits = Math.max(0, (user.credits || 0) + finalCreditsEarned);
+    const updatedUser = { 
+      ...user, 
+      credits: newCredits,
+      totalRolls: totalRolls,
+      pityCount911: nextPity911,
+      pityCount500: nextPity500
+    };
+    
+    setUser(updatedUser);
+    setPity911(nextPity911);
+    setPity500(nextPity500);
+    localStorage.setItem('kipher_session', JSON.stringify(updatedUser));
+
+    if (finalCreditsEarned > 0) {
+      audioService.playSuccess();
+      window.dispatchEvent(new CustomEvent('kipher:creditsAwarded', { detail: finalCreditsEarned }));
+    } else if (finalCreditsEarned < 0) {
+      audioService.playError();
+    }
+
+    if (rarity.includes('Architect')) {
+      await titleService.awardTitle(user.uid, 'THE_ARCHITECT');
+    }
+
+    try {
+      await setDoc(doc(db, 'users', user.uid), { 
+        credits: newCredits,
+        totalRolls: totalRolls,
+        pityCount911: nextPity911,
+        pityCount500: nextPity500
+      }, { merge: true });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
     }
   };
   
@@ -183,16 +251,53 @@ export default function App() {
       if (!auth.currentUser) {
         try {
           await signInAnonymously(auth);
+          requestNotificationPermission();
         } catch (authErr: any) {
           console.warn('Initial anonymous auth failed', authErr);
         }
       }
 
-      // 2. Hydrate user from storage
+      // 2. Hydrate user from storage OR Firestore
       if (savedUser) {
         try {
           const profile = JSON.parse(savedUser) as UserProfile;
           setUser(profile);
+          setTotalRolls(profile.totalRolls || 0);
+          setPity911(profile.pityCount911 || 0);
+          setPity500(profile.pityCount500 || 0);
+
+          // Check reward interval
+          if (profile.lastRewardTime) {
+            const lastReward = new Date(profile.lastRewardTime).getTime();
+            const now = Date.now();
+            if (now - lastReward > 10 * 60 * 60 * 1000) {
+              setShowDailyReward(true);
+            }
+          } else {
+            setShowDailyReward(true);
+          }
+
+          // If we have an auth user, re-sync from Firestore to get latest credits/inventory
+          if (auth.currentUser) {
+            const docRef = doc(db, 'users', profile.uid);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+              const latestData = docSnap.data() as UserProfile;
+              const merged = { ...profile, ...latestData };
+              setUser(merged);
+              setTotalRolls(latestData.totalRolls || 0);
+              setPity911(latestData.pityCount911 || 0);
+              setPity500(latestData.pityCount500 || 0);
+              localStorage.setItem('kipher_session', JSON.stringify(merged));
+              
+              if (latestData.lastRewardTime) {
+                const lr = latestData.lastRewardTime.toDate ? latestData.lastRewardTime.toDate().getTime() : new Date(latestData.lastRewardTime).getTime();
+                if (Date.now() - lr > 10 * 60 * 60 * 1000) {
+                  setShowDailyReward(true);
+                }
+              }
+            }
+          }
 
           // 3. Re-sync admin privilege document if needed
           if (auth.currentUser && (profile.isOwner || profile.role === 'SUPERUSER' || profile.displayName === 'K7_OWNER')) {
@@ -236,17 +341,45 @@ export default function App() {
     // Listen for auth state changes to trigger listeners
     let alertUnsub: (() => void) | null = null;
     let mediaUnsub: (() => void) | null = null;
+    let eventUnsub: (() => void) | null = null;
 
     const authUnsub = onAuthStateChanged(auth, (firebaseUser) => {
       setIsAuthReady(true);
       
-      // Removed redundant tactical listeners - moved to TacticalProtocolHandler
+      if (firebaseUser) {
+        // Listen for global system events
+        const eventQuery = query(collection(db, 'system_events'), where('active', '==', true));
+        eventUnsub = onSnapshot(eventQuery, (snap) => {
+          let rainbow = false;
+          let blackout = false;
+          let luck = 1;
+          let credits = 1;
+          
+          snap.forEach(d => {
+            const ev = d.data();
+            if (ev.type === 'RAINBOW_MODE') rainbow = true;
+            if (ev.type === 'BLACKOUT') blackout = true;
+            if (ev.type === 'LUCK_BOOST') luck = ev.multiplier || 2;
+            if (ev.type === 'CREDIT_BOOST') credits = ev.multiplier || 2;
+            if (ev.type === 'SYSTEM_MSG' && !localStorage.getItem(`read_event_${d.id}`)) {
+               sendNetworkNotification('BROADCAST', ev.message);
+               localStorage.setItem(`read_event_${d.id}`, 'true');
+            }
+          });
+          
+          setIsRainbowMode(rainbow);
+          setIsBlackoutMode(blackout);
+          setLuckMultiplier(luck);
+          setCreditMultiplier(credits);
+        });
+      }
     });
 
     return () => {
       authUnsub();
       if (alertUnsub) alertUnsub();
       if (mediaUnsub) mediaUnsub();
+      if (eventUnsub) eventUnsub();
     };
   }, []);
 
@@ -295,11 +428,19 @@ export default function App() {
 
   return (
     <div 
-      className="h-screen bg-absolute-black text-slate-300 font-mono text-sm flex border-4 border-slate-900 overflow-hidden select-none relative"
+      className={`h-screen bg-absolute-black text-slate-300 font-mono text-sm flex border-4 border-slate-900 overflow-hidden select-none relative ${isRainbowMode ? 'rainbow-bg' : ''} ${isBlackoutMode ? 'blackout-view' : ''}`}
       style={mouseStyle}
     >
       {user.customization && (
         <CustomMouse customization={user.customization} />
+      )}
+
+      {showDailyReward && user && (
+        <DailyReward 
+          user={user} 
+          onClaim={() => { setShowDailyReward(false); audioService.playSuccess(); }} 
+          onClose={() => setShowDailyReward(false)} 
+        />
       )}
       
       <AnimatePresence>
@@ -308,9 +449,31 @@ export default function App() {
             user={user}
             onClose={() => setIsCasinoOpen(false)}
             onPull={async (luck) => {
-               const playerLuckBonus = user.purchasedItems?.includes('luck_chip') ? 1.15 : 1;
-               setLuckMultiplier(luck * playerLuckBonus);
+               if (isCutsceneActive) return;
+               audioService.resume();
+               const cost = 100;
+               if ((user.credits || 0) < cost) {
+                 audioService.playError();
+                 return alert('INSUFFICIENT_CREDITS: 100 CR_REQUIRED_FOR_NEURAL_ROLL');
+               }
+
+               const newCredits = (user.credits || 0) - cost;
+               const updated = { ...user, credits: newCredits };
+               setUser(updated);
+               localStorage.setItem('kipher_session', JSON.stringify(updated));
+               
+               try {
+                 await setDoc(doc(db, 'users', user.uid), { credits: newCredits }, { merge: true });
+               } catch (err) {
+                 console.error('Failed to sync credits on pull', err);
+               }
+
+               const playerLuckBonus = (user.customization?.luckBonus || 0) + (user.purchasedItems?.includes('luck_chip') ? 0.15 : 0);
+               setLuckMultiplier(luck * (1 + playerLuckBonus));
                setRollId(prev => prev + 1);
+               setTotalRolls(prev => prev + 1);
+               setPity911(prev => prev + 1);
+               setPity500(prev => prev + 1);
                setIsCutsceneActive(true);
             }}
             onUpdateCredits={async (cr) => {
@@ -347,6 +510,9 @@ export default function App() {
             onComplete={handleCutsceneComplete} 
             forcedType={forcedCutscene || undefined} 
             luckMultiplier={luckMultiplier}
+            level={user.level || user.promotionCount || 1}
+            pityCount911={pity911}
+            pityCount500={pity500}
           />
         )}
       </AnimatePresence>
@@ -426,7 +592,41 @@ export default function App() {
               icon={<Settings size={20} />} 
               label="SYST"
             />
+
+            <NavIcon 
+              active={activePage === 'BIO_SCAN'} 
+              onClick={() => navigateTo('BIO_SCAN')} 
+              icon={<Camera size={20} />} 
+              label="BIO"
+              color="text-emerald-500"
+            />
+
+            <NavIcon 
+              active={activePage === 'CIPHER_GAME'} 
+              onClick={() => navigateTo('CIPHER_GAME')} 
+              icon={<Terminal size={20} />} 
+              label="CODE"
+              color="text-amber-500"
+            />
+
+            <NavIcon 
+              active={activePage === 'BREACH_GAME'} 
+              onClick={() => navigateTo('BREACH_GAME')} 
+              icon={<Zap size={20} />} 
+              label="SYNC"
+              color="text-yellow-500"
+            />
           </div>
+
+          {!showDailyReward && (
+            <button 
+              onClick={() => setShowDailyReward(true)}
+              className="p-3 mb-2 text-amber-500 hover:scale-110 transition-transform animate-pulse"
+              title="DAILY_REWARD"
+            >
+              <Gift size={20} />
+            </button>
+          )}
 
           <button 
             onClick={() => { handleAuthChange(null); audioService.playError(); }} 
@@ -455,7 +655,7 @@ export default function App() {
                 <span className="text-[9px] font-black tracking-tighter uppercase">{!isMuted ? 'AUDIO_LIVE' : 'AUDIO_DARK'}</span>
               </button>
               <div className="text-right">
-                <div className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">{user.role} // LVL_{user.clearanceLevel + (user.promotionCount || 0)}</div>
+                <div className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">{user.role} // LVL_{user.level || 1}</div>
                 <div 
                   data-text={user.displayName}
                   className={`text-xs font-black uppercase flex flex-col items-end transition-all ${user.customization?.nameColor === 'rainbow' ? 'rainbow-text' : ''} ${user.customization?.glitchEffect ? 'kipher-glitch' : ''}`} 
@@ -488,6 +688,33 @@ export default function App() {
               {activePage === 'MEETING' && <MeetingHub currentUser={user} />}
               {activePage === 'COMM' && <DirectMessageContainer currentUser={user} />}
               {activePage === 'MISC' && <MiscSystems currentUser={user} onOpenSecret={() => navigateTo('SECRET_SPACE')} />}
+              {activePage === 'BIO_SCAN' && <BiometricScan onComplete={() => navigateTo('GATEWAY')} />}
+              {activePage === 'BREACH_GAME' && (
+                <NetworkBreach 
+                  onComplete={async (score) => {
+                    const finalScore = Math.floor(score * creditMultiplier);
+                    const newCredits = (user.credits || 0) + finalScore;
+                    setUser({ ...user, credits: newCredits });
+                    await setDoc(doc(db, 'users', user.uid), { credits: newCredits }, { merge: true });
+                    sendNetworkNotification('STABILITY_LINK_SYNCED', `Extracted ${finalScore} intelligence units.`);
+                    navigateTo('GATEWAY');
+                  }} 
+                  onFail={() => navigateTo('GATEWAY')} 
+                />
+              )}
+              {activePage === 'CIPHER_GAME' && (
+                <NeuralCipher 
+                  onComplete={async (score) => {
+                    const finalScore = score * creditMultiplier;
+                    const newCredits = (user.credits || 0) + finalScore;
+                    setUser({ ...user, credits: newCredits });
+                    await setDoc(doc(db, 'users', user.uid), { credits: newCredits }, { merge: true });
+                    sendNetworkNotification('CODE_BREACHED', `Extracted ${finalScore} intelligence units.`);
+                    navigateTo('GATEWAY');
+                  }} 
+                  onFail={() => navigateTo('GATEWAY')} 
+                />
+              )}
               {activePage === 'SECRET_SPACE' && (
                 <SecretSpace 
                   currentUser={user} 

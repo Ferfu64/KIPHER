@@ -11,7 +11,11 @@ const VIDEO_SOURCES = {
   ANGELIC_SYMPHONY: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_2_hkdudn.mp4",
   ETERNAL_OPPRESSION: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_5_online-video-cutter.com_vjopio.mp4",
   SUPREME_SOVEREIGN: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_5_online-video-cutter.com_1_wrfhem.mp4",
-  AEGIS_ARCHITECH: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_online-video-cutter.com_kmxlyf.mp4"
+  AEGIS_ARCHITECH: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_online-video-cutter.com_kmxlyf.mp4",
+  RUNIA: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_online-video-cutter.com_1_dsvyp1.mp4",
+  PIXELIZATION: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_1_online-video-cutter.com_leldrh.mp4",
+  ABYSSAL_HUNTER: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_3_online-video-cutter.com_nfoubz.mp4",
+  ARCHANGEL: "https://res.cloudinary.com/dad1nkuof/video/upload/v1/videoplayback_4_online-video-cutter.com_n8hrze.mp4"
 };
 // -----------------------------------
 
@@ -19,14 +23,17 @@ interface CutsceneProps {
   onComplete: (rarity: string) => void;
   forcedType?: string;
   luckMultiplier?: number;
+  level?: number;
+  pityCount911?: number;
+  pityCount500?: number;
 }
 
 type CutsceneType = 
   | 'SPIKE' | 'BREACH' | 'GHOST' | 'DATA_FALL' | 'BINARY_WAVE' | 'SYSTEM_SCAN' | 'NOISE' | 'PIXEL_DRIFT' | 'GLITCH_STORM' | 'TICKER_TAPE' | 'HEX_DUMP'
   | 'VISAGE' | 'LIFEFORM' | 'SATELLITE_LINK' | 'RADAR_SWEEP' | 'ENCRYPTION_KEY' | 'HYPER_LOOP' | 'NEURAL_SYNC' | 'DATA_ERASURE' | 'FIREWALL_BREACH' | 'GRID_LOCK' | 'VECTOR_FIELD' | 'STATIC_RAIN' | 'PULSE_WIDTH' | 'MIRROR_EDGE'
-  | 'VOID_EYE' | 'SILICON_CITY' | 'FRACTAL_GROWTH' | 'DRONE_SURVEILLANCE' | 'CODE_VORTEX' | 'GLITCH_FACE' | 'BIO_HAZARD' | 'NEON_GHOST' | 'ORBITAL_STRIKE' | 'SYNTH_WAVE' | 'CHRONO_TRIGGER' | 'CELESTIAL_SYNC'
-  | 'OMEGA' | 'QUANTUM_BIT' | 'CORE_PULSE' | 'TIME_FLUX' | 'STARS_ZOOM' | 'VOLCANIC_DEBUG' | 'SINGULARITY' | 'PRISM_SHIFT' | 'GALAXY_COLLISION' | 'SOLAR_FLARE' | 'VOID_TRESPASS'
-  | 'ANGELIC_SYMPHONY' | 'ETERNAL_OPPRESSION' | 'SUPREME_SOVEREIGN' | 'ANONYMOUS_DEITY' | 'AEGIS_ARCHITECH'
+  | 'VOID_EYE' | 'SILICON_CITY' | 'FRACTAL_GROWTH' | 'DRONE_SURVEILLANCE' | 'CODE_VORTEX' | 'GLITCH_FACE' | 'BIO_HAZARD' | 'NEON_GHOST' | 'ORBITAL_STRIKE' | 'SYNTH_WAVE' | 'CHRONO_TRIGGER' | 'CELESTIAL_SYNC' | 'SOLAR_ECLIPSE' | 'QUANTUM_ENTANGLEMENT' | 'DEATH_BYTE' | 'PHANTOM_RECKONING' | 'CHRONOS_REVERSION' | 'VOID_MATRIARCH' | 'CELESTIAL_OVERSEER'
+  | 'OMEGA' | 'ALPHA' | 'EPSILON' | 'VOID_STAR' | 'QUANTUM_BIT' | 'CORE_PULSE' | 'TIME_FLUX' | 'STARS_ZOOM' | 'VOLCANIC_DEBUG' | 'SINGULARITY' | 'PRISM_SHIFT' | 'GALAXY_COLLISION' | 'SOLAR_FLARE' | 'VOID_TRESPASS'
+  | 'ANGELIC_SYMPHONY' | 'ETERNAL_OPPRESSION' | 'SUPREME_SOVEREIGN' | 'ANONYMOUS_DEITY' | 'AEGIS_ARCHITECH' | 'RUNIA' | 'PIXELIZATION' | 'ABYSSAL_HUNTER' | 'ARCHANGEL'
   | 'STRUCTURAL_COLLAPSE' | 'JACKPOT_DREAM' | 'ROULETTE_REVOLUTION' | 'SLOT_SYNCHRONY'
   | 'COBALT_REIGN' | 'EMERALD_MIST' | 'SCARLET_STORM' | 'VIOLET_VORTEX' | 'AMBER_AWAKENING' | 'MAGENTA_MATRIX'
   | 'CYAN_CORE' | 'SILVER_SHADOW' | 'GOLDEN_GATEWAY' | 'BRONZE_BEAM' | 'OBSIDIAN_OVERLAY' | 'TITANIUM_TRACE'
@@ -56,10 +63,10 @@ type CutsceneType =
   | 'LITTLE_ENDIAN' | 'BIG_ENDIAN' | 'ASCII_ART' | 'UNICODE_UPRISING' | 'UTF8_STORM' 
   | 'COSMIC_CHURN' | 'DIGITAL_DEATH' | 'ELECTRON_END' | 'FIREWALL_FALL' | 'GHOST_GEAR' | 'HEX_HEX' | 'ION_IMPULSE'
   | 'JETTISON_JET' | 'KINETIC_KILL' | 'LOGIC_LOCK' | 'MAC_MELT' | 'NANO_NOISE' | 'OPTIC_OVERLOAD' | 'PROTON_PULSE' | 'QUARK_QUENCH'
-  | 'PLASMA_PULSE' | 'NEBULOUS_NIGHT' | 'VOID_VAGRANT' | 'STELLAR_STORM' | 'GALAXY_GHOST' | 'ORBITAL_ODYSSEY' | 'CELESTIAL_CRASH' | 'ASTRAL_ARRAY' | 'QUANTUM_QUAKE' | 'DIMENSIONAL_DIVE' | 'TIME_TANGLE' | 'SPACE_SPIKE' | 'LUNAR_LEAK' | 'SOLAR_SURGE' | 'GRAVITY_GRIP' | 'METEOR_MELT' | 'COMET_CLASH' | 'TITAN_TICK' | 'EUROPA_END' | 'MARS_MIST' | 'VENUS_VOID' | 'SATURN_SHOCK' | 'JUPITER_JOLT' | 'NEPTUNE_NODE' | 'URANUS_UPRISING' | 'PLUTO_PULSE' | 'MERCURY_MELT' | 'SUN_STORM' | 'STAR_SURGE'
+  | 'PLASMA_PULSE' | 'NEBULOUS_NIGHT' | 'VOID_VAGRANT' | 'STELLAR_STORM' | 'GALAXY_GHOST' | 'ORBITAL_ODYSSEY' | 'CELESTIAL_CRASH' | 'ASTRAL_ARRAY' | 'QUANTUM_QUAKE' | 'DIMENSIONAL_DIVE' | 'TIME_TANGLE' | 'SPACE_SPIKE' | 'LUNAR_LEAK' | 'SOLAR_SURGE' | 'GRAVITY_GRIP' | 'METEOR_MELT' | 'COMET_CLASH' | 'TITAN_TICK' | 'EUROPA_END' | 'MARS_MIST' | 'VENUS_VOID' | 'SATURN_SHOCK' | 'JUPITER_JOLT' | 'NEPTUNE_NODE' | 'URANUS_UPRISING' | 'PLUTO_PULSE' | 'MERCURY_MELT' | 'SUN_STORM' | 'STAR_SURGE' | 'RAID_RECOVERY' | 'SENTRY_STANCE' | 'OMEGA_POINT' | 'CYBER_CRUX' | 'DATA_DIVINE' | 'GHOST_GRID' | 'NEURAL_NODE' | 'BINARY_BEAST' | 'SILICON_SOUL' | 'VECTOR_VALOR' | 'CORE_COMMAND' | 'SHELL_SHIELD'
   | 'BAUD_RATE_BURST' | 'LATENCY_LAG' | 'PING_OF_DEATH' | 'PACKET_LOSS_PURGE' | 'CORTEX_OVERRIDE';
 
-export default function CortexCutscene({ onComplete, forcedType, luckMultiplier = 1 }: CutsceneProps) {
+export default function CortexCutscene({ onComplete, forcedType, luckMultiplier = 1, level = 1, pityCount911 = 0, pityCount500 = 0 }: CutsceneProps) {
   const [type, setType] = useState<CutsceneType | null>(forcedType as CutsceneType || null);
   const [status, setStatus] = useState<'ACTIVE' | 'DISPLAY_RARITY'>('ACTIVE');
   const [rarityText, setRarityText] = useState(forcedType ? 'ADMIN_OVERRIDE (FORCED_RESTORE)' : '');
@@ -78,63 +85,125 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
     
     audioInitialized.current = true;
 
-    // Total pool of 1,000,000
-    // Bias the random roll downwards (lower is better) using the luckMultiplier
-    const rand = (Math.random() * 1000000) / luckMultiplier;
+    // 1. Identify Seed
+    const effectiveLuck = luckMultiplier * (1 + (level - 1) * 0.02);
+    const rand = Math.random();
+    
     let selected: CutsceneType = type || 'SPIKE';
     let text = rarityText || '';
+
+    // Pity System for 500s (Epic) and 911 (Legendary)
+    const is911Pity = pityCount911 >= 500;
+    const is500Pity = pityCount500 >= 100;
 
     if (forcedType) {
         selected = forcedType as CutsceneType;
         text = 'ADMIN_OVERRIDE (FORCED_RESTORE)';
+    } else if (is911Pity) {
+        const legPool: CutsceneType[] = [
+          'ARCHANGEL', 'STRUCTURAL_COLLAPSE', 'SINGULARITY', 'ANGELIC_SYMPHONY', 
+          'ETERNAL_OPPRESSION', 'SUPREME_SOVEREIGN', 'ANONYMOUS_DEITY', 'AEGIS_ARCHITECH', 
+          'RUNIA', 'PIXELIZATION', 'ABYSSAL_HUNTER', 'SOLAR_ECLIPSE', 'QUANTUM_ENTANGLEMENT', 
+          'DEATH_BYTE', 'PHANTOM_RECKONING', 'CHRONOS_REVERSION', 'VOID_MATRIARCH', 'CELESTIAL_OVERSEER'
+        ];
+        selected = legPool[Math.floor(Math.random() * legPool.length)];
+        
+        let displayOdds = "LEGENDARY";
+        if (selected === 'ARCHANGEL') displayOdds = "1,000,000,000,000,000,000,000,000,000,000,000";
+        else if (selected === 'ANONYMOUS_DEITY') displayOdds = "1 in 350,000";
+        else if (selected === 'CELESTIAL_OVERSEER') displayOdds = "1 in 250,000";
+        else if (selected === 'CHRONOS_REVERSION') displayOdds = "1 in 150,000";
+        else if (selected === 'VOID_MATRIARCH') displayOdds = "1 in 100,000";
+        else if (selected === 'RUNIA') displayOdds = "1 in 50,000";
+        else if (selected === 'PIXELIZATION') displayOdds = "1 in 45,000";
+        else if (selected === 'ABYSSAL_HUNTER') displayOdds = "1 in 40,400";
+        else if (selected === 'AEGIS_ARCHITECH') displayOdds = "1 in 10,000";
+        else if (selected === 'ETERNAL_OPPRESSION') displayOdds = "1 in 10M";
+        else if (selected === 'SUPREME_SOVEREIGN') displayOdds = "1 in 5.5M";
+        else if (selected === 'ANGELIC_SYMPHONY') displayOdds = "1 in 1,000";
+        else if (selected === 'PHANTOM_RECKONING') displayOdds = "1 in 1,000";
+        else if (selected === 'DEATH_BYTE') displayOdds = "1 in 1,200";
+        else if (selected === 'QUANTUM_ENTANGLEMENT') displayOdds = "1 in 1,500";
+        else if (selected === 'SOLAR_ECLIPSE') displayOdds = "1 in 1,111";
+        else if (selected === 'SINGULARITY') displayOdds = "1 in 1M";
+        else if (selected === 'STRUCTURAL_COLLAPSE') displayOdds = "1 in 2111";
+
+        text = `PITY_REACHED (${displayOdds}_${selected}_SYNCHRONIZED)`;
+    } else if (is500Pity) {
+        const epicPool: CutsceneType[] = [
+          'OMEGA', 'ALPHA', 'EPSILON', 'VOID_STAR', 'NEBULA_NOVA', 'SUPERNOVA_SOUL', 
+          'QUASAR_QUAKE', 'BEYOND_BOUNDARY', 'INFINITY_INIT', 'ETERNITY_EDGE', 'COSMOS_CORE',
+          'OMEGA_POINT', 'CYBER_CRUX', 'DATA_DIVINE'
+        ];
+        selected = epicPool[Math.floor(Math.random() * epicPool.length)];
+        text = `PITY_REACHED (EPIC_${selected}_STABILIZED)`;
     } else if (!type) {
-    // Tiers (Odds adjusted for more accessibility while remaining rare)
-        if (rand < 0.015) { // 1 in 67,000,000ish (rand is out of 1M)
-          selected = 'AEGIS_ARCHITECH';
-          text = '1 in 67,000,000 (THE_MASTER_BUILDER) [AEGIS_ARCHITECH]';
-        } else if (rand < 500) {
+        // Tiers (Updated to user requested "True" odds)
+        // Order: Archangel (1M) -> Deity (350k) -> Runia (50k) -> Pixel (45k) -> Abyssal (40.4k) -> Architect (10k)
+        if (rand < (0.000001 * effectiveLuck)) { 
+          selected = 'ARCHANGEL';
+          text = 'ODDS: \n1,000,000,000,000,000,000,000,000,000,000,000 (DIVINE_MESSENGER) [ARCHANGEL]';
+        } else if (rand < (0.00000385 * effectiveLuck)) { 
           selected = 'ANONYMOUS_DEITY';
-          text = '1 in 1,000,000,000 (GHOST_IN_THE_SHELL) [ANONYMOUS_DEITY]';
-        } else if (rand < 1100) { // 1 in 911 approx
-          selected = 'STRUCTURAL_COLLAPSE';
-          text = '1 in 911 (LEGENDARY_SYSTEM_FAILURE) [STRUCTURAL_COLLAPSE]';
-        } else if (rand < 1500) { 
-          selected = 'ANGELIC_SYMPHONY';
-          text = '1 in 10,000 (CELESTIAL_INTERVENTION) [ANGELIC_SYMPHONY]';
-        } else if (rand < 2500) { 
-          selected = 'SUPREME_SOVEREIGN';
-          text = '1 in 750,000,000 (ABSOLUTE_AUTHORITY) [SUPREME_SOVEREIGN]';
-        } else if (rand < 4500) {
-          selected = 'ETERNAL_OPPRESSION';
-          text = '1 in 5,000 (THE_UNAVOIDABLE_TRUTH) [ETERNAL_OPPRESSION]';
-        } else if (rand < 6000) {
-          const jackpotRand = Math.random();
-          if (jackpotRand < 0.1) {
-            selected = 'JACKPOT_DREAM';
-            text = '1 in 777 (FORTUNE_FAVORS_THE_BOLD) [JACKPOT_DREAM]';
-          } else if (jackpotRand < 0.4) {
-            selected = 'ROULETTE_REVOLUTION';
-            text = '1 in 36 (FATE_SPINS_THE_WHEEL) [ROULETTE_REVOLUTION]';
-          } else {
-            selected = 'SLOT_SYNCHRONY';
-            text = '1 in 77 (SYNCHRONIZED_CHANCE) [SLOT_SYNCHRONY]';
-          }
-        } else if (rand < 10000) { 
+          text = '1 in 350,000 (GHOST_IN_THE_SHELL) [ANONYMOUS_DEITY]';
+        } else if (rand < (0.00000785 * effectiveLuck)) { 
+          selected = 'CELESTIAL_OVERSEER';
+          text = '1 in 250,000 (CELESTIAL_OVERSEER) [DIVINE_EYE]';
+        } else if (rand < (0.00001451 * effectiveLuck)) { 
+          selected = 'CHRONOS_REVERSION';
+          text = '1 in 150,000 (TIME_THIEF) [CHRONOS_REVERSION]';
+        } else if (rand < (0.00002451 * effectiveLuck)) { 
+          selected = 'VOID_MATRIARCH';
+          text = '1 in 100,000 (QUEEN_OF_DARKNESS) [VOID_MATRIARCH]';
+        } else if (rand < (0.00004451 * effectiveLuck)) { 
+          selected = 'RUNIA';
+          text = '1 in 50,000 (THE_HEAVENLY_JUDGE) [RUNIA]';
+        } else if (rand < (0.00006673 * effectiveLuck)) { 
+          selected = 'PIXELIZATION';
+          text = '1 in 45,000 (DIGITAL_OBLIVION) [PIXELIZATION]';
+        } else if (rand < (0.00009148 * effectiveLuck)) { 
+          selected = 'ABYSSAL_HUNTER';
+          text = '1 in 40,400 (THE_DEEP_STALKER) [ABYSSAL_HUNTER]';
+        } else if (rand < (0.00014148 * effectiveLuck)) { 
           selected = 'SINGULARITY';
-          text = '1 in 1,000 (THE_SINGULARITY_REACHED) [SINGULARITY]';
-        } else if (rand < 60000) { 
+          text = '1 IN 20,000 (SINGULARITY_BREACH)';
+        } else if (rand < (0.00024148 * effectiveLuck)) { 
+          selected = 'AEGIS_ARCHITECH';
+          text = '1 in 10,000 (THE_MASTER_BUILDER) [AEGIS_ARCHITECH]';
+        } else if (rand < (0.00032 * effectiveLuck)) {
+          selected = 'ETERNAL_OPPRESSION';
+          text = '1 IN 10,000,000 (ETERNAL_OPPRESSION)';
+        } else if (rand < (0.0005 * effectiveLuck)) {
+          selected = 'SUPREME_SOVEREIGN';
+          text = '1 IN 5,500,000 (SUPREME_SOVEREIGN)';
+        } else if (rand < (0.0007 * effectiveLuck)) {
+          selected = 'QUANTUM_ENTANGLEMENT';
+          text = '1 IN 1,500 (QUANTUM_ENTANGLEMENT)';
+        } else if (rand < (0.0008 * effectiveLuck)) {
+          selected = 'DEATH_BYTE';
+          text = '1 IN 1,200 (DEATH_BYTE)';
+        } else if (rand < (0.0009 * effectiveLuck)) {
+          selected = 'SOLAR_ECLIPSE';
+          text = '1 IN 1,111 (SOLAR_ECLIPSE)';
+        } else if (rand < (0.001 * effectiveLuck)) {
+          selected = 'ANGELIC_SYMPHONY';
+          text = '1 IN 1,000 (ANGELIC_SYMPHONY)';
+        } else if (rand < (0.0011 * effectiveLuck)) {
+          selected = 'PHANTOM_RECKONING';
+          text = '1 IN 1,000 (PHANTOM_RECKONING)';
+        } else if (rand < (0.002 * effectiveLuck)) { 
+          selected = 'STRUCTURAL_COLLAPSE';
+          text = '1 IN 2,111 (LEGENDARY_SYSTEM_FAILURE) [STRUCTURAL_COLLAPSE]';
+        } else if (rand < (0.02 * effectiveLuck)) { 
           const epicPool: CutsceneType[] = [
-            'OMEGA', 'QUANTUM_BIT', 'CORE_PULSE', 'TIME_FLUX', 'STARS_ZOOM', 
-            'VOLCANIC_DEBUG', 'PRISM_SHIFT', 'GALAXY_COLLISION', 'SOLAR_FLARE', 'VOID_TRESPASS',
-            'BLACK_HOLE_SINGULARITY', 'WORMHOLE_ENTRY', 'DARK_ENERGY', 'SUPERNOVA_REMNANT', 'EVENT_HORIZON', 'WHITE_HOLE_EMISSION',
-            'JADE_JUNCTION', 'PEARL_PROTOCOL', 'OPAL_OSCILLATION', 'GARNET_GRID', 'ONYX_OUTBREAK', 'ZIRCON_ZERO', 'PYRITE_PATTERN', 'CORAL_COMMAND', 'METEOR_MIND', 'COMET_CRASH',
-            'NEBULA_NOVA', 'SUPERNOVA_SOUL', 'QUASAR_QUAKE', 'BEYOND_BOUNDARY', 'INFINITY_INIT', 'ETERNITY_EDGE', 'COSMOS_CORE',
+            'OMEGA', 'ALPHA', 'EPSILON', 'VOID_STAR', 'NEBULA_NOVA', 'SUPERNOVA_SOUL', 
+            'QUASAR_QUAKE', 'BEYOND_BOUNDARY', 'INFINITY_INIT', 'ETERNITY_EDGE', 'COSMOS_CORE',
             'PULSE_PRIME', 'VOID_VELOCITY', 'NEURAL_NEXUS',
-            'OMEGA_X', 'QUARK_QUAKE', 'NEON_NOIR'
+            'OMEGA_X', 'QUARK_QUAKE', 'NEON_NOIR', 'OMEGA_POINT', 'CYBER_CRUX', 'DATA_DIVINE'
           ];
           selected = epicPool[Math.floor(Math.random() * epicPool.length)];
           text = `1 IN 500 (EPIC_${selected}_PROTOCOL)`;
-        } else if (rand < 200000) { 
+        } else if (rand < (0.15 * effectiveLuck)) { 
           const rarePool: CutsceneType[] = [
             'VOID_EYE', 'SILICON_CITY', 'FRACTAL_GROWTH', 'DRONE_SURVEILLANCE', 
             'CODE_VORTEX', 'GLITCH_FACE', 'BIO_HAZARD', 'NEON_GHOST', 'ORBITAL_STRIKE', 'SYNTH_WAVE', 'CHRONO_TRIGGER', 'CELESTIAL_SYNC',
@@ -146,11 +215,12 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
             'VOID_PULSE', 'BINARY_STORM', 'KERNEL_PANIC', 'SEGMENTATION_FAULT', 'DEADLOCK_SHIELD', 'CORTEX_OVERRIDE',
             'COSMIC_CHURN', 'DIGITAL_DEATH', 'ELECTRON_END', 'FIREWALL_FALL', 'GHOST_GEAR', 'HEX_HEX', 'ION_IMPULSE',
             'JETTISON_JET', 'KINETIC_KILL', 'LOGIC_LOCK', 'MAC_MELT', 'NANO_NOISE', 'OPTIC_OVERLOAD', 'PROTON_PULSE', 'QUARK_QUENCH',
-            'PLASMA_PULSE', 'NEBULOUS_NIGHT', 'VOID_VAGRANT', 'STELLAR_STORM', 'GALAXY_GHOST', 'ORBITAL_ODYSSEY', 'CELESTIAL_CRASH', 'ASTRAL_ARRAY', 'QUANTUM_QUAKE', 'DIMENSIONAL_DIVE', 'TIME_TANGLE', 'SPACE_SPIKE', 'LUNAR_LEAK', 'SOLAR_SURGE', 'GRAVITY_GRIP', 'METEOR_MELT', 'COMET_CLASH', 'TITAN_TICK', 'EUROPA_END', 'MARS_MIST', 'VENUS_VOID', 'SATURN_SHOCK', 'JUPITER_JOLT', 'NEPTUNE_NODE', 'URANUS_UPRISING', 'PLUTO_PULSE', 'MERCURY_MELT', 'SUN_STORM', 'STAR_SURGE'
+            'PLASMA_PULSE', 'NEBULOUS_NIGHT', 'VOID_VAGRANT', 'STELLAR_STORM', 'GALAXY_GHOST', 'ORBITAL_ODYSSEY', 'CELESTIAL_CRASH', 'ASTRAL_ARRAY', 'QUANTUM_QUAKE', 'DIMENSIONAL_DIVE', 'TIME_TANGLE', 'SPACE_SPIKE', 'LUNAR_LEAK', 'SOLAR_SURGE', 'GRAVITY_GRIP', 'METEOR_MELT', 'COMET_CLASH', 'TITAN_TICK', 'EUROPA_END', 'MARS_MIST', 'VENUS_VOID', 'SATURN_SHOCK', 'JUPITER_JOLT', 'NEPTUNE_NODE', 'URANUS_UPRISING', 'PLUTO_PULSE', 'MERCURY_MELT', 'SUN_STORM', 'STAR_SURGE',
+            'GHOST_GRID', 'NEURAL_NODE'
           ];
           selected = rarePool[Math.floor(Math.random() * rarePool.length)];
-          text = `1 IN 100 (RARE_${selected}_EVENT)`;
-        } else if (rand < 550000) { 
+          text = `1 IN 200 (RARE_${selected}_EVENT)`;
+        } else if (rand < 500000) { 
           const uncommonPool: CutsceneType[] = [
             'VISAGE', 'LIFEFORM', 'SATELLITE_LINK', 'RADAR_SWEEP', 'ENCRYPTION_KEY', 
             'HYPER_LOOP', 'NEURAL_SYNC', 'DATA_ERASURE', 'FIREWALL_BREACH', 'GRID_LOCK', 'VECTOR_FIELD',
@@ -164,7 +234,8 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
             'GPU_RENDER_LOCK', 'DIRECT_X_FAILURE', 'OPEN_GL_ERROR', 'VULKAN_ERUPTION', 'SHADERC_CRASH', 'PIXEL_BURST', 'VOXEL_FALL', 'VECTOR_VOID', 'RASTER_REIGN',
             'BIT_BUCKET', 'FLOAT_POINT_BUG', 'INTEGER_OVERFLOW', 'STACK_SMASH', 'HEAP_EXHAUSTION', 'POINTER_GHOST', 'NULL_REFERENCE', 'UNDEFINED_BEHAVIOR',
             'DATA_RACE', 'RACE_CONDITION', 'HEISENBUG', 'MANDELBUG', 'SCHRODINBUG', 'BOHR_BUG', 'LITTLE_ENDIAN', 'BIG_ENDIAN',
-            'ASCII_ART', 'UNICODE_UPRISING', 'UTF8_STORM', 'BAUD_RATE_BURST', 'LATENCY_LAG', 'PING_OF_DEATH', 'PACKET_LOSS_PURGE'
+            'ASCII_ART', 'UNICODE_UPRISING', 'UTF8_STORM', 'BAUD_RATE_BURST', 'LATENCY_LAG', 'PING_OF_DEATH', 'PACKET_LOSS_PURGE',
+            'SILICON_SOUL', 'VECTOR_VALOR', 'CORE_COMMAND', 'SHELL_SHIELD'
           ];
           selected = uncommonPool[Math.floor(Math.random() * uncommonPool.length)];
           text = `1 IN 20 (UNCOMMON_${selected}_LINK)`;
@@ -172,7 +243,8 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
           const commonPool: CutsceneType[] = [
             'COBALT_REIGN', 'EMERALD_MIST', 'SCARLET_STORM', 'VIOLET_VORTEX', 'AMBER_AWAKENING', 'MAGENTA_MATRIX',
             'SIGNAL_SOFT', 'WAVE_WARP', 'PULSE_PART', 'BIT_BEAT', 'BYTE_BURST', 'CHIP_CIRCUIT', 'WIRE_WAVE', 'FLOW_FIELD',
-            'SHELL_SHOCK', 'BIT_BOUNCE', 'LINK_LOSS', 'NET_NODE'
+            'SHELL_SHOCK', 'BIT_BOUNCE', 'LINK_LOSS', 'NET_NODE',
+            'RAID_RECOVERY', 'SENTRY_STANCE', 'BINARY_BEAST'
           ];
           selected = commonPool[Math.floor(Math.random() * commonPool.length)];
           text = `1 IN 2 (COMMON_${selected}_MAINTENANCE)`;
@@ -183,9 +255,9 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
     setRarityText(text);
 
     // Sound logic
-    if (selected === 'SINGULARITY' || selected === 'ANGELIC_SYMPHONY' || selected === 'ETERNAL_OPPRESSION' || selected === 'SUPREME_SOVEREIGN' || selected === 'ANONYMOUS_DEITY' || selected === 'AEGIS_ARCHITECH') {
-        if (selected === 'ANGELIC_SYMPHONY' || selected === 'ETERNAL_OPPRESSION' || selected === 'SUPREME_SOVEREIGN' || selected === 'ANONYMOUS_DEITY' || selected === 'AEGIS_ARCHITECH') {
-            audioService.ensureMinVolume(0.3);
+    if (selected === 'SINGULARITY' || selected === 'ANGELIC_SYMPHONY' || selected === 'ETERNAL_OPPRESSION' || selected === 'SUPREME_SOVEREIGN' || selected === 'ANONYMOUS_DEITY' || selected === 'AEGIS_ARCHITECH' || selected === 'RUNIA' || selected === 'PIXELIZATION' || selected === 'ABYSSAL_HUNTER' || selected === 'ARCHANGEL') {
+        if (selected === 'ANGELIC_SYMPHONY' || selected === 'ETERNAL_OPPRESSION' || selected === 'SUPREME_SOVEREIGN' || selected === 'ANONYMOUS_DEITY' || selected === 'AEGIS_ARCHITECH' || selected === 'RUNIA' || selected === 'PIXELIZATION' || selected === 'ABYSSAL_HUNTER' || selected === 'ARCHANGEL') {
+            audioService.ensureMinVolume(0.5);
         }
         audioService.playCelestialSymphony();
     } 
@@ -199,10 +271,10 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
     if (!type) return;
     
     // Only set timer for non-video cutscenes
-    const isVideo = type === 'ANGELIC_SYMPHONY' || type === 'ETERNAL_OPPRESSION' || type === 'SUPREME_SOVEREIGN' || type === 'ANONYMOUS_DEITY' || type === 'AEGIS_ARCHITECH';
+    const isVideo = type === 'ANGELIC_SYMPHONY' || type === 'ETERNAL_OPPRESSION' || type === 'SUPREME_SOVEREIGN' || type === 'ANONYMOUS_DEITY' || type === 'AEGIS_ARCHITECH' || type === 'RUNIA' || type === 'PIXELIZATION' || type === 'ABYSSAL_HUNTER' || type === 'ARCHANGEL';
     
     // Safety timer for EVERY cutscene (fallback)
-    const timeoutDuration = isVideo ? 30000 : 
+    const timeoutDuration = isVideo ? 35000 : 
       ((type === 'SINGULARITY' || type === 'STARS_ZOOM' || type === 'STRUCTURAL_COLLAPSE' || type === 'OMEGA') ? 10000 : 3500);
     
     const timer = setTimeout(() => {
@@ -245,6 +317,18 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
              {type === 'VISAGE' && <VisageEffect />}
              {type === 'LIFEFORM' && <LifeformEffect />}
              {type === 'DATA_FALL' && <DataFallEffect />}
+             {type === 'RAID_RECOVERY' && <RaidEffect />}
+             {type === 'SENTRY_STANCE' && <SentryEffect />}
+             {type === 'OMEGA_POINT' && <SingularityEffect />}
+             {type === 'CYBER_CRUX' && <BreachEffect />}
+             {type === 'DATA_DIVINE' && <DataFallEffect />}
+             {type === 'GHOST_GRID' && <GhostEffect />}
+             {type === 'NEURAL_NODE' && <SpikeEffect />}
+             {type === 'BINARY_BEAST' && <SpikeEffect />}
+             {type === 'SILICON_SOUL' && <BreachEffect />}
+             {type === 'VECTOR_VALOR' && <SpikeEffect />}
+             {type === 'CORE_COMMAND' && <BreachEffect />}
+             {type === 'SHELL_SHIELD' && <SpikeEffect />}
              {type === 'BINARY_WAVE' && <BinaryWaveEffect />}
              {type === 'NEON_GRID' && <NeonGridEffect />}
              {type === 'SATELLITE_LINK' && <SatelliteLinkEffect />}
@@ -470,25 +554,37 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
              {type === 'CORTEX_OVERRIDE' && <TacticalColorEffect color="#06b6d4" label="CORTEX_OVERRIDE" icon={<Cpu />} junction rotate scan quake surge grid pulse />}
 
              {/* 15 New Rare Elite Cutscenes */}
-             {type === 'COSMIC_CHURN' && <TacticalColorEffect color="#4c1d95" label="COSMIC_CHURN" icon={<Globe />} rotate pulse scan surge />}
-             {type === 'DIGITAL_DEATH' && <TacticalColorEffect color="#450a0a" label="DIGITAL_DEATH" icon={<Skull />} quake grid scan pulse />}
-             {type === 'ELECTRON_END' && <TacticalColorEffect color="#1e3a8a" label="ELECTRON_END" icon={<Zap />} surge rotate junction grid />}
-             {type === 'FIREWALL_FALL' && <TacticalColorEffect color="#7c2d12" label="FIREWALL_FALL" icon={<ShieldAlert />} grid quake junction scan />}
-             {type === 'GHOST_GEAR' && <TacticalColorEffect color="#334155" label="GHOST_GEAR" icon={<Ghost />} rotate grid scan pulse />}
+             {type === 'COSMIC_CHURN' && <GalaxyCollisionEffect />}
+             {type === 'DIGITAL_DEATH' && <DeathByteEffect />}
+             {type === 'ELECTRON_END' && <SingularityEffect />}
+             {type === 'FIREWALL_FALL' && <BreachEffect />}
+             {type === 'GHOST_GEAR' && <GhostEffect />}
              {type === 'HEX_HEX' && <TacticalColorEffect color="#1e1b4b" label="HEX_HEX" icon={<Hash />} grid rotate scan surge />}
              {type === 'ION_IMPULSE' && <TacticalColorEffect color="#0891b2" label="ION_IMPULSE" icon={<Activity />} pulse surge rotate scan />}
              {type === 'JETTISON_JET' && <TacticalColorEffect color="#0f172a" label="JETTISON_JET" icon={<Plane />} surge rotate grid scan />}
              {type === 'KINETIC_KILL' && <TacticalColorEffect color="#991b1b" label="KINETIC_KILL" icon={<Zap />} surge rotate junction quake />}
              {type === 'LOGIC_LOCK' && <TacticalColorEffect color="#1e1b4b" label="LOGIC_LOCK" icon={<Lock />} grid junction rotate pulse />}
-             {type === 'MAC_MELT' && <TacticalColorEffect color="#ea580c" label="MAC_MELT" icon={<Cpu />} surge quake pulse rotate />}
+             {type === 'MAC_MELT' && <MeltingSiliconEffect />}
              {type === 'NANO_NOISE' && <TacticalColorEffect color="#065f46" label="NANO_NOISE" icon={<Radio />} scan grid rotate pulse />}
-             {type === 'OPTIC_OVERLOAD' && <TacticalColorEffect color="#ffffff" label="OPTIC_OVERLOAD" icon={<Eye />} surge grid scan rotate />}
+             {type === 'OPTIC_OVERLOAD' && <StarsZoomEffect />}
              {type === 'PROTON_PULSE' && <TacticalColorEffect color="#4338ca" label="PROTON_PULSE" icon={<Atom />} pulse surge rotate scan />}
              {type === 'QUARK_QUENCH' && <TacticalColorEffect color="#164e63" label="QUARK_QUENCH" icon={<Activity />} grid rotate pulse surge />}
 
 
+             {type === 'SOLAR_ECLIPSE' && <SolarEclipseEffect />}
+             {type === 'QUANTUM_ENTANGLEMENT' && <QuantumEntanglementEffect />}
+             {type === 'DEATH_BYTE' && <DeathByteEffect />}
+             {type === 'PHANTOM_RECKONING' && <PhantomReckoningEffect />}
+             {type === 'CHRONOS_REVERSION' && <ChronosReversionEffect />}
+             {type === 'VOID_MATRIARCH' && <VoidMatriarchEffect />}
+             {type === 'CELESTIAL_OVERSEER' && <CelestialOverseerEffect />}
+             
              {type === 'ANONYMOUS_DEITY' && <VideoCutscene src={VIDEO_SOURCES.ANONYMOUS_DEITY} label="ANONYMOUS_DEITY" onEnded={() => setStatus('DISPLAY_RARITY')} />}
              {type === 'AEGIS_ARCHITECH' && <VideoCutscene src={VIDEO_SOURCES.AEGIS_ARCHITECH} label="AEGIS_ARCHITECH" onEnded={() => setStatus('DISPLAY_RARITY')} />}
+             {type === 'RUNIA' && <VideoCutscene src={VIDEO_SOURCES.RUNIA} label="RUNIA" onEnded={() => setStatus('DISPLAY_RARITY')} />}
+             {type === 'PIXELIZATION' && <VideoCutscene src={VIDEO_SOURCES.PIXELIZATION} label="PIXELIZED" onEnded={() => setStatus('DISPLAY_RARITY')} />}
+             {type === 'ABYSSAL_HUNTER' && <VideoCutscene src={VIDEO_SOURCES.ABYSSAL_HUNTER} label="ABYSSAL_HUNTER" onEnded={() => setStatus('DISPLAY_RARITY')} />}
+             {type === 'ARCHANGEL' && <VideoCutscene src={VIDEO_SOURCES.ARCHANGEL} label="ARCHANGEL" onEnded={() => setStatus('DISPLAY_RARITY')} />}
              {type === 'STRUCTURAL_COLLAPSE' && <TowerCollapseEffect onComplete={() => setStatus('DISPLAY_RARITY')} />}
               {['PLASMA_PULSE', 'NEBULOUS_NIGHT', 'VOID_VAGRANT', 'STELLAR_STORM', 'GALAXY_GHOST', 'ORBITAL_ODYSSEY', 'CELESTIAL_CRASH', 'ASTRAL_ARRAY', 'QUANTUM_QUAKE', 'DIMENSIONAL_DIVE', 'TIME_TANGLE', 'SPACE_SPIKE', 'LUNAR_LEAK', 'SOLAR_SURGE', 'GRAVITY_GRIP', 'METEOR_MELT', 'COMET_CLASH', 'TITAN_TICK', 'EUROPA_END', 'MARS_MIST', 'VENUS_VOID', 'SATURN_SHOCK', 'JUPITER_JOLT', 'NEPTUNE_NODE', 'URANUS_UPRISING', 'PLUTO_PULSE', 'MERCURY_MELT', 'SUN_STORM', 'STAR_SURGE'].includes(type) && (
                 <TacticalColorEffect color="#1e293b" label={type} icon={<Zap />} pulse surge rotate grid scan />
@@ -524,12 +620,29 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
             key="rarity"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center space-y-4"
+            className="text-center space-y-4 max-w-2xl px-4"
           >
             <div className="text-tactical-cyan text-[10px] font-black tracking-[0.5em] uppercase animate-pulse">SEQUENCE_COMPLETE</div>
-            <div className="text-4xl font-black text-white italic uppercase tracking-tighter">
-              ODDS: <span className="text-red-500">{rarityText}</span>
-            </div>
+            
+            {type === 'ARCHANGEL' ? (
+              <div className="space-y-6">
+                <div className="text-6xl font-black text-white italic uppercase tracking-tighter kipher-glitch" data-text="ARCHANGEL">
+                  ARCHANGEL
+                </div>
+                <div className="space-y-2">
+                  <div className="text-4xl font-black text-red-500 italic uppercase tracking-tighter">ODDS:</div>
+                  <div className="text-3xl md:text-5xl font-black text-red-600 italic uppercase tracking-tighter break-all">
+                    1,000,000,000,000,000,000,000,000,000,000,000
+                  </div>
+                </div>
+                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">DIVINE_PROTOCOL_ESTABLISHED // TARGET_REACHED</div>
+              </div>
+            ) : (
+              <div className="text-4xl font-black text-white italic uppercase tracking-tighter">
+                ODDS: <span className="text-red-500">{rarityText}</span>
+              </div>
+            )}
+            
             <button 
               onClick={() => onComplete(rarityText)}
               className="mt-8 px-8 py-2 border border-tactical-cyan/40 text-tactical-cyan hover:bg-tactical-cyan hover:text-black transition-all font-black text-xs uppercase"
@@ -877,14 +990,13 @@ function VideoCutscene({ src, label, onEnded }: { src: string, label?: string, o
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [showBypass, setShowBypass] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
 
   useEffect(() => {
-    // Show manual bypass after 3 seconds if still loading
     const bypassTimer = setTimeout(() => {
       if (loading) setShowBypass(true);
     }, 3000);
 
-    // Skip entirely after 25 seconds as a final fail-safe
     const safetyTimer = setTimeout(() => {
       if (loading && onEnded) {
         console.warn(`Video ${label} timed out`);
@@ -894,12 +1006,29 @@ function VideoCutscene({ src, label, onEnded }: { src: string, label?: string, o
 
     if (videoRef.current) {
       videoRef.current.load();
+      videoRef.current.volume = 1.0;
+      videoRef.current.muted = true; // Start muted for autoplay
       videoRef.current.play().then(() => {
         setLoading(false);
-        setShowBypass(false);
+        // If it played, try to unmute immediately (most browsers will block this though)
+        if (videoRef.current) {
+           videoRef.current.muted = false;
+           setIsMuted(false);
+        }
       }).catch(err => {
-        console.warn("Autoplay interaction blocked:", err);
-        setShowBypass(true);
+        console.warn("Autoplay blocked, attempting muted play:", err);
+        if (videoRef.current) {
+          videoRef.current.muted = true;
+          setIsMuted(true);
+          videoRef.current.play().then(() => {
+            setLoading(false);
+            setShowBypass(true); 
+          }).catch(e => {
+            console.error("Muted play failed:", e);
+            setLoading(false);
+            setShowBypass(true);
+          });
+        }
       });
     }
 
@@ -907,39 +1036,11 @@ function VideoCutscene({ src, label, onEnded }: { src: string, label?: string, o
       clearTimeout(bypassTimer);
       clearTimeout(safetyTimer);
     };
-  }, [src, loading, label, onEnded]);
-
-  const handleManualPlay = () => {
-    // Attempt to resume audio context or play audio service music
-    audioService.ensureMinVolume(0.3);
-    audioService.playCelestialSymphony();
-    
-    if (videoRef.current) {
-      videoRef.current.play().then(() => {
-        setLoading(false);
-        setShowBypass(false);
-      }).catch(err => {
-        console.error("Manual play failed:", err);
-        if (onEnded) onEnded();
-      });
-    }
-  };
-
-  const handleCanPlay = () => {
-    setLoading(false);
-  };
-
-  const handleVideoError = () => {
-    console.error(`Failed to load video: ${src}`);
-    setError(true);
-    if (onEnded) onEnded();
-  };
+  }, [src, loading, onEnded, label]);
 
   return (
     <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden font-sans">
-      {/* Cinematic Overlays */}
       <div className="absolute inset-0 pointer-events-none z-10 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.8)_100%)] opacity-60" />
-      <div className="absolute inset-0 pointer-events-none z-10 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] opacity-20" />
       
       {(loading || showBypass) && !error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center z-50 bg-black/95 backdrop-blur-md">
@@ -965,7 +1066,17 @@ function VideoCutscene({ src, label, onEnded }: { src: string, label?: string, o
               className="mt-12 flex flex-col items-center gap-6"
             >
               <button 
-                onClick={handleManualPlay}
+                onClick={() => {
+                    if (videoRef.current) {
+                        videoRef.current.muted = false;
+                        setIsMuted(false);
+                        videoRef.current.volume = 1.0;
+                        videoRef.current.play().then(() => {
+                            setLoading(false);
+                            setShowBypass(false);
+                        });
+                    }
+                }}
                 className="group relative px-10 py-5 bg-tactical-cyan/10 border border-tactical-cyan/30 rounded-full hover:bg-tactical-cyan/20 transition-all duration-500 overflow-hidden"
               >
                 <div className="absolute inset-0 translate-y-full group-hover:translate-y-0 bg-tactical-cyan transition-transform duration-500 opacity-20" />
@@ -975,14 +1086,13 @@ function VideoCutscene({ src, label, onEnded }: { src: string, label?: string, o
                    </div>
                    <div className="text-left">
                      <div className="text-white text-xs font-black tracking-widest uppercase">INITIALIZE_CARRIAGE</div>
-                     <div className="text-tactical-cyan/60 text-[9px] font-mono uppercase tracking-tighter">Bypass_Browser_Audio_Lock</div>
                    </div>
                 </div>
               </button>
               
               <button 
                 onClick={onEnded}
-                className="text-[10px] text-white/20 hover:text-white/80 transition-colors uppercase tracking-[0.4em] font-mono border-b border-white/5 pb-1"
+                className="text-[10px] text-white/20 hover:text-white/80 transition-colors uppercase tracking-[0.4em] font-mono"
               >
                 SKIP_ENCRYPTED_STREAM
               </button>
@@ -994,29 +1104,16 @@ function VideoCutscene({ src, label, onEnded }: { src: string, label?: string, o
       <video 
           ref={videoRef}
           playsInline
-          className={`min-w-full min-h-full object-cover transition-all duration-3000 ease-in-out ${loading ? 'opacity-0 scale-110 blur-xl' : 'opacity-100 scale-100 blur-none'}`}
+          className={`min-w-full min-h-full object-cover transition-opacity duration-1000 ${loading ? 'opacity-0' : 'opacity-100'}`}
           onEnded={onEnded}
-          onError={handleVideoError}
-          onCanPlay={handleCanPlay}
-      >
-          <source src={src} type="video/mp4" />
-          Your browser does not support the video tag.
-      </video>
-
-      {/* Decorative Tactical Elements */}
-      {!loading && (
-        <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute inset-0 pointer-events-none z-20"
-        >
-            {/* Corner Brackets */}
-            <div className="absolute top-5 left-5 w-10 h-10 border-t border-l border-white/20" />
-            <div className="absolute top-5 right-5 w-10 h-10 border-t border-r border-white/20" />
-            <div className="absolute bottom-5 left-5 w-10 h-10 border-b border-l border-white/20" />
-            <div className="absolute bottom-5 right-5 w-10 h-10 border-b border-r border-white/20" />
-        </motion.div>
-      )}
+          onError={() => {
+              setError(true);
+              if (onEnded) onEnded();
+          }}
+          onCanPlay={() => setLoading(false)}
+          src={src}
+          muted={isMuted}
+      />
     </div>
   );
 }
@@ -1034,121 +1131,122 @@ function TacticalColorEffect({ color, label, icon, pulse, scan, surge, quake, ju
     rotate?: boolean
 }) {
     return (
-        <div className="w-full h-full relative overflow-hidden bg-slate-950 flex items-center justify-center">
-            {/* Background Atmosphere */}
-            <div className="absolute inset-0 opacity-20" style={{ backgroundColor: `${color}10` }} />
+        <div className="w-full h-full bg-slate-950 flex items-center justify-center relative overflow-hidden">
+            {/* Background ambiance */}
+            <div className="absolute inset-0 opacity-10" style={{ backgroundColor: color + '10' }} />
             
-            {/* Dynamic Grid Background */}
-            <div 
-                className="absolute inset-0 opacity-10" 
-                style={{ 
-                    backgroundImage: `radial-gradient(circle at 2px 2px, ${color} 1px, transparent 0)`,
-                    backgroundSize: '40px 40px'
-                }} 
-            />
-
-            {/* Effect Layers */}
             {scan && (
                 <motion.div 
                     animate={{ y: ["-100%", "200%"] }}
                     transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                    className="absolute w-full h-[30%] z-10 pointer-events-none"
-                    style={{ background: `linear-gradient(to bottom, transparent, ${color}40, transparent)` }}
+                    className="absolute w-full h-[15%] z-10 pointer-events-none"
+                    style={{ background: `linear-gradient(to bottom, transparent, ${color}60, transparent)` }}
                 />
             )}
 
             {surge && (
                 <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
-                    {Array.from({ length: 5 }).map((_, i) => (
+                    {Array.from({ length: 8 }).map((_, i) => (
                         <motion.div 
                             key={i}
-                            animate={{ scale: [0, 4], opacity: [0.5, 0] }}
-                            transition={{ duration: 2, repeat: Infinity, delay: i * 0.4 }}
-                            className="absolute border-2 rounded-full w-40 h-40"
-                            style={{ borderColor: color }}
+                            animate={{ scale: [0, 8], opacity: [0.3, 0] }}
+                            transition={{ duration: 3, repeat: Infinity, delay: i * 0.4 }}
+                            className="absolute border border-current rounded-full w-40 h-40"
+                            style={{ color: color }}
                         />
                     ))}
                 </div>
             )}
 
             {grid && (
-                <div className="absolute inset-0 grid grid-cols-8 grid-rows-8 opacity-20">
-                    {Array.from({ length: 64 }).map((_, i) => (
+                <div className="absolute inset-0 grid grid-cols-12 grid-rows-12 opacity-10">
+                    {Array.from({ length: 144 }).map((_, i) => (
                         <motion.div 
                             key={i}
-                            animate={{ opacity: [0, 1, 0] }}
-                            transition={{ duration: 1.5, repeat: Infinity, delay: Math.random() * 2 }}
-                            className="border border-white/5"
-                            style={{ backgroundColor: i % 7 === 0 ? color : 'transparent' }}
+                            animate={{ opacity: [0.1, 0.5, 0.1] }}
+                            transition={{ duration: 2 + Math.random() * 2, repeat: Infinity }}
+                            className="border-[0.5px] border-white/5"
+                            style={{ backgroundColor: i % 13 === 0 ? color : 'transparent' }}
                         />
                     ))}
                 </div>
             )}
 
             {junction && (
-                 <div className="absolute inset-0 flex items-center justify-center">
+                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
                     <motion.div 
-                        initial={{ rotate: 0 }}
                         animate={{ rotate: 360 }}
-                        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                        className="w-[120%] h-px opacity-30"
-                        style={{ backgroundColor: color }}
+                        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                        className="w-[150%] h-[150%] border-[2px] border-dashed border-current rounded-full"
+                        style={{ color: color }}
                     />
                     <motion.div 
-                        initial={{ rotate: 90 }}
-                        animate={{ rotate: 450 }}
-                        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                        className="w-[120%] h-px opacity-30"
-                        style={{ backgroundColor: color }}
+                        animate={{ rotate: -360 }}
+                        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+                        className="absolute w-[120%] h-[120%] border border-current rounded-full opacity-50"
+                        style={{ color: color }}
                     />
                  </div>
             )}
 
-            {/* Central Focal Component */}
-            <motion.div 
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ 
-                    scale: quake ? [0.95, 1.05, 0.98, 1.02, 1] : 1,
-                    opacity: 1,
-                    boxShadow: pulse ? [`0 0 20px ${color}30`, `0 0 60px ${color}60`, `0 0 20px ${color}30`] : `0 0 40px ${color}40`,
-                    rotate: rotate ? [0, 360] : 0
-                }}
-                transition={{ 
-                    scale: quake ? { duration: 0.1, repeat: Infinity } : { duration: 0.5 },
-                    opacity: { duration: 0.5 },
-                    boxShadow: { duration: 1.5, repeat: Infinity },
-                    rotate: { duration: 4, repeat: Infinity, ease: "linear" }
-                }}
-                className="relative z-20 flex flex-col items-center justify-center p-12 bg-black/40 border border-white/10 rounded-2xl backdrop-blur-xl"
-            >
-                <div className="text-white relative" style={{ color: color }}>
-                    {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 100 }) : icon}
-                    {pulse && (
-                        <motion.div 
-                            animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
-                            transition={{ duration: 1, repeat: Infinity }}
-                            className="absolute inset-0 rounded-full bg-current opacity-20 blur-xl"
-                        />
-                    )}
-                </div>
-                
-                <div className="mt-8 flex flex-col items-center gap-1">
-                    <div className="text-[10px] font-mono tracking-[0.6em] opacity-40 uppercase" style={{ color: color }}>
-                        SYSTEM_OVERRIDE_{label}
+            {/* Central Focal Component - REMOVED THE BOX, it's now purely HUD-style */}
+            <div className="relative z-20 flex flex-col items-center justify-center">
+                <motion.div 
+                    animate={{ 
+                        scale: quake ? [0.97, 1.03, 0.98, 1.02, 1] : pulse ? [1, 1.05, 1] : 1,
+                        rotate: rotate ? [0, 360] : 0
+                    }}
+                    transition={{ 
+                        scale: quake ? { duration: 0.1, repeat: Infinity } : { duration: 2, repeat: Infinity },
+                        rotate: { duration: 8, repeat: Infinity, ease: "linear" }
+                    }}
+                    className="flex flex-col items-center justify-center"
+                    style={{ color: color }}
+                >
+                    <div className="relative p-8">
+                        {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { size: 180, strokeWidth: 0.5 }) : icon}
+                        {pulse && (
+                            <motion.div 
+                                animate={{ scale: [1, 2.5], opacity: [0.2, 0] }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                                className="absolute inset-0 rounded-full bg-current opacity-10 blur-3xl"
+                            />
+                        )}
+                        
+                        {/* Decorative HUD Corners inside the focus area */}
+                        <div className="absolute top-0 left-0 w-8 h-8 border-t border-l border-current opacity-40" />
+                        <div className="absolute top-0 right-0 w-8 h-8 border-t border-r border-current opacity-40" />
+                        <div className="absolute bottom-0 left-0 w-8 h-8 border-b border-l border-current opacity-40" />
+                        <div className="absolute bottom-0 right-0 w-8 h-8 border-b border-r border-current opacity-40" />
                     </div>
-                    <div className="h-px w-24 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                </div>
-            </motion.div>
-
-            {/* Tactical Decals */}
-            <div className="absolute top-10 left-10 text-white/10 font-mono text-[8px] tracking-[0.5em] flex flex-col gap-1">
-                <div>HASH_SEQUENCE: {Math.random().toString(16).slice(2, 10).toUpperCase()}</div>
-                <div>SIGNAL_STRENGTH: 98.4%</div>
+                </motion.div>
+                
+                <motion.div 
+                    initial={{ opacity: 0, letterSpacing: "0.2em" }}
+                    animate={{ opacity: 1, letterSpacing: "1.2em" }}
+                    transition={{ duration: 1 }}
+                    className="mt-16 text-center"
+                    style={{ color: color }}
+                >
+                    <div className="text-[10px] font-mono opacity-80 uppercase font-black">
+                        {label}
+                    </div>
+                    <div className="mt-4 flex items-center justify-center gap-6">
+                        <div className="h-[2px] w-32 bg-gradient-to-r from-transparent to-current opacity-40" />
+                        <div className="w-3 h-3 rotate-45 border border-current animate-pulse" />
+                        <div className="h-[2px] w-32 bg-gradient-to-l from-transparent to-current opacity-40" />
+                    </div>
+                </motion.div>
             </div>
+
+            {/* Full Screen HUD Overlay */}
+            <div className="absolute inset-8 border border-current opacity-5 pointer-events-none" style={{ color }} />
+            <div className="absolute top-4 left-4 w-40 h-40 border-t-2 border-l-2 border-current opacity-20" style={{ color }} />
+            <div className="absolute bottom-4 right-4 w-40 h-40 border-b-2 border-r-2 border-current opacity-20" style={{ color }} />
             
-            <div className="absolute bottom-10 right-10 text-white/10 font-mono text-[8px] tracking-[0.5em] flex flex-col gap-1 items-end">
-                <div>LATENCY: 4.2ms</div>
-                <div>ENCRYPTION: AES-256-TACTICAL</div>
+            <div className="absolute top-6 right-6 flex flex-col items-end gap-1 opacity-20" style={{ color }}>
+                <div className="text-[8px] font-mono uppercase">SYNC_STATUS: NORMAL</div>
+                <div className="text-[8px] font-mono uppercase">BUFFRE_LVL: {Math.floor(Math.random() * 100)}%</div>
             </div>
         </div>
     );
@@ -2619,4 +2717,285 @@ function SingularityEffect() {
         ))}
       </div>
     );
+}
+
+function RaidEffect() {
+  return (
+    <div className="w-full h-full bg-slate-900 flex items-center justify-center">
+      <motion.div animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 180, 270, 360] }} transition={{ duration: 4, repeat: Infinity }}>
+        <Database size={80} className="text-tactical-cyan" />
+      </motion.div>
+      <div className="absolute bottom-10 text-[10px] text-tactical-cyan font-black animate-pulse uppercase tracking-[2em]">RECONSTRUCTING_DATA_RAID</div>
+    </div>
+  );
+}
+
+function SentryEffect() {
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-black">
+      <motion.div 
+        animate={{ 
+          y: [-20, 20, -20],
+          boxShadow: ["0 0 20px #22d3ee", "0 0 60px #22d3ee", "0 0 20px #22d3ee"] 
+        }} 
+        transition={{ duration: 2, repeat: Infinity }}
+        className="w-32 h-32 border-4 border-tactical-cyan rounded-full flex items-center justify-center"
+      >
+        <Radar size={48} className="text-tactical-cyan animate-spin" />
+      </motion.div>
+      <div className="absolute top-10 text-[10px] text-tactical-cyan font-black uppercase tracking-[1em]">SENTRY_STANCE_ACTIVE</div>
+    </div>
+  );
+}
+
+function SolarEclipseEffect() {
+  return (
+    <div className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden">
+      <motion.div 
+        animate={{ scale: [1, 1.1, 1], rotate: 360 }}
+        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        className="relative w-96 h-96"
+      >
+        <div className="absolute inset-0 rounded-full bg-white shadow-[0_0_100px_white]" />
+        <motion.div 
+          initial={{ x: -200 }}
+          animate={{ x: 0 }}
+          transition={{ duration: 4, ease: "easeInOut" }}
+          className="absolute inset-0 rounded-full bg-black"
+        />
+      </motion.div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 mix-blend-difference">
+        <Sun size={120} className="text-white" />
+      </div>
+      <div className="absolute bottom-10 text-white/20 font-black tracking-[1em] uppercase italic">TOTAL_ECLIPSE</div>
+    </div>
+  );
+}
+
+function QuantumEntanglementEffect() {
+  return (
+    <div className="w-full h-full bg-slate-950 flex items-center justify-center p-20 overflow-hidden">
+      <div className="relative w-full max-w-2xl h-64 flex items-center justify-between">
+        <motion.div 
+          animate={{ x: [0, 10, -10, 0], y: [0, -5, 5, 0] }}
+          transition={{ duration: 0.1, repeat: Infinity }}
+          className="w-12 h-12 bg-indigo-500 rounded-full shadow-[0_0_30px_#6366f1]"
+        >
+           <div className="w-full h-full animate-ping bg-indigo-400 rounded-full opacity-50" />
+        </motion.div>
+        
+        <svg className="absolute inset-0 w-full h-full pointer-events-none">
+          <motion.path
+            d="M 48 128 L 620 128"
+            stroke="#6366f1"
+            strokeWidth="2"
+            strokeDasharray="5,5"
+            animate={{ strokeDashoffset: [0, -10] }}
+            transition={{ duration: 0.2, repeat: Infinity, ease: "linear" }}
+          />
+        </svg>
+
+        <motion.div 
+          animate={{ x: [0, -10, 10, 0], y: [0, 5, -5, 0] }}
+          transition={{ duration: 0.1, repeat: Infinity }}
+          className="w-12 h-12 bg-indigo-500 rounded-full shadow-[0_0_30px_#6366f1]"
+        >
+           <div className="w-full h-full animate-ping bg-indigo-400 rounded-full opacity-50" />
+        </motion.div>
+      </div>
+      <div className="absolute text-indigo-500 font-mono text-[10px] tracking-widest bottom-20 uppercase">QUANTUM_STATE_SYNC: [ENTANGLED]</div>
+    </div>
+  );
+}
+
+function DeathByteEffect() {
+  return (
+    <div className="w-full h-full bg-black flex items-center justify-center relative overflow-hidden">
+      <div className="absolute inset-0 flex">
+        {Array.from({ length: 40 }).map((_, i) => (
+          <motion.div
+            key={i}
+            animate={{ y: [-1000, 1000] }}
+            transition={{ duration: 1, repeat: Infinity, delay: Math.random() * 2, ease: "linear" }}
+            className="flex-1 text-[8px] text-red-950 font-mono break-all opacity-20"
+            style={{ width: "2.5%" }}
+          >
+            {Math.random().toString(16).repeat(10)}
+          </motion.div>
+        ))}
+      </div>
+      <motion.div 
+        animate={{ scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] }}
+        transition={{ duration: 0.05, repeat: Infinity }}
+        className="relative z-10"
+      >
+        <Skull size={300} className="text-red-600 drop-shadow-[0_0_30px_rgba(220,38,38,0.5)]" strokeWidth={1} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-black font-black text-4xl italic">01000100</div>
+      </motion.div>
+      <div className="absolute bottom-10 bg-red-600 text-black px-4 py-1 text-xs font-black italic uppercase animate-bounce">FATAL_SYSTEM_ERROR</div>
+    </div>
+  );
+}
+
+function PhantomReckoningEffect() {
+  return (
+    <div className="w-full h-full bg-zinc-950 flex items-center justify-center relative overflow-hidden">
+      <motion.div
+        animate={{ x: [-100, 1200] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+        className="absolute inset-y-0 w-96 bg-gradient-to-r from-transparent via-zinc-800 to-transparent flex items-center justify-center"
+      >
+        <Ghost size={400} className="text-zinc-600 opacity-20 blur-sm" />
+      </motion.div>
+      <div className="absolute inset-0 flex flex-col justify-between py-10 opacity-10">
+        {Array.from({ length: 50 }).map((_, i) => (
+          <div key={i} className="h-px bg-zinc-500 w-full" />
+        ))}
+      </div>
+      <div className="relative z-10 text-center">
+        <motion.div 
+          animate={{ opacity: [0, 1, 0] }}
+          transition={{ duration: 0.1, repeat: Infinity, delay: 0.5 }}
+          className="text-white font-black text-6xl italic tracking-[0.5em] mix-blend-difference"
+        >
+          PHANTOM
+        </motion.div>
+        <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-[2em] mt-4">SCANNING_TIMELINE...</div>
+      </div>
+    </div>
+  );
+}
+
+function ChronosReversionEffect() {
+  return (
+    <div className="w-full h-full bg-slate-900 flex items-center justify-center relative overflow-hidden">
+      <div className="absolute inset-0 border-[50px] border-black opacity-40 z-20 pointer-events-none" />
+      <motion.div 
+        animate={{ rotate: -360 * 5 }}
+        transition={{ duration: 2, repeat: Infinity, ease: "circIn" }}
+        className="relative"
+      >
+        <Clock size={400} className="text-tactical-cyan opacity-10" strokeWidth={0.5} />
+        <div className="absolute top-1/2 left-1/2 w-[2px] h-48 bg-tactical-cyan origin-bottom -translate-x-1/2 -translate-y-full shadow-[0_0_15px_cyan]" />
+        <div className="absolute top-1/2 left-1/2 w-[4px] h-32 bg-white origin-bottom -translate-x-1/2 -translate-y-full blur-[1px]" />
+      </motion.div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_40%,#000_100%)] z-10" />
+      <div className="absolute flex flex-col items-center gap-2">
+        <motion.div 
+          animate={{ scale: [1, 2], opacity: [1, 0] }}
+          transition={{ duration: 1, repeat: Infinity }}
+          className="text-white font-black text-8xl italic uppercase select-none"
+        >
+          REVERSE
+        </motion.div>
+        <div className="text-tactical-cyan font-mono text-xs font-black tracking-widest uppercase">Temporal_Distortion_Lock</div>
+      </div>
+    </div>
+  );
+}
+
+function VoidMatriarchEffect() {
+  return (
+    <div className="w-full h-full bg-black flex items-center justify-center relative overflow-hidden">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.5 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 2 }}
+        className="relative flex flex-col items-center"
+      >
+        <div className="w-80 h-[500px] bg-indigo-900/20 blur-[100px] rounded-full absolute" />
+        <Skull size={250} className="text-indigo-900/40 relative z-10" />
+        <div className="absolute top-1/4 flex gap-4">
+          <Eye className="text-indigo-500 animate-pulse" size={24} />
+          <Eye className="text-indigo-500 animate-pulse" size={24} />
+          <Eye className="text-indigo-500 animate-pulse" size={24} />
+        </div>
+      </motion.div>
+      {Array.from({ length: 50 }).map((_, i) => (
+        <motion.div
+          key={i}
+          animate={{ 
+            x: [0, (Math.random()-0.5) * 1000], 
+            y: [0, (Math.random()-0.5) * 1000], 
+            scale: [0, 2],
+            opacity: [1, 0] 
+          }}
+          transition={{ duration: 3, repeat: Infinity, delay: Math.random() * 5 }}
+          className="absolute w-1 h-1 bg-indigo-400 rounded-full blur-[2px]"
+        />
+      ))}
+      <div className="absolute top-10 left-1/2 -translate-x-1/2">
+        <div className="text-indigo-500 font-black text-xs uppercase tracking-[2em] animate-pulse">VOiD_mAtRiArCh_oWnS_yOu</div>
+      </div>
+    </div>
+  );
+}
+
+function CelestialOverseerEffect() {
+  return (
+    <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(251,191,36,0.05)_1px,transparent_1px)] bg-[length:30px_30px]" />
+      <motion.div 
+        animate={{ scale: [1, 1.05, 1] }} 
+        transition={{ duration: 5, repeat: Infinity }}
+        className="relative"
+      >
+        <div className="w-[600px] h-64 border-y-2 border-amber-500/20 rounded-[50%] flex items-center justify-center relative overflow-hidden">
+          <motion.div 
+            animate={{ x: [-100, 100], y: [-20, 20] }}
+            transition={{ duration: 10, repeat: Infinity, repeatType: "mirror" }}
+            className="w-40 h-40 bg-amber-500 rounded-full shadow-[0_0_100px_#f59e0b] relative"
+          >
+            <div className="absolute inset-4 bg-black rounded-full shadow-inner flex items-center justify-center overflow-hidden">
+              <div className="w-full h-full bg-[radial-gradient(circle,white_1px,transparent_1px)] bg-[length:10px_10px] opacity-40" />
+            </div>
+          </motion.div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/20" />
+        </div>
+      </motion.div>
+      <div className="mt-12 text-center space-y-4">
+        <div className="text-amber-500 font-black text-xs uppercase tracking-[3em] animate-pulse">Watching_The_Cosmos</div>
+        <div className="h-px w-96 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
+      </div>
+    </div>
+  );
+}
+
+function MeltingSiliconEffect() {
+  return (
+    <div className="w-full h-full bg-slate-950 flex items-center justify-center relative overflow-hidden">
+      <div className="absolute inset-0 flex flex-wrap opacity-40">
+        {Array.from({ length: 400 }).map((_, i) => (
+          <motion.div
+            key={i}
+            animate={{ 
+              scale: [1, 1.2, 0.8, 1],
+              opacity: [0.2, 0.5, 0.2],
+              borderRadius: ["0%", "50%", "20%", "0%"]
+            }}
+            transition={{ duration: 3, repeat: Infinity, delay: Math.random() * 2 }}
+            className="w-8 h-8 bg-orange-600/20 m-1"
+          />
+        ))}
+      </div>
+      <div className="relative z-10 flex flex-col items-center">
+        <motion.div
+          animate={{ 
+            y: [0, 10, 0],
+            skewX: [-5, 5, -5]
+          }}
+          transition={{ duration: 0.2, repeat: Infinity }}
+          className="relative"
+        >
+          <Cpu size={200} className="text-orange-500 blur-[2px]" strokeWidth={0.5} />
+          <motion.div 
+            animate={{ height: ["0%", "100%", "0%"] }}
+            transition={{ duration: 5, repeat: Infinity }}
+            className="absolute top-0 left-1/2 w-4 bg-orange-600/50 blur-lg -translate-x-1/2"
+          />
+        </motion.div>
+        <div className="mt-8 text-orange-600 font-black text-4xl italic tracking-tighter uppercase animate-pulse">HARDWARE_MELtdown</div>
+      </div>
+    </div>
+  );
 }

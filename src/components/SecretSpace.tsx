@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { titleService } from '../services/titleService';
 import { audioService } from '../services/audioService';
-import { db } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { doc, setDoc, updateDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import TankGame from './TankGame';
 import MemoryMatch from './MemoryMatch';
@@ -78,15 +78,15 @@ export default function SecretSpace({ currentUser, onUpdate, onClose, onImmersiv
     setIsPromoting(true);
     audioService.playSuccess();
     
-    const newPromotionCount = (localUser.promotionCount || 0) + 1;
+    const newLevel = (localUser.level || 1) + 1;
     const newCredits = (localUser.credits || 0) - 500;
     
-    const updated = { ...localUser, promotionCount: newPromotionCount, credits: newCredits };
+    const updated = { ...localUser, level: newLevel, credits: newCredits };
     setLocalUser(updated);
     onUpdate(updated);
     
     await updateDoc(doc(db, 'users', localUser.uid), {
-      promotionCount: newPromotionCount,
+      level: newLevel,
       credits: newCredits
     });
     
@@ -228,12 +228,66 @@ export default function SecretSpace({ currentUser, onUpdate, onClose, onImmersiv
       cost: 600,
       icon: Cpu,
       config: { nameColor: '#10b981', titleColor: 'rgba(16,185,129,0.4)', mouseColor: '#10b981' }
+    },
+    {
+      id: 'neural_bridge',
+      title: "Neural_Link_V3",
+      desc: "Direct neural uplink. Boosts simulation credit rewards by 10%.",
+      cost: 8000,
+      icon: Zap,
+      config: { creditBonus: 0.1 }
+    },
+    {
+      id: 'overclock_module',
+      title: "Overclock_Module",
+      desc: "Increases processing speed. (Visual particles on mouse)",
+      cost: 1200,
+      icon: Zap,
+      config: { overclocked: true }
+    },
+    {
+      id: 'sentry_drone',
+      title: "Sentry_Pod",
+      desc: "Tactical sentinel following your interface locator.",
+      cost: 2500,
+      icon: Shield,
+      config: { hasSentry: true }
     }
   ];
 
+  const applyGameCredits = async (cr: number, extra?: any) => {
+    let finalCr = cr;
+    if (localUser.customization?.creditBonus) {
+      finalCr = Math.round(cr * (1 + localUser.customization.creditBonus));
+    }
+    
+    const newCredits = (localUser.credits || 0) + finalCr;
+    const updatePayload: any = { credits: newCredits };
+    const updatedUser = { ...localUser, credits: newCredits };
+
+    if (extra && extra.tankHighscore !== undefined) {
+      const currentHigh = localUser.tankHighscore || 0;
+      const newHigh = Math.max(currentHigh, extra.tankHighscore);
+      updatePayload.tankHighscore = newHigh;
+      updatedUser.tankHighscore = newHigh;
+    }
+
+    setLocalUser(updatedUser);
+    onUpdate(updatedUser);
+    
+    try {
+      await updateDoc(doc(db, 'users', localUser.uid), updatePayload);
+      if (finalCr > 0) {
+        window.dispatchEvent(new CustomEvent('kipher:creditsAwarded', { detail: finalCr }));
+      }
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `users/${localUser.uid}`);
+    }
+  };
+
   const tabs = [
     { id: 'HONOR', icon: Trophy, label: 'Honors_Vault' },
-    { id: 'PROMOTIONS', icon: TrendingUp, label: 'Rank_Ascension' },
+    { id: 'PROMOTIONS', icon: TrendingUp, label: 'Neural_Ascension' },
     { id: 'SHOP', icon: ShoppingBag, label: 'Upgrade_Shop' },
     { id: 'LEADERBOARD', icon: Star, label: 'Leaderboard' },
     { id: 'GAMES', icon: Gamepad2, label: 'Tactical_Sims' },
@@ -338,8 +392,8 @@ export default function SecretSpace({ currentUser, onUpdate, onClose, onImmersiv
             {activeTab === 'PROMOTIONS' && (
               <div className="max-w-2xl mx-auto w-full py-10 flex flex-col items-center">
                  <div className="text-center mb-20">
-                   <h1 className="text-4xl font-black text-white tracking-[0.3em] uppercase mb-4">Rank_Ascension</h1>
-                   <p className="text-slate-500 text-xs font-black tracking-widest uppercase">Forge your path through the KIPHER hierarchy</p>
+                   <h1 className="text-4xl font-black text-white tracking-[0.3em] uppercase mb-4">Neural_Ascension</h1>
+                   <p className="text-slate-500 text-xs font-black tracking-widest uppercase">Increase your synchronization level to boost gacha luck</p>
                  </div>
 
                  <div className="relative w-64 h-64 mb-12">
@@ -350,21 +404,21 @@ export default function SecretSpace({ currentUser, onUpdate, onClose, onImmersiv
                      transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
                    ></motion.div>
                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <div className="text-5xl font-black text-white">{localUser.clearanceLevel + (localUser.promotionCount || 0)}</div>
-                      <div className="text-[10px] font-black text-tactical-cyan uppercase tracking-widest mt-1">Current_Clearance</div>
+                      <div className="text-5xl font-black text-white">LVL_{localUser.level || 1}</div>
+                      <div className="text-[10px] font-black text-tactical-cyan uppercase tracking-widest mt-1">Gacha_Luck_Bonus: +{((localUser.level || 1) - 1) * 2}%</div>
                    </div>
                  </div>
 
                  <div className="bg-slate-900/50 border border-slate-800 p-8 w-full max-w-md text-center">
-                    <h3 className="text-lg font-black text-white uppercase mb-4 tracking-widest">Protocol_Enhancement</h3>
-                    <p className="text-slate-500 text-xs mb-8 uppercase italic">Cost per ascension: <span className="text-tactical-cyan font-black">500 Credits</span></p>
+                    <h3 className="text-lg font-black text-white uppercase mb-4 tracking-widest">Neural_Uplink_Protocol</h3>
+                    <p className="text-slate-500 text-xs mb-8 uppercase italic">Cost per Level: <span className="text-tactical-cyan font-black">500 Credits</span></p>
                     
                     <button 
                       onClick={handlePromotion}
                       disabled={isPromoting || (localUser.credits || 0) < 500}
                       className={`w-full py-4 font-black uppercase tracking-[.3em] transition-all relative overflow-hidden ${isPromoting ? 'bg-slate-800 text-slate-600' : (localUser.credits || 0) >= 500 ? 'bg-tactical-cyan text-black hover:bg-white' : 'bg-slate-900 text-slate-700 border border-slate-800 cursor-not-allowed'}`}
                     >
-                      {isPromoting ? 'ASCENDING...' : 'INITIATE_PROMOTION'}
+                      {isPromoting ? 'ASCENDING...' : 'INITIATE_LEVEL_UP'}
                       {isPromoting && (
                          <motion.div 
                            initial={{ x: '-100%' }}
@@ -460,53 +514,22 @@ export default function SecretSpace({ currentUser, onUpdate, onClose, onImmersiv
                  ) : selectedGame === 'TANK' ? (
                     <TankGame 
                       onBack={() => setSelectedGame('NONE')} 
-                      onCreditsEarned={async (cr, wave) => {
-                        const newCredits = (localUser.credits || 0) + cr;
-                        const currentHigh = localUser.tankHighscore || 0;
-                        const newHigh = Math.max(currentHigh, wave);
-                        
-                        const updated = { ...localUser, credits: newCredits, tankHighscore: newHigh };
-                        setLocalUser(updated);
-                        onUpdate(updated);
-                        
-                        await updateDoc(doc(db, 'users', localUser.uid), { 
-                           credits: newCredits,
-                           tankHighscore: newHigh 
-                        });
-                      }}
+                      onCreditsEarned={(cr, wave) => applyGameCredits(cr, { tankHighscore: wave })}
                     />
                  ) : selectedGame === 'MEMORY' ? (
                     <MemoryMatch 
                       onBack={() => setSelectedGame('NONE')} 
-                      onCreditsEarned={async (cr) => {
-                        const newCredits = (localUser.credits || 0) + cr;
-                        const updated = { ...localUser, credits: newCredits };
-                        setLocalUser(updated);
-                        onUpdate(updated);
-                        await updateDoc(doc(db, 'users', localUser.uid), { credits: newCredits });
-                      }}
+                      onCreditsEarned={(cr) => applyGameCredits(cr)}
                     />
                   ) : selectedGame === 'CHRONOS' ? (
                      <TimeGame 
                        onBack={() => setSelectedGame('NONE')}
-                       onCreditsEarned={async (cr) => {
-                         const newCredits = (localUser.credits || 0) + cr;
-                         const updated = { ...localUser, credits: newCredits };
-                         setLocalUser(updated);
-                         onUpdate(updated);
-                         await updateDoc(doc(db, 'users', localUser.uid), { credits: newCredits });
-                       }}
+                       onCreditsEarned={(cr) => applyGameCredits(cr)}
                      />
                   ) : (
                     <TriviaGame 
                       onBack={() => setSelectedGame('NONE')}
-                      onCreditsEarned={async (cr) => {
-                         const newCredits = (localUser.credits || 0) + cr;
-                         const updated = { ...localUser, credits: newCredits };
-                         setLocalUser(updated);
-                         onUpdate(updated);
-                         await updateDoc(doc(db, 'users', localUser.uid), { credits: newCredits });
-                       }}
+                      onCreditsEarned={(cr) => applyGameCredits(cr)}
                     />
                   )}
               </div>
