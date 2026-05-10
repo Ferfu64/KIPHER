@@ -96,6 +96,10 @@ export default function TankGame({ onBack, onCreditsEarned }: TankGameProps) {
         createParticles(x, y, e.color, 10);
         if (e.hp <= 0) {
           enemiesKilledInLevel.current++;
+          
+          // Ult charge on kill: ~2.5% per kill (40 kills = 100%, exactly for level 5 boss)
+          setUltCharge(prev => Math.min(100, prev + 2.5));
+
           if (e.isBoss) {
             bossActive.current = false;
             triggerCutscene("BOSS_UNIT_DECOMMISSIONED");
@@ -155,7 +159,7 @@ export default function TankGame({ onBack, onCreditsEarned }: TankGameProps) {
       // Boss level
       enemiesToSpawn.current = 1; 
       totalEnemiesInLevel.current = 1;
-      setUltCharge(0);
+      // Do NOT reset ult charge here so it can be used on boss
       spawnBoss();
     } else {
       // Normal level
@@ -245,6 +249,7 @@ export default function TankGame({ onBack, onCreditsEarned }: TankGameProps) {
     powerUps.current = [];
     bossActive.current = false;
     setScore(0);
+    setUltCharge(0);
     setGameState('PLAYING');
     startLevel(1);
     audioService.playSuccess();
@@ -354,44 +359,48 @@ export default function TankGame({ onBack, onCreditsEarned }: TankGameProps) {
 
       // Special Action / Shooting
       const now = Date.now();
-      if (keys.current['Space'] && now - p.lastShot > p.fireRate) {
-        if (p.mode === 'RANGED') {
-        if (p.weaponType === 'TRIPLE') {
-          for (let i = -1; i <= 1; i++) {
-            const angle = p.rotation + i * 0.2;
+      if (keys.current['Space']) {
+        if (ultCharge >= 100) {
+          performUltimate();
+        } else if (now - p.lastShot > p.fireRate) {
+          if (p.mode === 'RANGED') {
+          if (p.weaponType === 'TRIPLE') {
+            for (let i = -1; i <= 1; i++) {
+              const angle = p.rotation + i * 0.2;
+              bullets.current.push({
+                x: p.x + Math.cos(angle) * 25,
+                y: p.y + Math.sin(angle) * 25,
+                width: 6, height: 6, rotation: angle,
+                vx: Math.cos(angle) * 8,
+                vy: Math.sin(angle) * 8,
+                damage: 15 + (wave * 2), owner: 'PLAYER'
+              });
+            }
+          } else {
             bullets.current.push({
-              x: p.x + Math.cos(angle) * 25,
-              y: p.y + Math.sin(angle) * 25,
-              width: 6, height: 6, rotation: angle,
-              vx: Math.cos(angle) * 8,
-              vy: Math.sin(angle) * 8,
-              damage: 15 + (wave * 2), owner: 'PLAYER'
+              x: p.x + Math.cos(p.rotation) * 25,
+              y: p.y + Math.sin(p.rotation) * 25,
+              width: 6, height: 6, rotation: p.rotation,
+              vx: Math.cos(p.rotation) * 7,
+              vy: Math.sin(p.rotation) * 7,
+              damage: 20 + (wave * 3), owner: 'PLAYER'
             });
           }
-        } else {
-          bullets.current.push({
-            x: p.x + Math.cos(p.rotation) * 25,
-            y: p.y + Math.sin(p.rotation) * 25,
-            width: 6, height: 6, rotation: p.rotation,
-            vx: Math.cos(p.rotation) * 7,
-            vy: Math.sin(p.rotation) * 7,
-            damage: 20 + (wave * 3), owner: 'PLAYER'
-          });
+          p.lastShot = now;
+          audioService.playBlip();
+          createParticles(p.x + Math.cos(p.rotation) * 25, p.y + Math.sin(p.rotation) * 25, '#22d3ee', 5, 1);
+        } else if (p.mode === 'MELEE') {
+          // Rushing Burst: Straight line dash with x2 damage contact
+          p.isRushing = true;
+          p.rushTimer = 40;
+          p.rushRotateFixed = p.rotation;
+          p.lastShot = now + 1500;
+          
+          triggerCutscene("RUSHING_BURST_ACTIVATED", 800);
+          audioService.playSuccess();
+          createParticles(p.x, p.y, '#22d3ee', 10, 2);
         }
-        p.lastShot = now;
-        audioService.playBlip();
-        createParticles(p.x + Math.cos(p.rotation) * 25, p.y + Math.sin(p.rotation) * 25, '#22d3ee', 5, 1);
-      } else if (p.mode === 'MELEE') {
-        // Rushing Burst: Straight line dash with x2 damage contact
-        p.isRushing = true;
-        p.rushTimer = 40;
-        p.rushRotateFixed = p.rotation;
-        p.lastShot = now + 1500;
-        
-        triggerCutscene("RUSHING_BURST_ACTIVATED", 800);
-        audioService.playSuccess();
-        createParticles(p.x, p.y, '#22d3ee', 10, 2);
-      }
+        }
       }
     } else if (gameState === 'BOSS_DODGE') {
        // Restricted movement
@@ -666,7 +675,10 @@ export default function TankGame({ onBack, onCreditsEarned }: TankGameProps) {
       if (b) {
         createParticles(b.x, b.y, '#ffffff', 200, 15);
         createParticles(b.x, b.y, '#facc15', 100, 10);
-        hitEnemy(b, enemies.current.indexOf(b), 9999, b.x, b.y);
+        
+        // Ultimate leaves boss at 1 HP
+        b.hp = 1;
+        audioService.playCelestialSymphony();
       }
       setUltCharge(0);
       setGameState('PLAYING');

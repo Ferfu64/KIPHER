@@ -26,6 +26,7 @@ import { titleService } from './services/titleService';
 import { requestNotificationPermission, sendNetworkNotification } from './lib/notifications';
 import DailyReward from './components/DailyReward';
 import GhostInTheMachine from './components/GhostInTheMachine';
+import VoiceProtocolHandler from './components/VoiceProtocolHandler';
 
 type NavigationPage = 'GHOST' | 'OWNER' | 'GATEWAY' | 'MEETING' | 'COMM' | 'MISC' | 'SECRET_SPACE';
 
@@ -56,47 +57,6 @@ export default function App() {
   const [showDailyReward, setShowDailyReward] = useState(false);
   const [activeEvents, setActiveEvents] = useState<{type: string, multiplier: number}[]>([]);
   const lastRewardPromptRef = useRef<number>(0);
-
-  useEffect(() => {
-    const q = query(collection(db, 'system_events'), where('active', '==', true));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      let isRainbow = false;
-      let multiplierLuck = 1;
-      let multiplierCredits = 1;
-      let multiplierSpeed = 1;
-      const events: {type: string, multiplier: number}[] = [];
-      
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.type === 'RAINBOW_MODE') {
-          isRainbow = true;
-          events.push({ type: 'RAINBOW_MODE', multiplier: 1 });
-        }
-        if (data.type === 'LUCK_BOOST') {
-          multiplierLuck = data.multiplier || 2;
-          events.push({ type: 'LUCK_BOOST', multiplier: multiplierLuck });
-        }
-        if (data.type === 'CREDIT_BOOST') {
-          multiplierCredits = data.multiplier || 2;
-          events.push({ type: 'CREDIT_BOOST', multiplier: multiplierCredits });
-        }
-        if (data.type === 'ROLL_SPEED_BOOST') {
-          multiplierSpeed = data.multiplier || 2;
-          events.push({ type: 'ROLL_SPEED_BOOST', multiplier: multiplierSpeed });
-        }
-        if (data.type === 'SYSTEM_MSG' && data.message) {
-          sendNetworkNotification('SYSTEM_BROADCAST', data.message);
-        }
-      });
-      
-      setIsRainbowMode(isRainbow);
-      setLuckMultiplier(multiplierLuck);
-      setCreditMultiplier(multiplierCredits);
-      setRollSpeedMultiplier(multiplierSpeed);
-      setActiveEvents(events);
-    });
-    return () => unsubscribe();
-  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -440,6 +400,19 @@ export default function App() {
               credits = ev.multiplier || 2;
               events.push({ type: 'CREDIT_BOOST', multiplier: credits });
             }
+            if (ev.type === 'X3_CREDITS_BLITZ') {
+              credits = 3;
+              events.push({ type: 'X3_CREDITS_BLITZ', multiplier: 3 });
+            }
+            if (ev.type === 'HACKER_LUCK_OVERLOAD') {
+              luck = 5;
+              events.push({ type: 'HACKER_LUCK_OVERLOAD', multiplier: 5 });
+            }
+            if (ev.type === 'SYSTEM_OVERCLOCK') {
+              luck = 2;
+              speedMul = 2;
+              events.push({ type: 'SYSTEM_OVERCLOCK', multiplier: 2 });
+            }
             if (ev.type === 'ROLL_SPEED_BOOST') {
               speedMul = ev.multiplier || 2;
               events.push({ type: 'ROLL_SPEED_BOOST', multiplier: speedMul });
@@ -635,6 +608,7 @@ export default function App() {
       <NotificationOverlay currentUser={user} onNavigate={(page) => navigateTo(page as NavigationPage)} />
       
       <GhostInTheMachine />
+      <VoiceProtocolHandler />
       
       {/* Persistent Event Banner */}
       <AnimatePresence>
@@ -655,6 +629,9 @@ export default function App() {
                   {ev.type === 'LUCK_BOOST' ? `LUCK_X${ev.multiplier}_ACTIVATED` : 
                    ev.type === 'CREDIT_BOOST' ? `CREDITS_X${ev.multiplier}_ACTIVATED` :
                    ev.type === 'ROLL_SPEED_BOOST' ? `SPEED_X${ev.multiplier}_ACTIVATED` :
+                   ev.type === 'X3_CREDITS_BLITZ' ? 'X3_CREDITS_BLITZ_ACTIVE' :
+                   ev.type === 'HACKER_LUCK_OVERLOAD' ? 'HACKER_LUCK_OVERLOAD_5X' :
+                   ev.type === 'SYSTEM_OVERCLOCK' ? 'SYSTEM_OVERCLOCK_SYNCHED' :
                    'SYSTEM_EVENT_ACTIVE'}
                 </span>
                 {ev.multiplier > 1 && (

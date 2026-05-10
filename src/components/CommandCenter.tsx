@@ -60,6 +60,19 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
     { type: 'PIXELIZATION', label: 'PIXELIZATION (1 in 45,000)' },
     { type: 'ABYSSAL_HUNTER', label: 'ABYSSAL_HUNTER (1 in 40,400)' },
     { type: 'ARCHANGEL', label: 'ARCHANGEL (1 in 1M True)' },
+    { type: 'OLIVER_TRANSFORMATION', label: 'OLIVER_TRANSFORMATION (ADMIN_ONLY)' },
+    { type: 'KIPHER_KODEX', label: 'KIPHER_KODEX (1 in 500)' },
+    { type: 'CORTEX_COLD', label: 'CORTEX_COLD (1 in 500)' },
+    { type: 'VINE_VIOLATION', label: 'VINE_VIOLATION (1 in 500)' },
+    { type: 'GATEWAY_GHOST', label: 'GATEWAY_GHOST (1 in 500)' },
+    { type: 'THREAT_TACTIC', label: 'THREAT_TACTIC (RARE)' },
+    { type: 'SIGNAL_STRIKE', label: 'SIGNAL_STRIKE (RARE)' },
+    { type: 'NODE_NEGATION', label: 'NODE_NEGATION (RARE)' },
+    { type: 'HASH_HELL', label: 'HASH_HELL (RARE)' },
+    { type: 'ENCRYPT_EYE', label: 'ENCRYPT_EYE (UNCOMMON)' },
+    { type: 'SHELL_STORM', label: 'SHELL_STORM (UNCOMMON)' },
+    { type: 'PROTOCOL_PAIN', label: 'PROTOCOL_PAIN (COMMON)' },
+    { type: 'VOICE_VOID', label: 'VOICE_VOID (COMMON)' },
   ];
 
   useEffect(() => {

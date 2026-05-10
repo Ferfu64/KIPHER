@@ -64,7 +64,12 @@ type CutsceneType =
   | 'COSMIC_CHURN' | 'DIGITAL_DEATH' | 'ELECTRON_END' | 'FIREWALL_FALL' | 'GHOST_GEAR' | 'HEX_HEX' | 'ION_IMPULSE'
   | 'JETTISON_JET' | 'KINETIC_KILL' | 'LOGIC_LOCK' | 'WILLIAM_CRASH' | 'NANO_NOISE' | 'OPTIC_OVERLOAD' | 'PROTON_PULSE' | 'QUARK_QUENCH'
   | 'PLASMA_PULSE' | 'NEBULOUS_NIGHT' | 'VOID_VAGRANT' | 'STELLAR_STORM' | 'GALAXY_GHOST' | 'ORBITAL_ODYSSEY' | 'CELESTIAL_CRASH' | 'ASTRAL_ARRAY' | 'QUANTUM_QUAKE' | 'DIMENSIONAL_DIVE' | 'TIME_TANGLE' | 'SPACE_SPIKE' | 'LUNAR_LEAK' | 'SOLAR_SURGE' | 'GRAVITY_GRIP' | 'METEOR_MELT' | 'COMET_CLASH' | 'TITAN_TICK' | 'EUROPA_END' | 'MARS_MIST' | 'VENUS_VOID' | 'SATURN_SHOCK' | 'JUPITER_JOLT' | 'NEPTUNE_NODE' | 'URANUS_UPRISING' | 'PLUTO_PULSE' | 'MERCURY_MELT' | 'SUN_STORM' | 'STAR_SURGE' | 'RAID_RECOVERY' | 'SENTRY_STANCE' | 'OMEGA_POINT' | 'CYBER_CRUX' | 'DATA_DIVINE' | 'GHOST_GRID' | 'NEURAL_NODE' | 'BINARY_BEAST' | 'SILICON_SOUL' | 'VECTOR_VALOR' | 'CORE_COMMAND' | 'SHELL_SHIELD'
-  | 'BAUD_RATE_BURST' | 'LATENCY_LAG' | 'PING_OF_DEATH' | 'PACKET_LOSS_PURGE' | 'CORTEX_OVERRIDE';
+  | 'BAUD_RATE_BURST' | 'LATENCY_LAG' | 'PING_OF_DEATH' | 'PACKET_LOSS_PURGE' | 'CORTEX_OVERRIDE'
+  | 'VOID_VENGEANCE' | 'CYBER_CHALICE' | 'NEURAL_NIGHTMARE'
+  | 'GHOST_IN_THE_GEAR' | 'MATRIX_MOURNING' | 'SYSTEM_SACRIFICE' | 'VIRTUAL_VIGIL' | 'DATA_DRONE' | 'CORE_CONDUIT' | 'LINK_LAMENT'
+  | 'SHELL_SHADOW' | 'BIT_BARRAGE' | 'BYTE_BANE' | 'CHIP_CHAOS' | 'WIRE_WRATH' | 'FLOW_FURY' | 'SIGNAL_SABOTAGE' | 'WAVE_WRATH' | 'PULSE_PLAGUE' | 'NET_NIGHT'
+  | 'BIT_BLINK' | 'BYTE_BLUR' | 'CHIP_CHILL' | 'WIRE_WHISPER' | 'FLOW_FADE' | 'SIGNAL_SILENCE' | 'WAVE_WHISPER' | 'PULSE_PAUSE' | 'BIT_BREAK' | 'BYTE_BREEZE' | 'CHIP_CHIME' | 'WIRE_WIND' | 'FLOW_FLUTTER' | 'SHELL_SHIVER' | 'BIT_BUMP' | 'OLIVER_TRANSFORMATION'
+  | 'KIPHER_KODEX' | 'CORTEX_COLD' | 'VINE_VIOLATION' | 'GATEWAY_GHOST' | 'THREAT_TACTIC' | 'SIGNAL_STRIKE' | 'NODE_NEGATION' | 'HASH_HELL' | 'ENCRYPT_EYE' | 'SHELL_STORM' | 'PROTOCOL_PAIN' | 'VOICE_VOID';
 
 export default function CortexCutscene({ onComplete, forcedType, luckMultiplier = 1, level = 1, pityCount911 = 0, pityCount500 = 0 }: CutsceneProps) {
   const [type, setType] = useState<CutsceneType | null>(forcedType as CutsceneType || null);
@@ -134,7 +139,8 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
         const epicPool: CutsceneType[] = [
           'OMEGA', 'ALPHA', 'EPSILON', 'VOID_STAR', 'NEBULA_NOVA', 'SUPERNOVA_SOUL', 
           'QUASAR_QUAKE', 'BEYOND_BOUNDARY', 'INFINITY_INIT', 'ETERNITY_EDGE', 'COSMOS_CORE',
-          'OMEGA_POINT', 'CYBER_CRUX', 'DATA_DIVINE', 'UNICODE_UPRISING'
+          'OMEGA_POINT', 'CYBER_CRUX', 'DATA_DIVINE', 'UNICODE_UPRISING',
+          'KIPHER_KODEX', 'CORTEX_COLD', 'VINE_VIOLATION', 'GATEWAY_GHOST'
         ];
         selected = epicPool[Math.floor(Math.random() * epicPool.length)];
         text = `PITY_REACHED (EPIC_${selected}_STABILIZED)`;
@@ -203,10 +209,16 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
             'OMEGA', 'ALPHA', 'EPSILON', 'VOID_STAR', 'NEBULA_NOVA', 'SUPERNOVA_SOUL', 
             'QUASAR_QUAKE', 'BEYOND_BOUNDARY', 'INFINITY_INIT', 'ETERNITY_EDGE', 'COSMOS_CORE',
             'PULSE_PRIME', 'VOID_VELOCITY', 'NEURAL_NEXUS',
-            'OMEGA_X', 'QUARK_QUAKE', 'NEON_NOIR', 'OMEGA_POINT', 'CYBER_CRUX', 'DATA_DIVINE', 'UNICODE_UPRISING'
+            'OMEGA_X', 'QUARK_QUAKE', 'NEON_NOIR', 'OMEGA_POINT', 'CYBER_CRUX', 'DATA_DIVINE', 'UNICODE_UPRISING',
+            'VOID_VENGEANCE', 'CYBER_CHALICE', 'NEURAL_NIGHTMARE', 'OLIVER_TRANSFORMATION',
+            'KIPHER_KODEX', 'CORTEX_COLD', 'VINE_VIOLATION', 'GATEWAY_GHOST'
           ];
           selected = epicPool[Math.floor(Math.random() * epicPool.length)];
-          if (selected === 'UNICODE_UPRISING') {
+          if (selected === 'OLIVER_TRANSFORMATION') {
+            text = '1 IN 500 (EPIC_OLIVER_TRANSFORMATION_EVENT)';
+          } else if (selected === 'KIPHER_KODEX' || selected === 'CORTEX_COLD' || selected === 'VINE_VIOLATION' || selected === 'GATEWAY_GHOST') {
+            text = `1 IN 500 (EPIC_${selected}_PROTOCOL)`;
+          } else if (selected === 'UNICODE_UPRISING') {
             text = '1 IN 500 (EPIC_UNICODE_UPRISING_PROTOCOL)';
           } else {
             text = `1 IN 500 (EPIC_${selected}_PROTOCOL)`;
@@ -224,7 +236,9 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
             'COSMIC_CHURN', 'DIGITAL_DEATH', 'ELECTRON_END', 'FIREWALL_FALL', 'GHOST_GEAR', 'HEX_HEX', 'ION_IMPULSE',
             'JETTISON_JET', 'KINETIC_KILL', 'LOGIC_LOCK', 'WILLIAM_CRASH', 'NANO_NOISE', 'OPTIC_OVERLOAD', 'PROTON_PULSE', 'QUARK_QUENCH',
             'PLASMA_PULSE', 'NEBULOUS_NIGHT', 'VOID_VAGRANT', 'STELLAR_STORM', 'GALAXY_GHOST', 'ORBITAL_ODYSSEY', 'CELESTIAL_CRASH', 'ASTRAL_ARRAY', 'QUANTUM_QUAKE', 'DIMENSIONAL_DIVE', 'TIME_TANGLE', 'SPACE_SPIKE', 'LUNAR_LEAK', 'SOLAR_SURGE', 'GRAVITY_GRIP', 'METEOR_MELT', 'COMET_CLASH', 'TITAN_TICK', 'EUROPA_END', 'MARS_MIST', 'VENUS_VOID', 'SATURN_SHOCK', 'JUPITER_JOLT', 'NEPTUNE_NODE', 'URANUS_UPRISING', 'PLUTO_PULSE', 'MERCURY_MELT', 'SUN_STORM', 'STAR_SURGE',
-            'GHOST_GRID', 'NEURAL_NODE'
+            'GHOST_GRID', 'NEURAL_NODE',
+            'GHOST_IN_THE_GEAR', 'MATRIX_MOURNING', 'SYSTEM_SACRIFICE', 'VIRTUAL_VIGIL', 'DATA_DRONE', 'CORE_CONDUIT', 'LINK_LAMENT',
+            'THREAT_TACTIC', 'SIGNAL_STRIKE', 'NODE_NEGATION', 'HASH_HELL'
           ];
           selected = rarePool[Math.floor(Math.random() * rarePool.length)];
           text = `1 IN 200 (RARE_${selected}_EVENT)`;
@@ -243,7 +257,9 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
             'BIT_BUCKET', 'FLOAT_POINT_BUG', 'INTEGER_OVERFLOW', 'STACK_SMASH', 'HEAP_EXHAUSTION', 'POINTER_GHOST', 'NULL_REFERENCE', 'UNDEFINED_BEHAVIOR',
             'DATA_RACE', 'RACE_CONDITION', 'HEISENBUG', 'MANDELBUG', 'SCHRODINBUG', 'BOHR_BUG', 'LITTLE_ENDIAN', 'BIG_ENDIAN',
             'ASCII_ART', 'UTF8_STORM', 'BAUD_RATE_BURST', 'LATENCY_LAG', 'PING_OF_DEATH', 'PACKET_LOSS_PURGE',
-            'SILICON_SOUL', 'VECTOR_VALOR', 'CORE_COMMAND', 'SHELL_SHIELD'
+            'SILICON_SOUL', 'VECTOR_VALOR', 'CORE_COMMAND', 'SHELL_SHIELD',
+            'SHELL_SHADOW', 'BIT_BARRAGE', 'BYTE_BANE', 'CHIP_CHAOS', 'WIRE_WRATH', 'FLOW_FURY', 'SIGNAL_SABOTAGE', 'WAVE_WRATH', 'PULSE_PLAGUE', 'NET_NIGHT',
+            'ENCRYPT_EYE', 'SHELL_STORM'
           ];
           selected = uncommonPool[Math.floor(Math.random() * uncommonPool.length)];
           text = `1 IN 20 (UNCOMMON_${selected}_LINK)`;
@@ -252,7 +268,9 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
             'COBALT_REIGN', 'EMERALD_MIST', 'SCARLET_STORM', 'VIOLET_VORTEX', 'AMBER_AWAKENING', 'MAGENTA_MATRIX',
             'SIGNAL_SOFT', 'WAVE_WARP', 'PULSE_PART', 'BIT_BEAT', 'BYTE_BURST', 'CHIP_CIRCUIT', 'WIRE_WAVE', 'FLOW_FIELD',
             'SHELL_SHOCK', 'BIT_BOUNCE', 'LINK_LOSS', 'NET_NODE',
-            'RAID_RECOVERY', 'SENTRY_STANCE', 'BINARY_BEAST'
+            'RAID_RECOVERY', 'SENTRY_STANCE', 'BINARY_BEAST',
+            'BIT_BLINK', 'BYTE_BLUR', 'CHIP_CHILL', 'WIRE_WHISPER', 'FLOW_FADE', 'SIGNAL_SILENCE', 'WAVE_WHISPER', 'PULSE_PAUSE', 'BIT_BREAK', 'BYTE_BREEZE', 'CHIP_CHIME', 'WIRE_WIND', 'FLOW_FLUTTER', 'SHELL_SHIVER', 'BIT_BUMP',
+            'PROTOCOL_PAIN', 'VOICE_VOID'
           ];
           selected = commonPool[Math.floor(Math.random() * commonPool.length)];
           text = `1 IN 2 (COMMON_${selected}_MAINTENANCE)`;
@@ -561,6 +579,61 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
              {type === 'PACKET_LOSS_PURGE' && <TacticalColorEffect color="#4b5563" label="PACKET_LOSS_PURGE" icon={<XCircle />} grid scan rotate junction quake surge />}
              {type === 'CORTEX_OVERRIDE' && <TacticalColorEffect color="#06b6d4" label="CORTEX_OVERRIDE" icon={<Cpu />} junction rotate scan quake surge grid pulse />}
 
+             {/* 35 New Requested Cutscenes */}
+             {type === 'VOID_VENGEANCE' && <TacticalColorEffect color="#1e1b4b" label="VENGEANCE" icon={<Skull />} pulse surge rotate grid quake />}
+             {type === 'CYBER_CHALICE' && <TacticalColorEffect color="#c026d3" label="CHALICE" icon={<Database />} pulse junction rotate scan />}
+             {type === 'NEURAL_NIGHTMARE' && <TacticalColorEffect color="#7f1d1d" label="NIGHTMARE" icon={<Ghost />} pulse grid quake scan rotate />}
+
+             {type === 'GHOST_IN_THE_GEAR' && <TacticalColorEffect color="#94a3b8" label="GEAR_GHOST" icon={<CircuitBoard />} scan grid pulse />}
+             {type === 'MATRIX_MOURNING' && <TacticalColorEffect color="#1e293b" label="MOURNING" icon={<Layers />} pulse grid scan />}
+             {type === 'SYSTEM_SACRIFICE' && <TacticalColorEffect color="#dc2626" label="SACRIFICE" icon={<Zap />} surge pulse rotate />}
+             {type === 'VIRTUAL_VIGIL' && <TacticalColorEffect color="#06b6d4" label="VIGIL" icon={<Eye />} scan pulse grid />}
+             {type === 'DATA_DRONE' && <TacticalColorEffect color="#166534" label="DRONE" icon={<Smartphone />} scan rotate junction />}
+             {type === 'CORE_CONDUIT' && <TacticalColorEffect color="#f97316" label="CONDUIT" icon={<Cpu />} junction rotate surge />}
+             {type === 'LINK_LAMENT' && <TacticalColorEffect color="#64748b" label="LAMENT" icon={<Unlink />} scan pulse rotate />}
+
+             {type === 'SHELL_SHADOW' && <TacticalColorEffect color="#0f172a" label="SHADOW" icon={<Box />} scan pulse />}
+             {type === 'BIT_BARRAGE' && <TacticalColorEffect color="#22c55e" label="BARRAGE" icon={<Zap />} surge grid />}
+             {type === 'BYTE_BANE' && <TacticalColorEffect color="#991b1b" label="BANE" icon={<Skull />} pulse scan />}
+             {type === 'CHIP_CHAOS' && <TacticalColorEffect color="#f59e0b" label="CHAOS" icon={<Activity />} rotate quake />}
+             {type === 'WIRE_WRATH' && <TacticalColorEffect color="#dc2626" label="WRATH" icon={<Zap />} surge pulse />}
+             {type === 'FLOW_FURY' && <TacticalColorEffect color="#c026d3" label="FURY" icon={<Wind />} surge rotate />}
+             {type === 'SIGNAL_SABOTAGE' && <TacticalColorEffect color="#ef4444" label="SABOTAGE" icon={<AlertTriangle />} scan rotate />}
+             {type === 'WAVE_WRATH' && <TacticalColorEffect color="#3b82f6" label="WRATH" icon={<CloudRain />} surge quake />}
+             {type === 'PULSE_PLAGUE' && <TacticalColorEffect color="#166534" label="PLAGUE" icon={<Activity />} pulse scan />}
+             {type === 'NET_NIGHT' && <TacticalColorEffect color="#020617" label="NIGHT" icon={<Globe />} pulse grid />}
+
+             {type === 'BIT_BLINK' && <TacticalColorEffect color="#10b981" label="BLINK" icon={<Zap />} pulse />}
+             {type === 'BYTE_BLUR' && <TacticalColorEffect color="#64748b" label="BLUR" icon={<Layers />} scan />}
+             {type === 'CHIP_CHILL' && <TacticalColorEffect color="#0ea5e9" label="CHILL" icon={<Cpu />} pulse />}
+             {type === 'WIRE_WHISPER' && <TacticalColorEffect color="#94a3b8" label="WHISPER" icon={<Repeat />} pulse />}
+             {type === 'FLOW_FADE' && <TacticalColorEffect color="#4b5563" label="FADE" icon={<Layers />} pulse />}
+             {type === 'SIGNAL_SILENCE' && <TacticalColorEffect color="#1e293b" label="SILENCE" icon={<Signal />} scan />}
+             {type === 'WAVE_WHISPER' && <TacticalColorEffect color="#3b82f6" label="WHISPER" icon={<Wind />} pulse />}
+             {type === 'PULSE_PAUSE' && <TacticalColorEffect color="#dc2626" label="PAUSE" icon={<Activity />} pulse />}
+             {type === 'BIT_BREAK' && <TacticalColorEffect color="#ef4444" label="BREAK" icon={<XCircle />} quake />}
+             {type === 'BYTE_BREEZE' && <TacticalColorEffect color="#10b981" label="BREEZE" icon={<Wind />} surge />}
+             {type === 'CHIP_CHIME' && <TacticalColorEffect color="#eab308" label="CHIME" icon={<Music />} pulse />}
+             {type === 'WIRE_WIND' && <TacticalColorEffect color="#94a3b8" label="WIND" icon={<Wind />} rotate />}
+             {type === 'FLOW_FLUTTER' && <TacticalColorEffect color="#c026d3" label="FLUTTER" icon={<Wind />} rotate />}
+             {type === 'SHELL_SHIVER' && <TacticalColorEffect color="#3b82f6" label="SHIVER" icon={<Box />} pulse />}
+             {type === 'BIT_BUMP' && <TacticalColorEffect color="#84cc16" label="BUMP" icon={<Dice5 />} pulse />}
+             {type === 'OLIVER_TRANSFORMATION' && <OliverTransformationEffect />}
+
+             {/* 12 New Requested Cutscenes */}
+             {type === 'KIPHER_KODEX' && <TacticalColorEffect color="#f59e0b" label="KODEX" icon={<FileCode />} scan rotate junction grid pulse />}
+             {type === 'CORTEX_COLD' && <TacticalColorEffect color="#3b82f6" label="COLD" icon={<Wind />} rotate scan pulse grid quake />}
+             {type === 'VINE_VIOLATION' && <TacticalColorEffect color="#dc2626" label="VIOLATION" icon={<ShieldAlert />} surge quake pulse rotate scan grid />}
+             {type === 'GATEWAY_GHOST' && <TacticalColorEffect color="#94a3b8" label="GHOST" icon={<Ghost />} pulse scan rotate junction grid pulse />}
+             {type === 'THREAT_TACTIC' && <TacticalColorEffect color="#ef4444" label="TACTIC" icon={<AlertTriangle />} quake scan rotate junction grid pulse />}
+             {type === 'SIGNAL_STRIKE' && <TacticalColorEffect color="#3b82f6" label="STRIKE" icon={<Zap />} rotate surge quake scan grid pulse />}
+             {type === 'NODE_NEGATION' && <TacticalColorEffect color="#1e1b4b" label="NEGATION" icon={<XCircle />} quake scan rotate junction grid pulse />}
+             {type === 'HASH_HELL' && <TacticalColorEffect color="#7f1d1d" label="HELL" icon={<Hash />} quake scan rotate junction grid pulse />}
+             {type === 'ENCRYPT_EYE' && <TacticalColorEffect color="#c026d3" label="EYE" icon={<Eye />} scan rotate junction grid pulse />}
+             {type === 'SHELL_STORM' && <TacticalColorEffect color="#475569" label="STORM" icon={<Box />} scan rotate junction grid pulse />}
+             {type === 'PROTOCOL_PAIN' && <TacticalColorEffect color="#991b1b" label="PAIN" icon={<AlertCircle />} quake scan rotate junction grid pulse />}
+             {type === 'VOICE_VOID' && <TacticalColorEffect color="#000000" label="VOID" icon={<Radio />} scan rotate junction grid pulse />}
+
              {/* 15 New Rare Elite Cutscenes */}
              {type === 'COSMIC_CHURN' && <GalaxyCollisionEffect />}
              {type === 'DIGITAL_DEATH' && <DeathByteEffect />}
@@ -696,6 +769,85 @@ function VisageEffect() {
             </div>
         </div>
     );
+}
+
+function OliverTransformationEffect() {
+  return (
+    <div className="relative w-full h-full bg-slate-950 flex items-center justify-center overflow-hidden font-mono">
+      <div className="flex flex-col items-center relative gap-8">
+        
+        {/* Stickman Oliver Stage */}
+        <motion.div
+          animate={{ 
+            opacity: [1, 1, 0],
+            scale: [1, 1, 0.5]
+          }}
+          transition={{ times: [0, 0.65, 0.7], duration: 4 }}
+          className="relative flex flex-col items-center"
+        >
+          <div className="absolute -top-16 bg-white text-black px-2 py-0.5 text-[10px] font-black uppercase tracking-tighter">OLIVER</div>
+          
+          <div className="w-10 h-10 border-2 border-white rounded-full bg-slate-900" />
+          <div className="w-0.5 h-16 bg-white" />
+          
+          {/* Arms */}
+          <div className="absolute top-14 w-16 h-0.5 bg-white -left-8 origin-right rotate-45" />
+          <div className="absolute top-14 w-16 h-0.5 bg-white -right-8 origin-left -rotate-45" />
+          
+          {/* Legs */}
+          <div className="absolute top-26 w-0.5 h-16 bg-white -rotate-[30deg] origin-top" />
+          <div className="absolute top-26 w-0.5 h-16 bg-white rotate-[30deg] origin-top" />
+        </motion.div>
+
+        {/* Falling Olive Part */}
+        <motion.div
+          initial={{ y: -1000 }}
+          animate={{ y: [ -1000, 0, 500 ] }}
+          transition={{ times: [0, 0.65, 1], duration: 4, ease: "linear" }}
+          className="absolute w-24 h-32 bg-[#4b5320] rounded-full border-4 border-[#2d3213] flex items-center justify-center z-20"
+        >
+           {/* Pimento center */}
+           <div className="w-8 h-8 bg-red-600 rounded-full shadow-inner" />
+           {/* Stem */}
+           <div className="absolute -top-6 w-2 h-10 bg-[#2d3213] rounded-full" />
+        </motion.div>
+
+        {/* Transformation Result */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: [0, 0, 1], scale: [0, 0, 1.2, 1] }}
+          transition={{ times: [0, 0.65, 0.7, 0.8], duration: 4.5 }}
+          className="absolute flex flex-col items-center"
+        >
+           <div className="w-32 h-40 bg-[#4b5320] rounded-full border-8 border-[#2d3213] flex items-center justify-center relative shadow-[0_0_80px_rgba(75,83,32,0.8)]">
+              <div className="w-12 h-12 bg-red-600 rounded-full border-2 border-red-800" />
+              <div className="absolute -top-10 w-2 h-12 bg-[#2d3213] rounded-full rotate-12" />
+              
+              <div className="absolute -bottom-16 w-full text-center">
+                <div className="bg-tactical-cyan text-black px-4 py-1 text-xs font-black uppercase tracking-widest inline-block border-2 border-white/50">
+                  OLIVER_ENTITY_COMPRESSED
+                </div>
+              </div>
+           </div>
+        </motion.div>
+
+      </div>
+      
+      {/* Visual Impact Flare */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 0.9, 0] }}
+        transition={{ times: [0.65, 0.67, 0.75], duration: 4 }}
+        className="absolute inset-0 bg-white pointer-events-none z-50"
+      />
+      
+      <div className="absolute bottom-10 left-10 text-tactical-cyan/40 text-[8px] uppercase tracking-widest leading-loose">
+        [SYSTEM_LOG] ATTEMPTING_ORGANIC_COMPRESSION...<br/>
+        [SYSTEM_LOG] IMPACT_DETECTED_AT_COORD_Y_0<br/>
+        [SYSTEM_LOG] TARGET_OLIVER: STATE_CHANGED_TO_DRUPE
+      </div>
+    </div>
+  );
 }
 
 function StickFightEffect() {
