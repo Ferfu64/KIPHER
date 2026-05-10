@@ -74,6 +74,7 @@ export default function CasinoHub({
   user, 
   onClose, 
   onPull, 
+  rollSpeedMultiplier,
   onUpdateCredits,
   onUnlockCasino
 }: { 

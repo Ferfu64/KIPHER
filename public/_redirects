@@ -1,0 +1,14 @@
+/*  Handle client-side routing for SPAs */
+/*  All requests to non-existent files are redirected to index.html */
+/*  */
+/*  /  /index.html  200 */
+/*  */
+/*  Above doesn't work for Cloudflare Pages _redirects which has different syntax */
+/*  For Cloudflare Pages: */
+/*  */
+/*  /* /index.html 200 */
+/*  */
+/*  Let's use the correct syntax */
+/*  */
+
+/* /index.html 200

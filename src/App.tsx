@@ -25,6 +25,7 @@ import CasinoHub from './components/CasinoHub';
 import { titleService } from './services/titleService';
 import { requestNotificationPermission, sendNetworkNotification } from './lib/notifications';
 import DailyReward from './components/DailyReward';
+import GhostInTheMachine from './components/GhostInTheMachine';
 
 type NavigationPage = 'GHOST' | 'OWNER' | 'GATEWAY' | 'MEETING' | 'COMM' | 'MISC' | 'SECRET_SPACE';
 
@@ -632,6 +633,8 @@ export default function App() {
       </AnimatePresence>
 
       <NotificationOverlay currentUser={user} onNavigate={(page) => navigateTo(page as NavigationPage)} />
+      
+      <GhostInTheMachine />
       
       {/* Persistent Event Banner */}
       <AnimatePresence>
