@@ -21,7 +21,8 @@ import {
   Clock,
   AlertTriangle,
   HelpCircle,
-  Target as TargetIcon 
+  Target as TargetIcon,
+  Terminal
 } from 'lucide-react';
 import { titleService } from '../services/titleService';
 import { audioService } from '../services/audioService';
@@ -31,6 +32,8 @@ import TankGame from './TankGame';
 import MemoryMatch from './MemoryMatch';
 import TimeGame from './TimeGame';
 import TriviaGame from './TriviaGame';
+import BiometricScan from './BiometricScan';
+import NeuralCipher from './NeuralCipher';
 
 interface SecretSpaceProps {
   currentUser: UserProfile;
@@ -47,7 +50,7 @@ export default function SecretSpace({ currentUser, onUpdate, onClose, onImmersiv
   const [titles, setTitles] = useState<string[]>([]);
   const [isPromoting, setIsPromoting] = useState(false);
   const [localUser, setLocalUser] = useState(currentUser);
-  const [selectedGame, setSelectedGame] = useState<'NONE' | 'TANK' | 'MEMORY' | 'CHRONOS' | 'TRIVIA'>('NONE');
+  const [selectedGame, setSelectedGame] = useState<'NONE' | 'TANK' | 'MEMORY' | 'CHRONOS' | 'TRIVIA' | 'BIO' | 'CIPHER'>('NONE');
 
   useEffect(() => {
     setLocalUser(currentUser);
@@ -509,6 +512,18 @@ export default function SecretSpace({ currentUser, onUpdate, onClose, onImmersiv
                            icon={HelpCircle}
                            onPlay={() => setSelectedGame('TRIVIA')}
                          />
+                         <GameCard 
+                           title="Biometric_Nexus"
+                           desc="Synchronize neural patterns through optical validation. Extract identity units."
+                           icon={User}
+                           onPlay={() => setSelectedGame('BIO')}
+                         />
+                         <GameCard 
+                           title="Neural_Cipher"
+                           desc="Decrypt complex frequency patterns to harvest encrypted credits."
+                           icon={Terminal}
+                           onPlay={() => setSelectedGame('CIPHER')}
+                         />
                       </div>
                    </div>
                  ) : selectedGame === 'TANK' ? (
@@ -526,6 +541,22 @@ export default function SecretSpace({ currentUser, onUpdate, onClose, onImmersiv
                        onBack={() => setSelectedGame('NONE')}
                        onCreditsEarned={(cr) => applyGameCredits(cr)}
                      />
+                  ) : selectedGame === 'BIO' ? (
+                    <BiometricScan 
+                      onComplete={() => {
+                        applyGameCredits(250);
+                        setSelectedGame('NONE');
+                      }}
+                      onFail={() => setSelectedGame('NONE')}
+                    />
+                  ) : selectedGame === 'CIPHER' ? (
+                    <NeuralCipher 
+                      onComplete={(score) => {
+                        applyGameCredits(score);
+                        setSelectedGame('NONE');
+                      }}
+                      onFail={() => setSelectedGame('NONE')}
+                    />
                   ) : (
                     <TriviaGame 
                       onBack={() => setSelectedGame('NONE')}

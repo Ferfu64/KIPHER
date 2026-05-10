@@ -25,6 +25,7 @@ export default function UnifiedChat({
   const [text, setText] = useState('');
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const [confirmImageUrl, setConfirmImageUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -113,6 +114,52 @@ export default function UnifiedChat({
     setReplyingTo(null);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('REQUISITION_DENIED: ONLY_IMAGE_DATA_ACCEPTED');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        onSendMessage(dataUrl, 'MEDIA', replyingTo?.id);
+        setReplyingTo(null);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+    audioService.playBlip();
+    e.target.value = '';
+  };
+
   return (
     <div className="flex-1 flex flex-col min-h-0 relative font-mono overflow-hidden">
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
@@ -172,6 +219,21 @@ export default function UnifiedChat({
           )}
         </AnimatePresence>
         <form onSubmit={handleSubmit} className="flex gap-2">
+          <input 
+             type="file" 
+             ref={fileInputRef} 
+             onChange={handleFileChange} 
+             accept="image/*" 
+             className="hidden" 
+          />
+          <button 
+             type="button" 
+             onClick={() => fileInputRef.current?.click()}
+             className="w-12 h-12 bg-slate-900 border border-slate-800 text-slate-500 flex items-center justify-center hover:text-tactical-cyan transition-colors shrink-0"
+             title="ATTACH_INTEL_PACKET"
+          >
+             <ImageIcon size={18} />
+          </button>
           <input 
             ref={inputRef}
             value={text}

@@ -9,6 +9,7 @@ import { signInAnonymously } from 'firebase/auth';
 import { audioService } from '../services/audioService';
 import ChatUserDisplay from './ChatUserDisplay';
 import UnifiedChat from './UnifiedChat';
+import SecurityFeed from './SecurityFeed';
 
 export default function MeetingHub({ currentUser }: { currentUser: UserProfile }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -69,7 +70,9 @@ export default function MeetingHub({ currentUser }: { currentUser: UserProfile }
   const [showNodePicker, setShowNodePicker] = useState(false);
   const [showVaultPicker, setShowVaultPicker] = useState(false);
   const [meetingFiles, setMeetingFiles] = useState<VaultFile[]>([]);
+  const [showUploadOptions, setShowUploadOptions] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const prevMessagesCount = useRef(0);
   const lastMessageTimes = useRef<number[]>([]);
 
@@ -119,10 +122,21 @@ export default function MeetingHub({ currentUser }: { currentUser: UserProfile }
       handleFirestoreError(error, OperationType.LIST, 'vaults');
     });
 
+    // 3. Meeting Files (Intel Packets)
+    const filesQ = query(collection(db, 'meeting_room_files'), orderBy('timestamp', 'desc'), limit(10));
+    const filesUnsub = onSnapshot(filesQ, (snap) => {
+      const list: VaultFile[] = [];
+      snap.forEach(d => list.push({ id: d.id, ...d.data() } as VaultFile));
+      setMeetingFiles(list);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'meeting_room_files');
+    });
+
     return () => {
       unsubscribe();
       nodesUnsub();
       vaultsUnsub();
+      filesUnsub();
     };
   }, []);
 
@@ -301,19 +315,66 @@ export default function MeetingHub({ currentUser }: { currentUser: UserProfile }
     setShowVaultPicker(false);
   };
 
-  const simulateFileUpload = () => {
-    const fileName = `INTEL_${Math.floor(Math.random()*1000)}.DAT`;
-    const newFile: VaultFile = {
-      id: Math.random().toString(36).substring(7),
-      name: fileName,
-      url: '#',
-      type: 'DATA',
-      size: 1024 * Math.random() * 100,
-      uploadedBy: currentUser.displayName,
-      timestamp: new Date().toISOString()
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('REQUISITION_DENIED: ONLY_IMAGE_BASED_INTEL_ACCEPTED');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64 = event.target?.result as string;
+      await processAndUploadIntel(base64, file.name, file.size);
     };
-    setMeetingFiles([newFile, ...meetingFiles]);
-    sendMessage(`UPLOADED_FILE: ${fileName}`, 'SYSTEM');
+    reader.readAsDataURL(file);
+    // Clear input
+    e.target.value = '';
+  };
+
+  const uploadByUrl = async () => {
+    const url = window.prompt('ENTER_INTEL_IMAGE_URL:');
+    if (!url) return;
+    
+    // We try to fetch the image to get a preview or just trust the URL
+    // Storing as URL for now since it's "By URL"
+    await processAndUploadIntel(url, 'URL_INTELLIGENCE', 0);
+    setShowUploadOptions(false);
+  };
+
+  const uploadByClipboard = () => {
+    setIsPastingImage(true);
+    setShowUploadOptions(false);
+  };
+
+  const uploadByDownload = () => {
+    fileInputRef.current?.click();
+    setShowUploadOptions(false);
+  };
+
+  const processAndUploadIntel = async (url: string, baseName: string, size: number) => {
+    const fileName = `INTEL_${baseName.toUpperCase().replace(/\s/g, '_')}`;
+    
+    try {
+      // Send to chat
+      await sendMessage(url, 'MEDIA');
+      
+      // Save to Shared Resources
+      await addDoc(collection(db, 'meeting_room_files'), {
+        name: fileName,
+        url: url,
+        type: 'INTEL_PACKET',
+        size: size,
+        uploadedBy: currentUser.displayName,
+        timestamp: serverTimestamp()
+      });
+      
+      audioService.playCelestialSymphony();
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'meeting_room_files');
+    }
   };
 
   return (
@@ -446,25 +507,63 @@ export default function MeetingHub({ currentUser }: { currentUser: UserProfile }
 
       {/* Right Column: Shared Assets & Files */}
       <div className="w-80 flex flex-col shrink-0 bg-black/20 overflow-hidden">
+         <div className="p-4 border-b border-slate-900 bg-slate-950/40">
+           <SecurityFeed />
+         </div>
          <div className="h-16 border-b border-slate-900 flex items-center px-6 shrink-0 bg-slate-950/40">
            <Paperclip size={14} className="text-slate-500 mr-3" />
            <h3 className="text-[10px] font-black text-slate-400 tracking-[.2em] uppercase">Shared_Resources</h3>
          </div>
          
          <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar min-h-0">
-           <button 
-             onClick={simulateFileUpload}
-             className="w-full py-3 border-2 border-dashed border-slate-800 text-slate-600 hover:text-tactical-cyan hover:border-tactical-cyan/50 hover:bg-tactical-cyan/5 transition-all text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 group"
-           >
-             <Plus size={14} /> Upload_Intel_Packet
-           </button>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept="image/*" 
+              onChange={handleFileUpload} 
+            />
+            <div className="relative">
+              <button 
+                onClick={() => setShowUploadOptions(!showUploadOptions)}
+                className="w-full py-3 border-2 border-dashed border-slate-800 text-slate-600 hover:text-tactical-cyan hover:border-tactical-cyan/50 hover:bg-tactical-cyan/5 transition-all text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 group"
+              >
+                <Plus size={14} /> Upload_Intel_Packet
+              </button>
+
+              <AnimatePresence>
+                {showUploadOptions && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute bottom-full left-0 right-0 mb-2 bg-slate-950 border border-slate-800 shadow-2xl z-50 overflow-hidden"
+                  >
+                    {[
+                      { label: 'By URL', icon: Share2, action: uploadByUrl },
+                      { label: 'By Image (Clipboard)', icon: Camera, action: uploadByClipboard },
+                      { label: 'By Download', icon: Download, action: uploadByDownload },
+                    ].map((opt, i) => (
+                      <button 
+                        key={i}
+                        onClick={opt.action}
+                        className="w-full p-4 flex items-center gap-4 hover:bg-tactical-cyan hover:text-black transition-colors text-slate-400 group/opt"
+                      >
+                        <opt.icon size={16} className="group-hover/opt:text-black" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">{opt.label}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
            <div className="space-y-2">
              {meetingFiles.map(file => (
                <div key={file.id} className="kipher-panel p-3 border-slate-900 bg-slate-950/40 hover:border-tactical-cyan group transition-all">
                   <div className="flex justify-between items-start mb-2">
                     <div className="text-[10px] font-black text-white uppercase truncate pr-4">{file.name}</div>
-                    <Download size={12} className="text-slate-700 group-hover:text-tactical-cyan cursor-pointer" />
+                    <ImageIcon size={12} className="text-slate-700 group-hover:text-tactical-cyan" />
                   </div>
                   <div className="flex justify-between text-[8px] font-bold text-slate-600 uppercase">
                     <span>{file.uploadedBy}</span>

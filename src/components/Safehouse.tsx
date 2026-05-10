@@ -406,7 +406,7 @@ export default function Safehouse({ currentUser }: { currentUser: UserProfile })
               >
                 ENTER_SAFEHOUSE
               </button>
-              {room.hostId === currentUser.uid && (
+              {(room.hostId === currentUser.uid || currentUser.isOwner) && (
                 <button onClick={() => deleteRoom(room.id)} className="kipher-button border-red-900/30 text-red-900/50 hover:text-red-500 hover:border-red-500">
                   <Trash2 size={14} />
                 </button>

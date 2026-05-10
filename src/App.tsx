@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { auth, db } from './lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, onSnapshot, collection, query, where, limit, orderBy, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection, query, where, limit, orderBy, setDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { UserProfile, SystemCommand } from './types';
-import { handleFirestoreError, OperationType } from './lib/utils';
+import { handleFirestoreError, OperationType, ensureDate } from './lib/utils';
 import KipherGateway from './components/KipherGateway';
 import GhostTerminal from './components/GhostTerminal';
 import OwnerIntelligence from './components/OwnerIntelligence';
@@ -14,7 +14,7 @@ import MiscSystems from './components/MiscSystems';
 import SecretSpace from './components/SecretSpace';
 import TacticalProtocolHandler from './components/TacticalProtocolHandler';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, Users, Home, Archive, ShieldAlert, LogOut, Radio, Activity, Zap, User, ShieldCheck, Lock, Info, Box, Settings, Volume2, VolumeX, MessageCircle, X } from 'lucide-react';
+import { Terminal, Users, Home, Archive, ShieldAlert, LogOut, Radio, Activity, Zap, User, ShieldCheck, Lock, Info, Box, Settings, Volume2, VolumeX, MessageCircle, X, Gift, Camera } from 'lucide-react';
 import { audioService } from './services/audioService';
 
 import DirectMessageContainer from './components/DirectMessageContainer';
@@ -23,6 +23,8 @@ import NotificationOverlay from './components/NotificationOverlay';
 import CortexCutscene from './components/CortexCutscene';
 import CasinoHub from './components/CasinoHub';
 import { titleService } from './services/titleService';
+import { requestNotificationPermission, sendNetworkNotification } from './lib/notifications';
+import DailyReward from './components/DailyReward';
 
 type NavigationPage = 'GHOST' | 'OWNER' | 'GATEWAY' | 'MEETING' | 'COMM' | 'MISC' | 'SECRET_SPACE';
 
@@ -47,6 +49,81 @@ export default function App() {
   const [isImmersive, setIsImmersive] = useState(false);
   const [clickCount, setClickCount] = useState(0);
   const [luckMultiplier, setLuckMultiplier] = useState(1);
+  const [creditMultiplier, setCreditMultiplier] = useState(1);
+  const [rollSpeedMultiplier, setRollSpeedMultiplier] = useState(1);
+  const [isRainbowMode, setIsRainbowMode] = useState(false);
+  const [showDailyReward, setShowDailyReward] = useState(false);
+  const [activeEvents, setActiveEvents] = useState<{type: string, multiplier: number}[]>([]);
+  const lastRewardPromptRef = useRef<number>(0);
+
+  useEffect(() => {
+    const q = query(collection(db, 'system_events'), where('active', '==', true));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      let isRainbow = false;
+      let multiplierLuck = 1;
+      let multiplierCredits = 1;
+      let multiplierSpeed = 1;
+      const events: {type: string, multiplier: number}[] = [];
+      
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.type === 'RAINBOW_MODE') {
+          isRainbow = true;
+          events.push({ type: 'RAINBOW_MODE', multiplier: 1 });
+        }
+        if (data.type === 'LUCK_BOOST') {
+          multiplierLuck = data.multiplier || 2;
+          events.push({ type: 'LUCK_BOOST', multiplier: multiplierLuck });
+        }
+        if (data.type === 'CREDIT_BOOST') {
+          multiplierCredits = data.multiplier || 2;
+          events.push({ type: 'CREDIT_BOOST', multiplier: multiplierCredits });
+        }
+        if (data.type === 'ROLL_SPEED_BOOST') {
+          multiplierSpeed = data.multiplier || 2;
+          events.push({ type: 'ROLL_SPEED_BOOST', multiplier: multiplierSpeed });
+        }
+        if (data.type === 'SYSTEM_MSG' && data.message) {
+          sendNetworkNotification('SYSTEM_BROADCAST', data.message);
+        }
+      });
+      
+      setIsRainbowMode(isRainbow);
+      setLuckMultiplier(multiplierLuck);
+      setCreditMultiplier(multiplierCredits);
+      setRollSpeedMultiplier(multiplierSpeed);
+      setActiveEvents(events);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    const checkReward = () => {
+      if (showDailyReward) return;
+      
+      // Prevent re-showing within 5 minutes of dismissing if the state hasn't synced
+      if (Date.now() - lastRewardPromptRef.current < 300000) return;
+
+      if (!user.lastRewardTime) {
+        setShowDailyReward(true);
+        return;
+      }
+      
+      const lastReward = ensureDate(user.lastRewardTime).getTime();
+      const now = Date.now();
+      const twentyFourHours = 24 * 60 * 60 * 1000;
+      
+      if (now - lastReward >= twentyFourHours) {
+        setShowDailyReward(true);
+      }
+    };
+    
+    checkReward();
+    const interval = setInterval(checkReward, 60000);
+    return () => clearInterval(interval);
+  }, [user, showDailyReward]);
 
   useEffect(() => {
     // Stop ambient drone on unmount
@@ -188,7 +265,8 @@ export default function App() {
     const nextPity911 = reset911 ? 0 : pity911;
     const nextPity500 = reset500 ? 0 : (reset911 ? 0 : pity500); // 911 roll also resets 500 pity for balance
 
-    const newCredits = Math.max(0, (user.credits || 0) + creditsEarned);
+    const finalCreditsEarned = creditsEarned > 0 ? Math.floor(creditsEarned * creditMultiplier) : creditsEarned;
+    const newCredits = Math.max(0, (user.credits || 0) + finalCreditsEarned);
     const updatedUser = { 
       ...user, 
       credits: newCredits,
@@ -202,10 +280,10 @@ export default function App() {
     setPity500(nextPity500);
     localStorage.setItem('kipher_session', JSON.stringify(updatedUser));
 
-    if (creditsEarned > 0) {
+    if (finalCreditsEarned > 0) {
       audioService.playSuccess();
-      window.dispatchEvent(new CustomEvent('kipher:creditsAwarded', { detail: creditsEarned }));
-    } else if (creditsEarned < 0) {
+      window.dispatchEvent(new CustomEvent('kipher:creditsAwarded', { detail: finalCreditsEarned }));
+    } else if (finalCreditsEarned < 0) {
       audioService.playError();
     }
 
@@ -241,6 +319,7 @@ export default function App() {
       if (!auth.currentUser) {
         try {
           await signInAnonymously(auth);
+          requestNotificationPermission();
         } catch (authErr: any) {
           console.warn('Initial anonymous auth failed', authErr);
         }
@@ -255,6 +334,17 @@ export default function App() {
           setPity911(profile.pityCount911 || 0);
           setPity500(profile.pityCount500 || 0);
 
+          // Check reward interval
+          if (profile.lastRewardTime) {
+            const lastReward = new Date(profile.lastRewardTime).getTime();
+            const now = Date.now();
+            if (now - lastReward > 10 * 60 * 60 * 1000) {
+              setShowDailyReward(true);
+            }
+          } else {
+            setShowDailyReward(true);
+          }
+
           // If we have an auth user, re-sync from Firestore to get latest credits/inventory
           if (auth.currentUser) {
             const docRef = doc(db, 'users', profile.uid);
@@ -267,6 +357,13 @@ export default function App() {
               setPity911(latestData.pityCount911 || 0);
               setPity500(latestData.pityCount500 || 0);
               localStorage.setItem('kipher_session', JSON.stringify(merged));
+              
+              if (latestData.lastRewardTime) {
+                const lr = latestData.lastRewardTime.toDate ? latestData.lastRewardTime.toDate().getTime() : new Date(latestData.lastRewardTime).getTime();
+                if (Date.now() - lr > 10 * 60 * 60 * 1000) {
+                  setShowDailyReward(true);
+                }
+              }
             }
           }
 
@@ -308,21 +405,64 @@ export default function App() {
     };
 
     initAuth();
+    requestNotificationPermission();
 
     // Listen for auth state changes to trigger listeners
     let alertUnsub: (() => void) | null = null;
     let mediaUnsub: (() => void) | null = null;
+    let eventUnsub: (() => void) | null = null;
 
     const authUnsub = onAuthStateChanged(auth, (firebaseUser) => {
       setIsAuthReady(true);
       
-      // Removed redundant tactical listeners - moved to TacticalProtocolHandler
+      if (firebaseUser) {
+        // Listen for global system events
+        const eventQuery = query(collection(db, 'system_events'), where('active', '==', true));
+        eventUnsub = onSnapshot(eventQuery, (snap) => {
+          let rainbow = false;
+          let luck = 1;
+          let credits = 1;
+          let speedMul = 1;
+          const events: {type: string, multiplier: number}[] = [];
+          
+          snap.forEach(d => {
+            const ev = d.data();
+            if (ev.type === 'RAINBOW_MODE') {
+              rainbow = true;
+              events.push({ type: 'RAINBOW_MODE', multiplier: 1 });
+            }
+            if (ev.type === 'LUCK_BOOST') {
+              luck = ev.multiplier || 2;
+              events.push({ type: 'LUCK_BOOST', multiplier: luck });
+            }
+            if (ev.type === 'CREDIT_BOOST') {
+              credits = ev.multiplier || 2;
+              events.push({ type: 'CREDIT_BOOST', multiplier: credits });
+            }
+            if (ev.type === 'ROLL_SPEED_BOOST') {
+              speedMul = ev.multiplier || 2;
+              events.push({ type: 'ROLL_SPEED_BOOST', multiplier: speedMul });
+            }
+            if (ev.type === 'SYSTEM_MSG' && !localStorage.getItem(`read_event_${d.id}`)) {
+               sendNetworkNotification('BROADCAST', ev.message);
+               localStorage.setItem(`read_event_${d.id}`, 'true');
+            }
+          });
+          
+          setIsRainbowMode(rainbow);
+          setLuckMultiplier(luck);
+          setCreditMultiplier(credits);
+          setRollSpeedMultiplier(speedMul);
+          setActiveEvents(events);
+        });
+      }
     });
 
     return () => {
       authUnsub();
       if (alertUnsub) alertUnsub();
       if (mediaUnsub) mediaUnsub();
+      if (eventUnsub) eventUnsub();
     };
   }, []);
 
@@ -371,11 +511,19 @@ export default function App() {
 
   return (
     <div 
-      className="h-screen bg-absolute-black text-slate-300 font-mono text-sm flex border-4 border-slate-900 overflow-hidden select-none relative"
+      className={`h-screen bg-absolute-black text-slate-300 font-mono text-sm flex border-4 border-slate-900 overflow-hidden select-none relative ${isRainbowMode ? 'rainbow-bg' : ''}`}
       style={mouseStyle}
     >
       {user.customization && (
         <CustomMouse customization={user.customization} />
+      )}
+
+      {showDailyReward && user && (
+        <DailyReward 
+          user={user} 
+          onClaim={() => { setShowDailyReward(false); audioService.playSuccess(); }} 
+          onClose={() => setShowDailyReward(false)} 
+        />
       )}
       
       <AnimatePresence>
@@ -386,31 +534,37 @@ export default function App() {
             onPull={async (luck) => {
                if (isCutsceneActive) return;
                audioService.resume();
-               const cost = 100;
-               if ((user.credits || 0) < cost) {
+               
+               // ROLLING IS NOW FREE
+               const cost = 0;
+               if (user.credits < cost) {
                  audioService.playError();
-                 return alert('INSUFFICIENT_CREDITS: 100 CR_REQUIRED_FOR_NEURAL_ROLL');
+                 return;
                }
 
-               const newCredits = (user.credits || 0) - cost;
+               // Immediately trigger cutscene for better UX
+               setIsCutsceneActive(true);
+               setRollId(prev => prev + 1);
+
+               const newCredits = Math.max(0, (user.credits || 0) - cost);
                const updated = { ...user, credits: newCredits };
                setUser(updated);
-               localStorage.setItem('kipher_session', JSON.stringify(updated));
                
                try {
-                 await setDoc(doc(db, 'users', user.uid), { credits: newCredits }, { merge: true });
+                 await updateDoc(doc(db, 'users', user.uid), { 
+                   credits: newCredits 
+                 });
                } catch (err) {
                  console.error('Failed to sync credits on pull', err);
                }
 
                const playerLuckBonus = (user.customization?.luckBonus || 0) + (user.purchasedItems?.includes('luck_chip') ? 0.15 : 0);
                setLuckMultiplier(luck * (1 + playerLuckBonus));
-               setRollId(prev => prev + 1);
                setTotalRolls(prev => prev + 1);
                setPity911(prev => prev + 1);
                setPity500(prev => prev + 1);
-               setIsCutsceneActive(true);
             }}
+            rollSpeedMultiplier={rollSpeedMultiplier}
             onUpdateCredits={async (cr) => {
                const newCredits = (user.credits || 0) + cr;
                const updated = { ...user, credits: newCredits };
@@ -436,7 +590,78 @@ export default function App() {
       </AnimatePresence>
 
       <TacticalProtocolHandler currentUser={user} />
+      <AnimatePresence>
+        {isRainbowMode && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 pointer-events-none z-[10000] mix-blend-overlay opacity-20"
+            style={{
+              background: 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)',
+              backgroundSize: '400% 400%',
+              animation: 'rainbow 5s ease infinite'
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes rainbow {
+          0% { background-position: 0% 50% }
+          50% { background-position: 100% 50% }
+          100% { background-position: 0% 50% }
+        }
+      `}} />
+
+      <AnimatePresence>
+        {showDailyReward && user && (
+          <DailyReward 
+            user={user} 
+            onClaim={() => {
+              setShowDailyReward(false);
+              lastRewardPromptRef.current = Date.now();
+              sendNetworkNotification('REWARD_CLAIMED', 'Intelligence packet successfully integrated.');
+            }} 
+            onClose={() => {
+              setShowDailyReward(false);
+              lastRewardPromptRef.current = Date.now();
+            }} 
+          />
+        )}
+      </AnimatePresence>
+
       <NotificationOverlay currentUser={user} onNavigate={(page) => navigateTo(page as NavigationPage)} />
+      
+      {/* Persistent Event Banner */}
+      <AnimatePresence>
+        {activeEvents.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-2 left-1/2 -translate-x-1/2 z-[100] flex gap-2"
+          >
+            {activeEvents.map((ev, idx) => (
+              <div 
+                key={idx}
+                className="px-3 py-1 bg-black/80 border border-tactical-cyan/40 text-tactical-cyan text-[9px] font-black uppercase tracking-widest flex items-center gap-2 backdrop-blur-md shadow-[0_0_15px_rgba(34,211,238,0.2)]"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-tactical-cyan animate-pulse" />
+                <span>
+                  {ev.type === 'LUCK_BOOST' ? `LUCK_X${ev.multiplier}_ACTIVATED` : 
+                   ev.type === 'CREDIT_BOOST' ? `CREDITS_X${ev.multiplier}_ACTIVATED` :
+                   ev.type === 'ROLL_SPEED_BOOST' ? `SPEED_X${ev.multiplier}_ACTIVATED` :
+                   'SYSTEM_EVENT_ACTIVE'}
+                </span>
+                {ev.multiplier > 1 && (
+                  <Zap size={10} className="text-yellow-500 animate-bounce" />
+                )}
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       <AnimatePresence>
         {isCutsceneActive && (

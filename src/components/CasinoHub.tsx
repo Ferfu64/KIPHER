@@ -80,6 +80,7 @@ export default function CasinoHub({
   user: any, 
   onClose: () => void, 
   onPull: (luck: number) => void,
+  rollSpeedMultiplier: number,
   onUpdateCredits: (cr: number) => void,
   onUnlockCasino: (id: string, cost: number) => void
 }) {
@@ -100,6 +101,7 @@ export default function CasinoHub({
           luck={selectedLoc?.luckMult || 1}
           credits={user.credits || 0}
           locationName={selectedLoc?.name || 'UNKNOWN_NODE'}
+          rollSpeedMultiplier={rollSpeedMultiplier}
           onClose={() => setActiveGame('NONE')}
           onExecute={() => {
              onPull(selectedLoc?.luckMult || 1);
@@ -237,7 +239,7 @@ export default function CasinoHub({
                       
                       <div className="md:col-span-2 grid grid-cols-2 gap-4">
                          <GameOption 
-                           icon={Zap} title="SYNC_ROLL" desc="Standard credit pull" 
+                           icon={Zap} title="NEURAL_ROLL" desc="Standard credit pull" 
                            onClick={() => setActiveGame('PULL')} 
                          />
                          {(selectedLoc.id === 'neon_noir' || selectedLoc.id === 'emerald_vault' || selectedLoc.id === 'gold_standard') && (

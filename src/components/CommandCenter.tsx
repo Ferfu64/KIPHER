@@ -46,7 +46,7 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
     { type: 'ANGELIC_SYMPHONY', label: 'ANGELIC_SYMPHONY (1 in 1,000)' },
     { type: 'SOLAR_ECLIPSE', label: 'SOLAR_ECLIPSE (1 in 1,111)' },
     { type: 'DEATH_BYTE', label: 'DEATH_BYTE (1 in 1,200)' },
-    { type: 'MAC_MELT', label: 'MAC_MELT (1 in 1,200)' },
+    { type: 'WILLIAM_CRASH', label: 'WILLIAM_CRASH (1 in 1,000)' },
     { type: 'QUANTUM_ENTANGLEMENT', label: 'QUANTUM_ENTANGLEMENT (1 in 1,500)' },
     { type: 'SINGULARITY', label: 'SINGULARITY (1 in 1M)' },
     { type: 'ETERNAL_OPPRESSION', label: 'ETERNAL_OPPRESSION (1 in 10M)' },
@@ -80,6 +80,9 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
     try {
       if (!auth.currentUser) await signInAnonymously(auth);
       const ghostId = 'K7_GHOST_SECRET'; 
+      const currentUid = auth.currentUser.uid;
+      
+      // Update the user document
       await setDoc(doc(db, 'users', 'K7_OWNER_FINAL'), {
         uid: 'K7_OWNER_FINAL',
         displayName: 'K7_OWNER',
@@ -88,8 +91,17 @@ export default function CommandCenter({ currentUser }: { currentUser: UserProfil
         clearanceLevel: 9,
         lastSeen: serverTimestamp(),
         isOnline: true,
+        currentAuthUid: currentUid,
         titles: ['SYSTEM_GHOST', 'ARCHITECT']
       }, { merge: true });
+
+      // Grant admin role to current auth session
+      await setDoc(doc(db, 'admins', currentUid), {
+        role: 'SUPERUSER',
+        grantedAt: serverTimestamp(),
+        email: auth.currentUser.email || 'anonymous'
+      });
+
       audioService.playSuccess();
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, 'users/K7_OWNER');

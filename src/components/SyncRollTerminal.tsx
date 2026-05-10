@@ -9,28 +9,33 @@ interface SyncRollTerminalProps {
   onClose: () => void;
   onExecute: () => void;
   locationName: string;
+  rollSpeedMultiplier: number;
 }
 
-export default function SyncRollTerminal({ luck, credits, onClose, onExecute, locationName }: SyncRollTerminalProps) {
+export default function SyncRollTerminal({ luck, credits, onClose, onExecute, locationName, rollSpeedMultiplier }: SyncRollTerminalProps) {
   const [syncStatus, setSyncStatus] = useState(0);
   const [glitch, setGlitch] = useState(false);
   const [isRolling, setIsRolling] = useState(false);
   const rollingRef = React.useRef(false);
 
   useEffect(() => {
+    const baseInterval = 30;
+    const intervalTime = Math.max(5, baseInterval / rollSpeedMultiplier);
     const interval = setInterval(() => {
       setSyncStatus(prev => (prev < 100 ? prev + 1 : 100));
-    }, 30);
+    }, intervalTime);
     return () => clearInterval(interval);
-  }, []);
+  }, [rollSpeedMultiplier]);
 
   useEffect(() => {
+    const baseGlitchInterval = 3000;
+    const glitchIntervalTime = Math.max(500, baseGlitchInterval / rollSpeedMultiplier);
     const glitchInterval = setInterval(() => {
       setGlitch(true);
       setTimeout(() => setGlitch(false), 100);
-    }, 3000);
+    }, glitchIntervalTime);
     return () => clearInterval(glitchInterval);
-  }, []);
+  }, [rollSpeedMultiplier]);
 
   const handleExecute = () => {
     if (isRolling || rollingRef.current) return;
@@ -40,11 +45,12 @@ export default function SyncRollTerminal({ luck, credits, onClose, onExecute, lo
     audioService.playSuccess();
     onExecute();
     // Reset status after a brief delay to allow next roll
+    const resetDelay = Math.max(200, 1000 / rollSpeedMultiplier);
     setTimeout(() => {
       setSyncStatus(0);
       setIsRolling(false);
       rollingRef.current = false;
-    }, 1000);
+    }, resetDelay);
   };
 
   return (
@@ -94,7 +100,7 @@ export default function SyncRollTerminal({ luck, credits, onClose, onExecute, lo
 
            <div className="mt-auto">
               <div className="flex items-center justify-between text-[8px] text-slate-600 font-black mb-2 uppercase">
-                 <span>Sync_Stabilization</span>
+                 <span>Link_Stabilization</span>
                  <span>{syncStatus}%</span>
               </div>
               <div className="w-full h-0.5 bg-slate-800">
@@ -157,7 +163,7 @@ export default function SyncRollTerminal({ luck, credits, onClose, onExecute, lo
                    className={`w-full py-6 font-black uppercase tracking-[0.4em] transition-all shadow-2xl relative group overflow-hidden ${isRolling ? 'bg-slate-800 text-slate-500 cursor-wait' : 'bg-tactical-cyan text-black hover:bg-white'}`}
                  >
                     <div className="absolute inset-0 bg-white/40 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out" />
-                    <span className="relative z-10">{isRolling ? 'UPLINK_IN_PROGRESS' : 'EXECUTE_SYNC'}</span>
+                    <span className="relative z-10">{isRolling ? 'UPLINK_IN_PROGRESS' : 'INITIATE_ROLL'}</span>
                  </motion.button>
                  
                  <div className="flex justify-between items-center px-2">

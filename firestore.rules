@@ -20,12 +20,11 @@ service cloud.firestore {
     // --- ENTITY VALIDATIONS ---
 
     function isValidUser(data) {
-      return data.displayName is string && data.displayName.size() <= 60 &&
-             data.role in ['AGENT', 'SUPERUSER', 'OWNER', 'ASSET'] &&
-             data.isOwner is bool &&
-             data.clearanceLevel is int &&
-             data.isBanned is bool &&
-             data.keys().hasAll(['uid', 'displayName', 'role', 'isOwner', 'clearanceLevel', 'isBanned']);
+      return (data.displayName == null || (data.displayName is string && data.displayName.size() <= 60)) &&
+             (data.role == null || data.role in ['AGENT', 'SUPERUSER', 'OWNER', 'ASSET']) &&
+             (data.isOwner == null || data.isOwner is bool) &&
+             (data.clearanceLevel == null || data.clearanceLevel is int) &&
+             (data.isBanned == null || data.isBanned is bool);
     }
 
     function isValidSafehouse(data) {
@@ -73,12 +72,26 @@ service cloud.firestore {
              data.turn in ['w', 'b'];
     }
 
+    function isValidIntelPacket(data) {
+      return data.name is string && data.name.size() <= 200 &&
+             data.url is string && 
+             data.type == 'INTEL_PACKET' &&
+             data.size is int &&
+             data.uploadedBy is string &&
+             data.timestamp == request.time;
+    }
+
     // --- MATCH BLOCKS ---
 
     match /system_commands/{id} {
       allow read: if isSignedIn();
       allow create: if isAdmin();
       allow update: if isAdmin();
+    }
+
+    match /system_events/{eventId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     match /users/{userId} {
@@ -91,7 +104,7 @@ service cloud.firestore {
         // Allow user to update their own data if they own the record
         ((existing().uid == userId || existing().currentAuthUid == request.auth.uid) && 
          isValidUser(incoming()) && 
-         incoming().diff(existing()).affectedKeys().hasOnly(['credits', 'titles', 'activeTitle', 'customization', 'promotionCount', 'lastSeen', 'totalRolls', 'pityCount911', 'pityCount500', 'unlockedCasinos', 'level', 'tankHighscore', 'isOnline', 'status', 'currentAuthUid']))
+         incoming().diff(existing()).affectedKeys().hasOnly(['credits', 'titles', 'activeTitle', 'customization', 'promotionCount', 'lastSeen', 'lastRewardTime', 'totalRolls', 'pityCount911', 'pityCount500', 'unlockedCasinos', 'level', 'tankHighscore', 'isOnline', 'status', 'currentAuthUid', 'bioCode', 'lastSeenTerminal']))
       ));
       allow delete: if isAdmin();
     }
@@ -195,6 +208,12 @@ service cloud.firestore {
         isValidChessGame(incoming())
       );
       allow delete: if isAdmin();
+    }
+
+    match /meeting_room_files/{fileId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidIntelPacket(incoming());
+      allow update, delete: if isAdmin();
     }
   }
 }

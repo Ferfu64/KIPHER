@@ -42,6 +42,21 @@ export default function SlotsGame({
         clearInterval(intervalId);
         if (index === 2) {
           setSpinning(false);
+          
+          // FORCED WIN LOGIC (BASED ON BET)
+          // Higher bet = slightly better chance to force a match if natural fail
+          setReels(currentReels => {
+            const isNaturalWin = currentReels[0] === currentReels[1] && currentReels[1] === currentReels[2];
+            if (!isNaturalWin) {
+               // Chance to force win: 100 bet: 1%, 500 bet: 5%, 1000 bet: 10%
+               const forceChance = bet >= 1000 ? 0.10 : (bet >= 500 ? 0.05 : 0.01);
+               if (Math.random() < forceChance) {
+                  const symbol = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+                  return [symbol, symbol, symbol];
+               }
+            }
+            return currentReels;
+          });
         }
       }, duration);
     });
@@ -49,14 +64,19 @@ export default function SlotsGame({
 
   useEffect(() => {
     if (!spinning && reels[0] !== undefined) {
-      // Check for win conditions here after spinning stops
       const isWin = reels[0] === reels[1] && reels[1] === reels[2];
       const isTwo = reels[0] === reels[1] || reels[1] === reels[2] || reels[0] === reels[2];
 
       if (isWin) {
-        const payout = bet * 10;
+        let payout = bet * 10;
+        // Bonus 1k for high-value symbols
+        const isBonusSymbol = reels[0] === '💎' || reels[0] === '🧿';
+        if (isBonusSymbol) {
+          payout += 1000;
+        }
+        
         onUpdateCredits(payout);
-        setResultMessage(`JACKPOT! +${payout} CR`);
+        setResultMessage(`JACKPOT! ${isBonusSymbol ? '+1K_BONUS ' : ''}+${payout} CR`);
         audioService.playSuccess();
       } else if (isTwo && (reels[0] !== reels[1] || reels[1] !== reels[2])) {
         // Technically double matched is already handled as isWin if all 3 match

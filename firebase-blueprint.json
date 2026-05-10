@@ -16,9 +16,26 @@
         "titles": { "type": "array", "items": { "type": "string" } },
         "activeTitle": { "type": "string" },
         "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE", "REDACTED"] },
-        "lastSeen": { "type": "string", "format": "date-time" }
+        "lastSeen": { "type": "string", "format": "date-time" },
+        "lastRewardTime": { "type": "string", "format": "date-time" },
+        "credits": { "type": "integer", "default": 0 }
       },
       "required": ["uid", "displayName", "password", "role", "isOwner", "clearanceLevel", "isBanned"]
+    },
+    "SystemEvent": {
+      "title": "Network Event",
+      "description": "Global event triggered by network owner",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["LUCK_BOOST", "CREDIT_BOOST", "RAINBOW_MODE", "SYSTEM_MSG"] },
+        "multiplier": { "type": "number" },
+        "duration": { "type": "integer", "description": "Minutes" },
+        "active": { "type": "boolean" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "active", "createdAt"]
     },
     "Safehouse": {
       "title": "Safehouse Room",
@@ -116,6 +133,20 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "fen", "white", "status", "turn"]
+    },
+    "IntelPacket": {
+      "title": "Intelligence Packet",
+      "description": "An encrypted visual intelligence unit uploaded to the meeting roomhub",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "url": { "type": "string", "description": "Base64 encoded image data" },
+        "type": { "type": "string", "enum": ["INTEL_PACKET"] },
+        "size": { "type": "integer" },
+        "uploadedBy": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "url", "type", "size", "uploadedBy", "timestamp"]
     }
   },
   "firestore": {
@@ -154,6 +185,14 @@
     "/system/commands/active/{commandId}": {
       "schema": "SystemCommand",
       "description": "Real-time system commands from KIPHER"
+    },
+    "/system_events/{eventId}": {
+      "schema": "SystemEvent",
+      "description": "Global events hosted by the owner"
+    },
+    "/meeting_room_files/{fileId}": {
+      "schema": "IntelPacket",
+      "description": "Shared visual intel packets in the meeting hub"
     }
   }
 }

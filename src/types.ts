@@ -11,6 +11,7 @@ export interface UserProfile {
   titles?: string[];
   activeTitle?: string;
   lastSeen: any;
+  lastRewardTime?: any;
   currentAuthUid?: string;
   credits?: number;
   promotionCount?: number;

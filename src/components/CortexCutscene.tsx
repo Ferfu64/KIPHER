@@ -62,7 +62,7 @@ type CutsceneType =
   | 'RACE_CONDITION' | 'HEISENBUG' | 'MANDELBUG' | 'SCHRODINBUG' | 'BOHR_BUG' 
   | 'LITTLE_ENDIAN' | 'BIG_ENDIAN' | 'ASCII_ART' | 'UNICODE_UPRISING' | 'UTF8_STORM' 
   | 'COSMIC_CHURN' | 'DIGITAL_DEATH' | 'ELECTRON_END' | 'FIREWALL_FALL' | 'GHOST_GEAR' | 'HEX_HEX' | 'ION_IMPULSE'
-  | 'JETTISON_JET' | 'KINETIC_KILL' | 'LOGIC_LOCK' | 'MAC_MELT' | 'NANO_NOISE' | 'OPTIC_OVERLOAD' | 'PROTON_PULSE' | 'QUARK_QUENCH'
+  | 'JETTISON_JET' | 'KINETIC_KILL' | 'LOGIC_LOCK' | 'WILLIAM_CRASH' | 'NANO_NOISE' | 'OPTIC_OVERLOAD' | 'PROTON_PULSE' | 'QUARK_QUENCH'
   | 'PLASMA_PULSE' | 'NEBULOUS_NIGHT' | 'VOID_VAGRANT' | 'STELLAR_STORM' | 'GALAXY_GHOST' | 'ORBITAL_ODYSSEY' | 'CELESTIAL_CRASH' | 'ASTRAL_ARRAY' | 'QUANTUM_QUAKE' | 'DIMENSIONAL_DIVE' | 'TIME_TANGLE' | 'SPACE_SPIKE' | 'LUNAR_LEAK' | 'SOLAR_SURGE' | 'GRAVITY_GRIP' | 'METEOR_MELT' | 'COMET_CLASH' | 'TITAN_TICK' | 'EUROPA_END' | 'MARS_MIST' | 'VENUS_VOID' | 'SATURN_SHOCK' | 'JUPITER_JOLT' | 'NEPTUNE_NODE' | 'URANUS_UPRISING' | 'PLUTO_PULSE' | 'MERCURY_MELT' | 'SUN_STORM' | 'STAR_SURGE' | 'RAID_RECOVERY' | 'SENTRY_STANCE' | 'OMEGA_POINT' | 'CYBER_CRUX' | 'DATA_DIVINE' | 'GHOST_GRID' | 'NEURAL_NODE' | 'BINARY_BEAST' | 'SILICON_SOUL' | 'VECTOR_VALOR' | 'CORE_COMMAND' | 'SHELL_SHIELD'
   | 'BAUD_RATE_BURST' | 'LATENCY_LAG' | 'PING_OF_DEATH' | 'PACKET_LOSS_PURGE' | 'CORTEX_OVERRIDE';
 
@@ -126,6 +126,7 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
         else if (selected === 'QUANTUM_ENTANGLEMENT') displayOdds = "1 in 1,500";
         else if (selected === 'SOLAR_ECLIPSE') displayOdds = "1 in 1,111";
         else if (selected === 'SINGULARITY') displayOdds = "1 in 1M";
+        else if (selected === 'WILLIAM_CRASH') displayOdds = "1 in 1,000";
         else if (selected === 'STRUCTURAL_COLLAPSE') displayOdds = "1 in 2111";
 
         text = `PITY_REACHED (${displayOdds}_${selected}_SYNCHRONIZED)`;
@@ -133,7 +134,7 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
         const epicPool: CutsceneType[] = [
           'OMEGA', 'ALPHA', 'EPSILON', 'VOID_STAR', 'NEBULA_NOVA', 'SUPERNOVA_SOUL', 
           'QUASAR_QUAKE', 'BEYOND_BOUNDARY', 'INFINITY_INIT', 'ETERNITY_EDGE', 'COSMOS_CORE',
-          'OMEGA_POINT', 'CYBER_CRUX', 'DATA_DIVINE'
+          'OMEGA_POINT', 'CYBER_CRUX', 'DATA_DIVINE', 'UNICODE_UPRISING'
         ];
         selected = epicPool[Math.floor(Math.random() * epicPool.length)];
         text = `PITY_REACHED (EPIC_${selected}_STABILIZED)`;
@@ -191,7 +192,10 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
         } else if (rand < (0.0011 * effectiveLuck)) {
           selected = 'PHANTOM_RECKONING';
           text = '1 IN 1,000 (PHANTOM_RECKONING)';
-        } else if (rand < (0.002 * effectiveLuck)) { 
+        } else if (rand < (0.0021 * effectiveLuck)) {
+          selected = 'WILLIAM_CRASH';
+          text = '1 IN 1,000 (WILLIAM_CRASH) [ROCKET_IMPACT]';
+        } else if (rand < (0.003 * effectiveLuck)) { 
           selected = 'STRUCTURAL_COLLAPSE';
           text = '1 IN 2,111 (LEGENDARY_SYSTEM_FAILURE) [STRUCTURAL_COLLAPSE]';
         } else if (rand < (0.02 * effectiveLuck)) { 
@@ -199,10 +203,14 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
             'OMEGA', 'ALPHA', 'EPSILON', 'VOID_STAR', 'NEBULA_NOVA', 'SUPERNOVA_SOUL', 
             'QUASAR_QUAKE', 'BEYOND_BOUNDARY', 'INFINITY_INIT', 'ETERNITY_EDGE', 'COSMOS_CORE',
             'PULSE_PRIME', 'VOID_VELOCITY', 'NEURAL_NEXUS',
-            'OMEGA_X', 'QUARK_QUAKE', 'NEON_NOIR', 'OMEGA_POINT', 'CYBER_CRUX', 'DATA_DIVINE'
+            'OMEGA_X', 'QUARK_QUAKE', 'NEON_NOIR', 'OMEGA_POINT', 'CYBER_CRUX', 'DATA_DIVINE', 'UNICODE_UPRISING'
           ];
           selected = epicPool[Math.floor(Math.random() * epicPool.length)];
-          text = `1 IN 500 (EPIC_${selected}_PROTOCOL)`;
+          if (selected === 'UNICODE_UPRISING') {
+            text = '1 IN 500 (EPIC_UNICODE_UPRISING_PROTOCOL)';
+          } else {
+            text = `1 IN 500 (EPIC_${selected}_PROTOCOL)`;
+          }
         } else if (rand < (0.15 * effectiveLuck)) { 
           const rarePool: CutsceneType[] = [
             'VOID_EYE', 'SILICON_CITY', 'FRACTAL_GROWTH', 'DRONE_SURVEILLANCE', 
@@ -214,7 +222,7 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
             'NEURAL_RESET', 'VOID_GATE', 'CYBER_SYMPHONY', 'STORM_WATCH',
             'VOID_PULSE', 'BINARY_STORM', 'KERNEL_PANIC', 'SEGMENTATION_FAULT', 'DEADLOCK_SHIELD', 'CORTEX_OVERRIDE',
             'COSMIC_CHURN', 'DIGITAL_DEATH', 'ELECTRON_END', 'FIREWALL_FALL', 'GHOST_GEAR', 'HEX_HEX', 'ION_IMPULSE',
-            'JETTISON_JET', 'KINETIC_KILL', 'LOGIC_LOCK', 'MAC_MELT', 'NANO_NOISE', 'OPTIC_OVERLOAD', 'PROTON_PULSE', 'QUARK_QUENCH',
+            'JETTISON_JET', 'KINETIC_KILL', 'LOGIC_LOCK', 'WILLIAM_CRASH', 'NANO_NOISE', 'OPTIC_OVERLOAD', 'PROTON_PULSE', 'QUARK_QUENCH',
             'PLASMA_PULSE', 'NEBULOUS_NIGHT', 'VOID_VAGRANT', 'STELLAR_STORM', 'GALAXY_GHOST', 'ORBITAL_ODYSSEY', 'CELESTIAL_CRASH', 'ASTRAL_ARRAY', 'QUANTUM_QUAKE', 'DIMENSIONAL_DIVE', 'TIME_TANGLE', 'SPACE_SPIKE', 'LUNAR_LEAK', 'SOLAR_SURGE', 'GRAVITY_GRIP', 'METEOR_MELT', 'COMET_CLASH', 'TITAN_TICK', 'EUROPA_END', 'MARS_MIST', 'VENUS_VOID', 'SATURN_SHOCK', 'JUPITER_JOLT', 'NEPTUNE_NODE', 'URANUS_UPRISING', 'PLUTO_PULSE', 'MERCURY_MELT', 'SUN_STORM', 'STAR_SURGE',
             'GHOST_GRID', 'NEURAL_NODE'
           ];
@@ -234,7 +242,7 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
             'GPU_RENDER_LOCK', 'DIRECT_X_FAILURE', 'OPEN_GL_ERROR', 'VULKAN_ERUPTION', 'SHADERC_CRASH', 'PIXEL_BURST', 'VOXEL_FALL', 'VECTOR_VOID', 'RASTER_REIGN',
             'BIT_BUCKET', 'FLOAT_POINT_BUG', 'INTEGER_OVERFLOW', 'STACK_SMASH', 'HEAP_EXHAUSTION', 'POINTER_GHOST', 'NULL_REFERENCE', 'UNDEFINED_BEHAVIOR',
             'DATA_RACE', 'RACE_CONDITION', 'HEISENBUG', 'MANDELBUG', 'SCHRODINBUG', 'BOHR_BUG', 'LITTLE_ENDIAN', 'BIG_ENDIAN',
-            'ASCII_ART', 'UNICODE_UPRISING', 'UTF8_STORM', 'BAUD_RATE_BURST', 'LATENCY_LAG', 'PING_OF_DEATH', 'PACKET_LOSS_PURGE',
+            'ASCII_ART', 'UTF8_STORM', 'BAUD_RATE_BURST', 'LATENCY_LAG', 'PING_OF_DEATH', 'PACKET_LOSS_PURGE',
             'SILICON_SOUL', 'VECTOR_VALOR', 'CORE_COMMAND', 'SHELL_SHIELD'
           ];
           selected = uncommonPool[Math.floor(Math.random() * uncommonPool.length)];
@@ -564,7 +572,7 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
              {type === 'JETTISON_JET' && <TacticalColorEffect color="#0f172a" label="JETTISON_JET" icon={<Plane />} surge rotate grid scan />}
              {type === 'KINETIC_KILL' && <TacticalColorEffect color="#991b1b" label="KINETIC_KILL" icon={<Zap />} surge rotate junction quake />}
              {type === 'LOGIC_LOCK' && <TacticalColorEffect color="#1e1b4b" label="LOGIC_LOCK" icon={<Lock />} grid junction rotate pulse />}
-             {type === 'MAC_MELT' && <MeltingSiliconEffect />}
+             {type === 'WILLIAM_CRASH' && <WilliamHouseCrashEffect />}
              {type === 'NANO_NOISE' && <TacticalColorEffect color="#065f46" label="NANO_NOISE" icon={<Radio />} scan grid rotate pulse />}
              {type === 'OPTIC_OVERLOAD' && <StarsZoomEffect />}
              {type === 'PROTON_PULSE' && <TacticalColorEffect color="#4338ca" label="PROTON_PULSE" icon={<Atom />} pulse surge rotate scan />}
@@ -2956,6 +2964,89 @@ function CelestialOverseerEffect() {
       <div className="mt-12 text-center space-y-4">
         <div className="text-amber-500 font-black text-xs uppercase tracking-[3em] animate-pulse">Watching_The_Cosmos</div>
         <div className="h-px w-96 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
+      </div>
+    </div>
+  );
+}
+
+function WilliamHouseCrashEffect() {
+  return (
+    <div className="w-full h-full bg-slate-900 flex items-center justify-center relative overflow-hidden">
+      {/* Background elements */}
+      <div className="absolute inset-0 bg-gradient-to-b from-sky-900 to-slate-900 opacity-50" />
+      
+      {/* William's Assets */}
+      <div className="relative z-10 flex flex-col items-center gap-12">
+        <motion.div 
+          animate={{ y: [0, -5, 0] }}
+          transition={{ duration: 4, repeat: Infinity }}
+          className="relative"
+        >
+          {/* The House */}
+          <div className="relative w-64 h-48 bg-slate-100 rounded-lg shadow-2xl flex flex-col items-center justify-end p-4 border-b-8 border-slate-300">
+             <div className="absolute -top-16 left-0 right-0 h-16 bg-slate-400 [clip-path:polygon(50%_0%,0%_100%,100%_100%)]" />
+             <div className="flex gap-4 mb-4">
+                <div className="w-8 h-8 bg-sky-200 border-2 border-slate-300" />
+                <div className="w-8 h-8 bg-sky-200 border-2 border-slate-300" />
+             </div>
+             <div className="w-10 h-16 bg-amber-800 border-2 border-slate-300" />
+             <div className="absolute -top-20 bg-white/10 px-4 py-1 rounded-full border border-white/20 backdrop-blur-md">
+                <div className="text-[10px] font-black text-white italic tracking-widest uppercase text-center">William's House</div>
+             </div>
+          </div>
+        </motion.div>
+
+        {/* Youtube Channel UI */}
+        <motion.div 
+          animate={{ x: [0, 5, 0] }}
+          transition={{ duration: 5, repeat: Infinity }}
+          className="w-96 bg-black border border-white/10 rounded-xl overflow-hidden shadow-2xl relative"
+        >
+          <div className="h-4 bg-red-600 w-full" />
+          <div className="p-4 flex items-center gap-4">
+            <div className="w-12 h-12 bg-slate-800 rounded-full" />
+            <div className="flex-1">
+              <div className="h-2 w-32 bg-slate-700 rounded mb-2" />
+              <div className="h-2 w-20 bg-slate-800 rounded" />
+            </div>
+            <div className="bg-red-600 px-3 py-1 text-[8px] font-black uppercase text-white rounded">Subscribe</div>
+          </div>
+          <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-white/10 px-4 py-1 rounded-full border border-white/20 backdrop-blur-md">
+            <div className="text-[8px] font-black text-white italic tracking-widest uppercase">William's Youtube Channel</div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* The Rocketship Crash Animation */}
+      <motion.div
+        initial={{ top: '-20%', left: '120%', rotate: -45 }}
+        animate={{ top: '50%', left: '50%' }}
+        transition={{ duration: 1.5, ease: "circIn" }}
+        className="absolute z-30"
+      >
+        <Rocket size={120} className="text-slate-200 drop-shadow-[0_0_30px_rgba(255,255,255,0.5)]" />
+        <div className="absolute -right-10 top-1/2 -translate-y-1/2 w-48 h-8 bg-gradient-to-l from-transparent via-orange-500 to-yellow-500 blur-xl animate-pulse" />
+      </motion.div>
+
+      {/* Explosion Sequence */}
+      <AnimatePresence>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 2 }}
+          transition={{ delay: 1.5, duration: 0.2 }}
+          className="absolute inset-0 z-40 bg-white flex items-center justify-center"
+        >
+           <motion.div 
+             animate={{ scale: [1, 10], opacity: [1, 0] }}
+             transition={{ duration: 1, delay: 1.5 }}
+             className="w-full h-full bg-orange-600 rounded-full blur-[100px]"
+           />
+           <div className="text-black font-black text-6xl italic tracking-tighter uppercase whitespace-nowrap">REDACTED_BY_NETWORK</div>
+        </motion.div>
+      </AnimatePresence>
+
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50">
+        <div className="text-[10px] text-white/20 font-black tracking-[1em] uppercase italic">1_IN_1000_RARE_EVENT</div>
       </div>
     </div>
   );
