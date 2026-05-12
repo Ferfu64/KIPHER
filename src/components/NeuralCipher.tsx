@@ -74,7 +74,7 @@ export default function NeuralCipher({ onComplete, onFail }: NeuralCipherProps) 
           </div>
           <div className="flex gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className={`w-1 h-3 ${i < level ? 'bg-tactical-cyan' : 'bg-slate-800'}`} />
+              <div key={`level-pips-${i}`} className={`w-1 h-3 ${i < level ? 'bg-tactical-cyan' : 'bg-slate-800'}`} />
             ))}
           </div>
         </div>
@@ -89,7 +89,7 @@ export default function NeuralCipher({ onComplete, onFail }: NeuralCipherProps) 
         <div className="grid grid-cols-3 gap-4 mb-8">
           {Array.from({ length: 9 }).map((_, i) => (
             <motion.button
-              key={i}
+              key={`pad-${i}`}
               whileHover={gameState === 'INPUT' ? { scale: 1.05 } : {}}
               whileTap={gameState === 'INPUT' ? { scale: 0.95 } : {}}
               onClick={() => handleInput(i)}
@@ -125,10 +125,10 @@ export default function NeuralCipher({ onComplete, onFail }: NeuralCipherProps) 
              {gameState === 'INPUT' && (
                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-2">
                   {userInput.map((_, i) => (
-                    <div key={i} className="w-2 h-2 rounded-full bg-tactical-cyan animate-pulse" />
+                    <div key={`input-${i}`} className="w-2 h-2 rounded-full bg-tactical-cyan animate-pulse" />
                   ))}
                   {Array.from({ length: sequence.length - userInput.length }).map((_, i) => (
-                    <div key={i} className="w-2 h-2 rounded-full border border-white/20" />
+                    <div key={`placeholder-${i}`} className="w-2 h-2 rounded-full border border-white/20" />
                   ))}
                </motion.div>
              )}

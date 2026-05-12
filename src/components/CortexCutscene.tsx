@@ -69,7 +69,8 @@ type CutsceneType =
   | 'GHOST_IN_THE_GEAR' | 'MATRIX_MOURNING' | 'SYSTEM_SACRIFICE' | 'VIRTUAL_VIGIL' | 'DATA_DRONE' | 'CORE_CONDUIT' | 'LINK_LAMENT'
   | 'SHELL_SHADOW' | 'BIT_BARRAGE' | 'BYTE_BANE' | 'CHIP_CHAOS' | 'WIRE_WRATH' | 'FLOW_FURY' | 'SIGNAL_SABOTAGE' | 'WAVE_WRATH' | 'PULSE_PLAGUE' | 'NET_NIGHT'
   | 'BIT_BLINK' | 'BYTE_BLUR' | 'CHIP_CHILL' | 'WIRE_WHISPER' | 'FLOW_FADE' | 'SIGNAL_SILENCE' | 'WAVE_WHISPER' | 'PULSE_PAUSE' | 'BIT_BREAK' | 'BYTE_BREEZE' | 'CHIP_CHIME' | 'WIRE_WIND' | 'FLOW_FLUTTER' | 'SHELL_SHIVER' | 'BIT_BUMP' | 'OLIVER_TRANSFORMATION'
-  | 'KIPHER_KODEX' | 'CORTEX_COLD' | 'VINE_VIOLATION' | 'GATEWAY_GHOST' | 'THREAT_TACTIC' | 'SIGNAL_STRIKE' | 'NODE_NEGATION' | 'HASH_HELL' | 'ENCRYPT_EYE' | 'SHELL_STORM' | 'PROTOCOL_PAIN' | 'VOICE_VOID';
+  | 'KIPHER_KODEX' | 'CORTEX_COLD' | 'VINE_VIOLATION' | 'GATEWAY_GHOST' | 'THREAT_TACTIC' | 'SIGNAL_STRIKE' | 'NODE_NEGATION' | 'HASH_HELL' | 'ENCRYPT_EYE' | 'SHELL_STORM' | 'PROTOCOL_PAIN' | 'VOICE_VOID'
+  | 'GHOST_SIGNAL' | 'VOID_TREMOR' | 'CYBER_CORE' | 'NEURAL_NEST' | 'STATIC_WAVE' | 'PIXEL_PRIME' | 'DATA_DRAIN' | 'SHELL_SWITCH' | 'LINK_LEAK' | 'CHIP_CRUSH' | 'WIRE_WARP' | 'FLOW_FAULT';
 
 export default function CortexCutscene({ onComplete, forcedType, luckMultiplier = 1, level = 1, pityCount911 = 0, pityCount500 = 0 }: CutsceneProps) {
   const [type, setType] = useState<CutsceneType | null>(forcedType as CutsceneType || null);
@@ -201,29 +202,26 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
         } else if (rand < (0.0021 * effectiveLuck)) {
           selected = 'WILLIAM_CRASH';
           text = '1 IN 1,000 (WILLIAM_CRASH) [ROCKET_IMPACT]';
-        } else if (rand < (0.003 * effectiveLuck)) { 
+        } else if (rand < 0.003 * effectiveLuck) { 
           selected = 'STRUCTURAL_COLLAPSE';
           text = '1 IN 2,111 (LEGENDARY_SYSTEM_FAILURE) [STRUCTURAL_COLLAPSE]';
-        } else if (rand < (0.02 * effectiveLuck)) { 
+        } else if (rand < 0.005 * effectiveLuck) { 
+          // Special Tier: 1 in 500 EXCLUSIVELY for Oliver
+          selected = 'OLIVER_TRANSFORMATION';
+          text = '1 IN 500 (EPIC_OLIVER_TRANSFORMATION_EVENT)';
+        } else if (rand < 0.01 * effectiveLuck) { 
           const epicPool: CutsceneType[] = [
             'OMEGA', 'ALPHA', 'EPSILON', 'VOID_STAR', 'NEBULA_NOVA', 'SUPERNOVA_SOUL', 
             'QUASAR_QUAKE', 'BEYOND_BOUNDARY', 'INFINITY_INIT', 'ETERNITY_EDGE', 'COSMOS_CORE',
             'PULSE_PRIME', 'VOID_VELOCITY', 'NEURAL_NEXUS',
             'OMEGA_X', 'QUARK_QUAKE', 'NEON_NOIR', 'OMEGA_POINT', 'CYBER_CRUX', 'DATA_DIVINE', 'UNICODE_UPRISING',
-            'VOID_VENGEANCE', 'CYBER_CHALICE', 'NEURAL_NIGHTMARE', 'OLIVER_TRANSFORMATION',
-            'KIPHER_KODEX', 'CORTEX_COLD', 'VINE_VIOLATION', 'GATEWAY_GHOST'
+            'VOID_VENGEANCE', 'CYBER_CHALICE', 'NEURAL_NIGHTMARE',
+            'KIPHER_KODEX', 'CORTEX_COLD', 'VINE_VIOLATION', 'GATEWAY_GHOST',
+            'GHOST_SIGNAL', 'VOID_TREMOR', 'CYBER_CORE', 'NEURAL_NEST', 'STATIC_WAVE', 'PIXEL_PRIME', 'DATA_DRAIN', 'SHELL_SWITCH', 'LINK_LEAK', 'CHIP_CRUSH', 'WIRE_WARP', 'FLOW_FAULT'
           ];
           selected = epicPool[Math.floor(Math.random() * epicPool.length)];
-          if (selected === 'OLIVER_TRANSFORMATION') {
-            text = '1 IN 500 (EPIC_OLIVER_TRANSFORMATION_EVENT)';
-          } else if (selected === 'KIPHER_KODEX' || selected === 'CORTEX_COLD' || selected === 'VINE_VIOLATION' || selected === 'GATEWAY_GHOST') {
-            text = `1 IN 500 (EPIC_${selected}_PROTOCOL)`;
-          } else if (selected === 'UNICODE_UPRISING') {
-            text = '1 IN 500 (EPIC_UNICODE_UPRISING_PROTOCOL)';
-          } else {
-            text = `1 IN 500 (EPIC_${selected}_PROTOCOL)`;
-          }
-        } else if (rand < (0.15 * effectiveLuck)) { 
+          text = `1 IN 500 (EPIC_${selected}_PROTOCOL)`;
+        } else if (rand < 0.02 * effectiveLuck) { 
           const rarePool: CutsceneType[] = [
             'VOID_EYE', 'SILICON_CITY', 'FRACTAL_GROWTH', 'DRONE_SURVEILLANCE', 
             'CODE_VORTEX', 'GLITCH_FACE', 'BIO_HAZARD', 'NEON_GHOST', 'ORBITAL_STRIKE', 'SYNTH_WAVE', 'CHRONO_TRIGGER', 'CELESTIAL_SYNC',
@@ -242,7 +240,7 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
           ];
           selected = rarePool[Math.floor(Math.random() * rarePool.length)];
           text = `1 IN 200 (RARE_${selected}_EVENT)`;
-        } else if (rand < 500000) { 
+        } else if (rand < 0.15 * effectiveLuck) { 
           const uncommonPool: CutsceneType[] = [
             'VISAGE', 'LIFEFORM', 'SATELLITE_LINK', 'RADAR_SWEEP', 'ENCRYPTION_KEY', 
             'HYPER_LOOP', 'NEURAL_SYNC', 'DATA_ERASURE', 'FIREWALL_BREACH', 'GRID_LOCK', 'VECTOR_FIELD',
@@ -624,7 +622,7 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
              {type === 'KIPHER_KODEX' && <TacticalColorEffect color="#f59e0b" label="KODEX" icon={<FileCode />} scan rotate junction grid pulse />}
              {type === 'CORTEX_COLD' && <TacticalColorEffect color="#3b82f6" label="COLD" icon={<Wind />} rotate scan pulse grid quake />}
              {type === 'VINE_VIOLATION' && <TacticalColorEffect color="#dc2626" label="VIOLATION" icon={<ShieldAlert />} surge quake pulse rotate scan grid />}
-             {type === 'GATEWAY_GHOST' && <TacticalColorEffect color="#94a3b8" label="GHOST" icon={<Ghost />} pulse scan rotate junction grid pulse />}
+             {type === 'GATEWAY_GHOST' && <TacticalColorEffect color="#94a3b8" label="GHOST" icon={<Ghost />} pulse scan rotate junction grid />}
              {type === 'THREAT_TACTIC' && <TacticalColorEffect color="#ef4444" label="TACTIC" icon={<AlertTriangle />} quake scan rotate junction grid pulse />}
              {type === 'SIGNAL_STRIKE' && <TacticalColorEffect color="#3b82f6" label="STRIKE" icon={<Zap />} rotate surge quake scan grid pulse />}
              {type === 'NODE_NEGATION' && <TacticalColorEffect color="#1e1b4b" label="NEGATION" icon={<XCircle />} quake scan rotate junction grid pulse />}
@@ -633,6 +631,20 @@ export default function CortexCutscene({ onComplete, forcedType, luckMultiplier 
              {type === 'SHELL_STORM' && <TacticalColorEffect color="#475569" label="STORM" icon={<Box />} scan rotate junction grid pulse />}
              {type === 'PROTOCOL_PAIN' && <TacticalColorEffect color="#991b1b" label="PAIN" icon={<AlertCircle />} quake scan rotate junction grid pulse />}
              {type === 'VOICE_VOID' && <TacticalColorEffect color="#000000" label="VOID" icon={<Radio />} scan rotate junction grid pulse />}
+
+             {/* 12 New Series 3 Epic Cutscenes */}
+             {type === 'GHOST_SIGNAL' && <TacticalColorEffect color="#94a3b8" label="GHOST_SIGNAL" icon={<Ghost />} pulse scan rotate grid quake />}
+             {type === 'VOID_TREMOR' && <TacticalColorEffect color="#1e1b4b" label="VOID_TREMOR" icon={<Activity />} quake scan rotate grid />}
+             {type === 'CYBER_CORE' && <TacticalColorEffect color="#0ea5e9" label="CYBER_CORE" icon={<Cpu />} pulse junction rotate scan grid />}
+             {type === 'NEURAL_NEST' && <TacticalColorEffect color="#a855f7" label="NEURAL_NEST" icon={<Network />} junction rotate pulse grid />}
+             {type === 'STATIC_WAVE' && <TacticalColorEffect color="#475569" label="STATIC_WAVE" icon={<Wind />} scan rotate pulse quake />}
+             {type === 'PIXEL_PRIME' && <TacticalColorEffect color="#2dd4bf" label="PIXEL_PRIME" icon={<Box />} grid pulse scan junction />}
+             {type === 'DATA_DRAIN' && <TacticalColorEffect color="#ef4444" label="DATA_DRAIN" icon={<ArrowRight />} surge scan rotate grid />}
+             {type === 'SHELL_SWITCH' && <TacticalColorEffect color="#fb923c" label="SHELL_SWITCH" icon={<Repeat />} rotate junction grid scan />}
+             {type === 'LINK_LEAK' && <TacticalColorEffect color="#22c55e" label="LINK_LEAK" icon={<Unlink />} scan rotate pulse grid />}
+             {type === 'CHIP_CRUSH' && <TacticalColorEffect color="#dc2626" label="CHIP_CRUSH" icon={<Zap />} quake surge rotate pulse />}
+             {type === 'WIRE_WARP' && <TacticalColorEffect color="#6366f1" label="WIRE_WARP" icon={<Repeat />} rotate scan grid pulse />}
+             {type === 'FLOW_FAULT' && <TacticalColorEffect color="#fcd34d" label="FLOW_FAULT" icon={<AlertTriangle />} quake scan rotate grid />}
 
              {/* 15 New Rare Elite Cutscenes */}
              {type === 'COSMIC_CHURN' && <GalaxyCollisionEffect />}
@@ -897,7 +909,7 @@ function HyperLoopEffect() {
         <div className="w-full h-full bg-black flex items-center justify-center overflow-hidden">
             {Array.from({ length: 20 }).map((_, i) => (
                 <motion.div 
-                    key={i}
+                    key={`loop-${i}`}
                     initial={{ scale: 0, opacity: 1 }}
                     animate={{ scale: 5, opacity: 0 }}
                     transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1, ease: "easeIn" }}
@@ -913,7 +925,7 @@ function NeuralSyncEffect() {
         <div className="w-full h-full bg-slate-950 p-20 grid grid-cols-5 grid-rows-5 gap-4">
              {Array.from({ length: 25 }).map((_, i) => (
                  <motion.div 
-                    key={i}
+                    key={`sync-${i}`}
                     animate={{ backgroundColor: ["#0f172a", "#0ea5e9", "#0f172a"] }}
                     transition={{ duration: 1, delay: Math.random() * 2, repeat: Infinity }}
                     className="rounded-full shadow-inner border border-slate-800 flex items-center justify-center"
@@ -934,7 +946,7 @@ function CodeVortexEffect() {
                 className="text-tactical-cyan text-xs font-mono grid grid-cols-10 gap-x-40"
             >
                 {Array.from({ length: 100 }).map((_, i) => (
-                    <div key={i}>{Math.random().toString(36).substring(7)}</div>
+                    <div key={`vortex-${i}`}>{Math.random().toString(36).substring(7)}</div>
                 ))}
             </motion.div>
         </div>

@@ -172,7 +172,7 @@ export default function TacticalProtocolHandler({ currentUser }: { currentUser: 
                 <span>TERMINAL_INJECT // EPHEMERAL_STREAM</span>
                 <button onClick={() => setMediaInject(null)} className="hover:scale-125 transition-transform"><X size={14}/></button>
               </div>
-              <img src={mediaInject} alt="INJECT" className="w-full aspect-video object-cover" referrerPolicy="no-referrer" />
+              {mediaInject && <img src={mediaInject} alt="INJECT" className="w-full aspect-video object-cover" referrerPolicy="no-referrer" />}
             </div>
           </motion.div>
         )}

@@ -492,14 +492,6 @@ export default function App() {
         <CustomMouse customization={user.customization} />
       )}
 
-      {showDailyReward && user && (
-        <DailyReward 
-          user={user} 
-          onClaim={() => { setShowDailyReward(false); audioService.playSuccess(); }} 
-          onClose={() => setShowDailyReward(false)} 
-        />
-      )}
-      
       <AnimatePresence>
         {isCasinoOpen && (
           <CasinoHub 
@@ -621,7 +613,7 @@ export default function App() {
           >
             {activeEvents.map((ev, idx) => (
               <div 
-                key={idx}
+                key={`${ev.type}-${idx}`}
                 className="px-3 py-1 bg-black/80 border border-tactical-cyan/40 text-tactical-cyan text-[9px] font-black uppercase tracking-widest flex items-center gap-2 backdrop-blur-md shadow-[0_0_15px_rgba(34,211,238,0.2)]"
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-tactical-cyan animate-pulse" />
@@ -939,9 +931,9 @@ function TitleManagerUI({ user, onClose, onUpdate }: { user: UserProfile, onClos
                 >
                   <div className="text-[10px] font-black uppercase tracking-widest">[ NONE ]</div>
                 </button>
-                {titles.map(t => (
+                {titles.map((t, idx) => (
                   <button 
-                    key={t}
+                    key={`${t}-${idx}`}
                     onClick={() => selectTitle(t)}
                     className={`w-full p-4 border text-left transition-all ${user.activeTitle === t ? 'border-tactical-cyan bg-tactical-cyan/10 text-tactical-cyan shadow-[inset_0_0_20px_rgba(4,217,217,0.1)]' : 'border-white/5 text-white hover:border-tactical-cyan/40'}`}
                   >

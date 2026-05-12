@@ -193,10 +193,10 @@ export default function MemoryMatch({ onBack, onCreditsEarned }: { onBack: () =>
       {/* Decorative Matrix Background Elements */}
       <div className="absolute inset-0 pointer-events-none opacity-5">
          <div className="absolute top-10 left-10 text-[8px] space-y-1">
-            {Array.from({ length: 20 }).map((_, i) => <div key={i}>0x{Math.random().toString(16).slice(2, 10).toUpperCase()}</div>)}
+            {Array.from({ length: 20 }).map((_, i) => <div key={`bg-left-${i}`}>0x{Math.random().toString(16).slice(2, 10).toUpperCase()}</div>)}
          </div>
          <div className="absolute bottom-10 right-10 text-[8px] space-y-1 text-right">
-            {Array.from({ length: 20 }).map((_, i) => <div key={i}>SY_N{Math.random().toString().slice(2, 6)}_NC</div>)}
+            {Array.from({ length: 20 }).map((_, i) => <div key={`bg-right-${i}`}>SY_N{Math.random().toString().slice(2, 6)}_NC</div>)}
          </div>
       </div>
     </div>
